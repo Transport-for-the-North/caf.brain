@@ -1,16 +1,16 @@
-![Transport for the North Logo](https://github.com/Transport-for-the-North/caf.toolkit/blob/main/docs/TFN_Landscape_Colour_CMYK.png)
+![Transport for the North Logo](https://github.com/Transport-for-the-North/caf.ml/blob/main/docs/TFN_Landscape_Colour_CMYK.png)
 
 <h1 align="center">CAF template</h1>
 
 [//]: # (Use the below and update URLs to add more badges when deploying)
 
-[//]: # (<a href="https://pypi.org/project/caf.toolkit/"><img alt="Supported Python versions" src="https://img.shields.io/pypi/pyversions/caf.package.svg?style=flat-square"></a>)
+[//]: # (<a href="https://pypi.org/project/caf.ml/"><img alt="Supported Python versions" src="https://img.shields.io/pypi/pyversions/caf.package.svg?style=flat-square"></a>)
 
-[//]: # (<a href="https://pypi.org/project/caf.toolkit/"><img alt="Latest release" src="https://img.shields.io/github/release/transport-for-the-north/caf.package.svg?style=flat-square&maxAge=86400"></a>)
+[//]: # (<a href="https://pypi.org/project/caf.ml/"><img alt="Latest release" src="https://img.shields.io/github/release/transport-for-the-north/caf.package.svg?style=flat-square&maxAge=86400"></a>)
 
-[//]: # (<a href="https://app.codecov.io/gh/Transport-for-the-North/caf.toolkit"><img alt="Coverage" src="https://img.shields.io/codecov/c/github/transport-for-the-north/caf.package.svg?branch=master&style=flat-square&logo=CodeCov"></a>)
+[//]: # (<a href="https://app.codecov.io/gh/Transport-for-the-North/caf.ml"><img alt="Coverage" src="https://img.shields.io/codecov/c/github/transport-for-the-north/caf.package.svg?branch=master&style=flat-square&logo=CodeCov"></a>)
 
-[//]: # (<a href="https://github.com/Transport-for-the-North/caf.toolkit/actions?query=event%3Apush"><img alt="Testing Badge" src="https://img.shields.io/github/actions/workflow/status/transport-for-the-north/caf.toolkit/tests.yml?style=flat-square&logo=GitHub&label=Tests"></a>)
+[//]: # (<a href="https://github.com/Transport-for-the-North/caf.ml/actions?query=event%3Apush"><img alt="Testing Badge" src="https://img.shields.io/github/actions/workflow/status/transport-for-the-north/caf.ml/tests.yml?style=flat-square&logo=GitHub&label=Tests"></a>)
 
 
 <p align="center">
@@ -21,26 +21,14 @@
 
 A template repo for caf modules.
 
-For an example implementation of this template please see [caf.toolkit](https://github.com/Transport-for-the-North/caf.toolkit)
+For an example implementation of this template please see [caf.ml](https://github.com/Transport-for-the-North/caf.ml)
 
 ## Usage
 Follow the instruction below to use this template to make a new caf package based on the
 standard caf structure. Briefly:
 
-- Update the package names in all places that {package_name} is used.
+- Update the package names in all places that {package_name} is used - Done.
 - Run and install versioneer
-
-### Places to change package name
-In short - anywhere there is something named {package_name} 
-
-- `src/caf/{package_name}`
-- `RELEASE.md` - 1 change
-  - Update the URL in the 'releases' link
-- `pyproject.toml` - 4 changes
-  - Under `project` update name 
-  - Update the URLs under `project.urls`
-  - Under `tool.setuptools.package-data` update caf.{package_name}, e.g., `caf.toolkit = py.typed`
-  - Under `tool.mypy` update packages
 
 
 ### VersioningIt

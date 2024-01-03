@@ -1,6 +1,3 @@
-# Packaging
-versioningit>=2.2.0, < 3.0.0
-
 # package linters
 black>=22.6.0
 mypy>=1.0.0, <2.0.0

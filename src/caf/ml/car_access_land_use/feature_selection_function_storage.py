@@ -37,11 +37,7 @@ def feature_selection(data_to_model, target_column=None, regression_methods=None
         data_to_model = data_to_model.apply(pd.to_numeric, errors='coerce')
         data_to_model = data_to_model.dropna(axis=1, how='any')
 
-    # Check if the target column is numeric
-    if target_column is not None and not pd.to_numeric(data_to_model[target_column],
-                                                       errors='coerce').notna().all():
-        raise ValueError(
-            "Error: The target column is not numeric. Please adapt the target column to be numeric.")
+
 
     # Remove any rows with NaN values after conversion
     data_to_model = data_to_model.dropna()
@@ -102,7 +98,6 @@ def feature_selection(data_to_model, target_column=None, regression_methods=None
                 print(
                     f"No features selected for {regression_method.__name__}. Skipping grid search.")
                 continue
-
             X_selected = selector.transform(X_train)
 
             # In the 1st loop iteration, X_selected_combined is initialized with zeros
@@ -147,7 +142,10 @@ def feature_selection(data_to_model, target_column=None, regression_methods=None
         print("No features selected for any regression method")
         final_model = None
         selected_features_df = None
-
+        feat_select_df = feature_selection_alt(X_scaled, y)
+        # if this feat selection is called here then data already sorted, if just called as user doesnt
+        # want the intensive one then need to sort data a bit like the code does in new feat selec func
+        # needs adapting this is TODO tomorrow
     else:
         print("Selected Features:", np.array(data_to_model.columns[:-1])[selected_features])
         print("Mean Outer Score:", np.mean(outer_scores))
@@ -178,3 +176,140 @@ def get_cv_class(cv_method, splits, repeats):
         return RepeatedStratifiedKFold(n_splits=splits if splits else 5, n_repeats=repeats)
     else:
         raise ValueError(f"Invalid cross-validation method: {cv_method}")
+
+
+# feature selection for if initial feature selection results in all features removed or if user specified
+
+from sklearn.feature_selection import SelectKBest, f_classif, f_regression, chi2
+from scipy.stats import ttest_ind
+
+
+def feature_selection_alt(data, target_column, X_scaled, y, correlation_threshold=0.5, p_value_threshold=0.05, k_best=5):
+
+    data_list = [data, X_scaled, y]
+    for i in range(len(data_list)):
+        # For the data DataFrame
+        if i == 0:
+            if target_column in data_list[i].columns:
+                try:
+                    data_list[i][target_column] = pd.to_numeric(data_list[i][target_column],
+                                                                errors='coerce')
+                except ValueError:
+                    print(
+                        f"Error: Unable to convert '{target_column}' to numeric. Please check the target column.")
+                    return
+            else:
+                print(
+                    f"Warning: '{target_column}' not found in the 'data' DataFrame. Make sure the target column is specified correctly.")
+                return
+            if not data_list[i].applymap(np.isreal).all().all():
+                print(
+                    "Warning: Not all columns are numeric. Converting non-numeric columns to numeric.")
+                data_list[i] = data_list[i].apply(pd.to_numeric, errors='coerce')
+                data_list[i] = data_list[i].dropna(axis=1, how='any')
+                print("Columns dropped:", data_list[i].columns.difference(data.columns))
+            # For X_scaled and y
+            else:
+                if i == 2:  # For y
+                    if not data_list[i].applymap(np.isreal).all().all():
+                        print(
+                            f"Error: All columns in '{data_list[i].name}' should be numeric. Please check your data.")
+                        return
+                else:  # For X_scaled
+                    if not data_list[i].applymap(np.isreal).all().all():
+                        print(
+                            f"Warning: Not all columns in '{data_list[i].name}' are numeric. Converting non-numeric columns to numeric.")
+                        data_list[i] = data_list[i].apply(pd.to_numeric, errors='coerce')
+                        data_list[i] = data_list[i].dropna(axis=1, how='any')
+                        print("Columns dropped:", data_list[i].columns.difference(data.columns))
+
+
+
+    # Remove any rows with NaN values after conversion
+    data = data.dropna()
+
+    # Split data into X (features) and y (target variable)
+    X = data.drop(target_column, axis=1)
+    y = data[target_column]
+
+    # Pairwise Correlation
+    corr_matrix = X.corr().abs()
+    upper_tri = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(np.bool))
+    to_drop_corr = [column for column in upper_tri.columns if any(upper_tri[column] > correlation_threshold)]
+
+    # ANOVA (for numerical features)
+    numeric_columns = X.select_dtypes(include=np.number).columns
+    anova_results = pd.Series(index=numeric_columns)
+    for column in numeric_columns:
+        _, p_value = f_classif(X[[column]], y)
+        anova_results[column] = p_value
+    to_drop_anova = anova_results[anova_results > p_value_threshold].index.tolist()
+
+    # T-tests (for binary categorical features)
+    binary_columns = X.select_dtypes(include='category').columns
+    t_test_results = pd.Series(index=binary_columns)
+    for column in binary_columns:
+        group1 = X[X[column] == X[column].value_counts().idxmax()][target_column]
+        group2 = X[X[column] != X[column].value_counts().idxmax()][target_column]
+        _, p_value = ttest_ind(group1, group2)
+        t_test_results[column] = p_value
+    to_drop_t_test = t_test_results[t_test_results > p_value_threshold].index.tolist()
+
+    # Chi-squared tests (for non-binary categorical features)
+    non_binary_columns = X.select_dtypes(include='category').columns.difference(binary_columns)
+    chi2_results = pd.Series(index=non_binary_columns)
+    for column in non_binary_columns:
+        contingency_table = pd.crosstab(X[column], y)
+        _, p_value, _, _ = chi2(contingency_table)
+        chi2_results[column] = p_value
+    to_drop_chi2 = chi2_results[chi2_results > p_value_threshold].index.tolist()
+
+    # Combine features to drop from all tests
+    to_drop_all = list(set(to_drop_corr + to_drop_anova + to_drop_t_test + to_drop_chi2))
+
+    # Select top k features using SelectKBest
+    selector = SelectKBest(score_func=f_classif, k=k_best)
+    X_selected = selector.fit_transform(X, y)
+    selected_features = X.columns[selector.get_support()].tolist()
+
+    # Print features to drop
+    print("Features removed:")
+    print(to_drop_all)
+
+    # Create DataFrame with selected features
+    selected_data = pd.concat([X[selected_features], y], axis=1)
+
+    return selected_data
+
+
+
+def pvalue_feature_selection_(x_train, y_train, x_test):
+    significance_level = 0.05
+    methods = [f_classif, chi2, mutual_info_classif]
+
+    # Initialize a dictionary to store p-values for each method
+    p_values_dict = {}
+
+    # Loop through each statistical test method
+    for method in methods:
+        # Use SelectKBest with k='all' to compute scores for all features on training data
+        selector = SelectKBest(method, k='all')
+        selector.fit(x_train, y_train)
+
+        # Get p-values from the statistical test
+        p_values = selector.pvalues_
+
+        # Convert p-values to numpy array to ensure consistent shape
+        p_values = np.asarray(p_values)
+
+        # Store p-values in the dictionary
+        p_values_dict[method.__name__] = p_values
+
+    # Calculate average p-values across all methods
+    average_p_values = np.mean(list(p_values_dict.values()), axis=0)
+
+    # Select features that pass the significance level on average for both training and test data
+    selected_features_train = x_train.columns[average_p_values < significance_level].tolist()
+    selected_features_test = x_test.columns[average_p_values < significance_level].tolist()
+
+    return selected_features_train, selected_features_test

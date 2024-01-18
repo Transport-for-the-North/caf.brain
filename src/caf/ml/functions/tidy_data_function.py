@@ -100,8 +100,21 @@ def remove_and_export_outliers(df, threshold=None, output_folder=None):
 
 
 def assess_correlation(df, threshold=0.7, vif_threshold=5.0):
+    # Separate numeric and non-numeric columns
+    numeric_columns = df.select_dtypes(include=[np.number]).columns
+    non_numeric_columns = df.columns.difference(numeric_columns)
+
+    # Handle non-numeric columns separately
+    non_numeric_df = df[non_numeric_columns]
+
+    # Ensure all numeric columns are numeric
+    numeric_df = df[numeric_columns].apply(pd.to_numeric, errors='coerce')
+
+    # Replace infinite values with NaN and drop columns with NaN
+    numeric_df = numeric_df.replace([np.inf, -np.inf], np.nan).dropna(axis=1)
+
     # Calculate the correlation matrix for numeric columns
-    correlation_matrix = df.corr()
+    correlation_matrix = numeric_df.corr()
 
     # Find and handle highly correlated variables
     correlated_columns = set()
@@ -112,7 +125,7 @@ def assess_correlation(df, threshold=0.7, vif_threshold=5.0):
                 correlated_columns.add(colname)
 
     # Drop highly correlated numeric columns
-    df_no_correlation = df.drop(columns=correlated_columns, axis=1)
+    df_no_correlation = numeric_df.drop(columns=correlated_columns, axis=1)
 
     # Check for multicollinearity using VIF
     variables = df_no_correlation.columns
@@ -123,10 +136,18 @@ def assess_correlation(df, threshold=0.7, vif_threshold=5.0):
     # Identify variables with high VIF
     high_vif_variables = vif_data[vif_data["VIF"] > vif_threshold]["Variable"].tolist()
 
+    # Print a message about non-numeric columns
+    if not non_numeric_columns.empty:
+        print(f"Non-numeric columns ignored during correlation analysis: {non_numeric_columns.tolist()}")
+
+    # Print a message about columns removed due to high VIF
     if high_vif_variables:
         print(f"Columns removed due to high VIF: {high_vif_variables}")
 
-    return df_no_correlation
+    # Concatenate numeric and non-numeric columns back together
+    df_no_multicollinearity = pd.concat([df[non_numeric_columns], df_no_correlation], axis=1)
+
+    return df_no_multicollinearity
 
 
 def main_tdf(data, output_folder):

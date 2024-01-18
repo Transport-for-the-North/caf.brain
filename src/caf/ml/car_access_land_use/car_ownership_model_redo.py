@@ -20,7 +20,8 @@ ALLOWED_MODELS = (ElasticNet, Lasso, Ridge)
 
 from process_data_class import DataProcessor
 from tidy_data_function import main_tdf
-from feature_selection_function import feature_selection
+from feature_selection_function_storage import feature_selection
+from numeric_data import process_data_numeric
 
 
 # Save each DataFrame as a separate CSV file
@@ -311,7 +312,9 @@ def main(params: CarInputs2, output_folder, reg_method, custom_regression_method
     # tidy data: remove correlated values etc.
     data_to_model = main_tdf(data, output_folder)
 
-    final_model, selected_features_df = feature_selection(data_to_model, num_folds=5,
+    data_final = process_data_numeric(data_to_model)
+
+    final_model, selected_features_df = feature_selection(data_final, num_folds=5,
                                                           selected_algorithm=reg_method,
                                                           target_column=params.target_column)
 

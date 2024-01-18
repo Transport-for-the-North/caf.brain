@@ -11,7 +11,7 @@ from caf.toolkit import BaseConfig
 # pylint: disable=import-error,wrong-import-position
 # Local imports here
 # pylint: enable=import-error,wrong-import-position
-from typing import Any, Optional
+from typing import Optional, List, Any
 
 
 # # # CONSTANTS # # #
@@ -36,14 +36,20 @@ class CarInputs2(BaseConfig):
     x: Optional[Path] = None
     y: Optional[Path] = None
     folder_path: Optional[Path] = None
-    index1: Optional[str] = None
-    index2: Optional[str] = None
+    index_columns: Optional[List[str]] = None
+    drop_columns: Optional[List[str]] = None
     wide_format: Optional[str] = None
     variable_name: Optional[str] = None
     value_name: Optional[str] = None
-    method: Any  # abc.ABCMeta not supported by caf.toolkit currently
-    target_column: str
+    model_type: Any  # abc.ABCMeta not supported by caf.toolkit currently
+    target_column: Optional[str] = None
     folder: Optional[Path] = None
+    output_folder: Optional[Path] = None
+    outlier_threshold: Optional[str] = None
+    cv_method: Optional[str] = None
+    splits: Optional[str] = None
+    repeats: Optional[str] = None
+    hp_optimisation: Optional[str] = None
 
 
 class LvuLog(BaseConfig):

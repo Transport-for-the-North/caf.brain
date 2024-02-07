@@ -15,7 +15,7 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_absolute_percent
 from sklearn.metrics import explained_variance_score, mean_squared_error
 from scipy.stats import pearsonr, spearmanr
 from statsmodels.stats.outliers_influence import variance_inflation_factor
-from inputs import CarInputs, CarInputs2
+from caf.ml.inputs.general_inputs import CarInputs2
 ALLOWED_MODELS = (ElasticNet, Lasso, Ridge)
 
 from process_data_class import DataProcessor

@@ -30,20 +30,46 @@ from sklearn.linear_model import ElasticNet, Lasso, Ridge
 from sklearn.model_selection import KFold, RandomizedSearchCV, GridSearchCV, StratifiedKFold, RepeatedKFold, RepeatedStratifiedKFold
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neural_network import MLPRegressor
-from sklearn.ensemble import GradientBoostingRegressor
 from tqdm import tqdm
 from sklearn.feature_selection import SelectFromModel
 from sklearn.feature_selection import SelectKBest, f_classif, chi2, mutual_info_classif, RFE
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import (
+    ExtraTreesRegressor,
+    RandomForestRegressor,
+    GradientBoostingRegressor,
+    AdaBoostRegressor,
+    BaggingRegressor,
+)
+from caf.ml.inputs.cafml_inputs import CarInputs2, Models, Default_regression_methods
+from caf.ml.car_access_land_use.process_data_class import process_data_numeric
 
 
 def feature_selection_(df, target_column, model_type, cv_method=None,
                        splits=None, repeats=None,
                        hp_optimisation=None):
+
+    ######## KEY MODEL CHECKS ########
+
+    if model_type is None:
+        regression_methods = Default_regression_methods
+    else:
+        if model_type not in Models:
+            raise ValueError(
+                f"Selected algorithm {model_type} not in the list of regression methods.")
+        regression_methods = [Models[model_type]]
+
+    if hp_optimisation is None:
+        hp_optimisation = RandomizedSearchCV
+        print(
+            "A hyperparameter optimization method was not specified. RandomizedSearchCV is used as default and recommended")
+    elif hp_optimisation not in (RandomizedSearchCV, GridSearchCV):
+        raise ValueError(
+            f"Selected hyperparameter optimization method not in the recommended list. "
+            "Please use either RandomizedSearchCV or GridSearchCV")
 
     ######## DATA PROCESSING ########
 
@@ -51,9 +77,8 @@ def feature_selection_(df, target_column, model_type, cv_method=None,
     if not df.applymap(np.isreal).all().all():
         print("Not all columns are numeric. Converting non-numeric columns to numeric.")
 
-        # Convert non-numeric columns to numeric, drop non-convertible columns
-        df = df.apply(pd.to_numeric, errors='coerce')
-        data = df.dropna(axis=1, how='any')
+        data = process_data_numeric(df)
+
     else:
         data = df  # Initialise data if all columns are numeric
 
@@ -70,38 +95,7 @@ def feature_selection_(df, target_column, model_type, cv_method=None,
     x_scaled = pd.DataFrame(x_scaled)
 
     ######## ALGORITHM SELECTION ########
-
-    # Initialize regression methods
-    default_regression_methods = [ElasticNet, Lasso, Ridge]
-    model_classes = {
-        "linear_regression": LinearRegression,
-        "decision_tree": DecisionTreeRegressor,
-        "random_forest": RandomForestRegressor,
-        "svm": SVR,
-        "knr": KNeighborsRegressor,
-        "neural_network": MLPRegressor,
-        "gradient_boosting": GradientBoostingRegressor,
-    }
-
-    if model_type is None:
-        regression_methods = default_regression_methods
-    else:
-        if model_type not in model_classes:
-            raise ValueError(
-                f"Selected algorithm {model_type} not in the list of regression methods.")
-        regression_methods = [model_classes[model_type]]
-
-
     cv_class = get_cv_class(cv_method, splits, repeats)
-
-    if hp_optimisation is None:
-        hpo = RandomizedSearchCV
-        print(
-            "A hyperparameter optimization method was not specified. RandomizedSearchCV is used as default and recommended")
-    elif hp_optimisation not in (RandomizedSearchCV, GridSearchCV):
-        raise ValueError(
-            f"Selected hyperparameter optimization method not in the recommended list. "
-            "Please use either RandomizedSearchCV or GridSearchCV")
 
     ######## FEATURE SELECTION CODE ########
 

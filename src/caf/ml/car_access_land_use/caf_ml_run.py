@@ -6,30 +6,51 @@ import warnings
 # model specific imports
 from pathlib import Path
 from sklearn.linear_model import ElasticNet, Lasso, Ridge
-from caf.ml.car_access_land_use.inputs import CarInputs2
+from caf.ml.inputs.cafml_inputs import CarInputs2, Models
+
 ALLOWED_MODELS = (ElasticNet, Lasso, Ridge)
 
 from caf.ml.car_access_land_use.process_data_class import DataProcessor
 from caf.ml.car_access_land_use.feature_selection import feature_selection_
+from caf.ml.functions.feature_selection_gridsearch import (select_model,
+                                                           select_param)
+
 
 
 def main(params: CarInputs2):
     warnings.filterwarnings("ignore")
 
     # process data: raw data -> model format
-    data = DataProcessor(params.x, params.y, params.folder_path,
+    processed_data = DataProcessor(params.x, params.y, params.folder_path,
                          params.index_columns, params.drop_columns,
                          params.wide_format, params.variable_name,
                          params.value_name, params.outlier_threshold, 
-                         params.target_column)
+                         params.target_column).data
 
     print('##########################################')
-    processed_data = data.data
-    
-    # model format data -> selected features map (30 min run time)
-    selected_feature_indices = feature_selection_(processed_data, params.target_column, params.model_type, params.cv_method,
+
+    if grid_search is None:
+        # model format data -> selected features map (30 min run time)
+        selected_feature_indices = feature_selection_(processed_data, params.target_column, params.model_type, params.cv_method,
                        params.splits, params.repeats,
                        params.hp_optimisation)
+    else:
+        x = data.drop(params.target_column, axis=1)
+        y = data[params.target_column]
+
+        if params.GS_model_type is None:
+            model_name = select_model(x, y)
+        else:
+            model_name = params.GS_model_type
+            print(
+                "Performing grid search to determine the best parameters for the model. This can"
+                " take some time."
+            )
+            model_params = select_param(x, y, model_name)
+
+        print("Best params for model determined to be: %s", model_params)
+        ml_mod = Models[model_name].value(**model_params)
+
 
     #todo (Adil) apply feature map to original dataframe
     print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')

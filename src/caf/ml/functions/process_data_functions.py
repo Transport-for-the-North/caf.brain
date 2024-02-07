@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 """
 Created on: 16/11/2023
-Updated on:
-
 Original author: Adil Zaheer
-Last update made by:
-Other updates made by:
-
-File purpose: Process data to be ready for future modelling
-
 """
-import pandas as pd
 import os
+import pandas as pd
+import numpy as np
+from scipy.stats import zscore
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+import warnings
 
+
+######### READ DATA FUNCTIONS #########
 
 def read_folder(folder_path):
     dataframes_in = {}
@@ -30,27 +29,82 @@ def read_csvs(x, y):
     return x_in, y_in
 
 
-def index_sorter(*dataframes, index1=None, index2=None):
+######### NUMERIC CONVERSION #########
+
+
+def find_numeric_target_column(data, target_column):
+    # todo fix this to work without target column
+    if target_column is None:
+        raise ValueError("Target column is None")
+
+    # Check if the target column is present in the data
+    if target_column in data.columns:
+        # Check if the target column is numeric
+        if not pd.to_numeric(data[target_column], errors='coerce').notna().all():
+            # Try to convert the target column to numeric
+            data[target_column] = pd.to_numeric(data[target_column], errors='coerce')
+            if not data[target_column].notna().all():
+                raise ValueError(
+                    "The target column could not be converted to numeric.")
+            print(
+                f"The target column '{target_column}' has been converted to numeric.")
+        return data
+
+    raise ValueError(
+        "Target column not found in the data. Modeling may require a numeric target column.")
+
+
+def process_data_numeric(data, keep_columns=None, output_path=None):
+    print(data)
+    # Convert to DataFrame if input is not dataframe
+    if not isinstance(data, pd.DataFrame):
+        data = convert_to_dataframe(data)
+
+    # Convert remaining columns to numeric
+    data = data.apply(pd.to_numeric, errors='coerce')
+
+    # Identify non-numeric columns
+    non_numeric_columns = data.columns[~data.applymap(np.isreal).all()]
+
+    # Set keep_columns to an empty set if not provided
+    keep_columns = keep_columns or set()
+
+    # Drop non-numeric columns, but only if they are not in the keep_columns set
+    columns_to_drop = non_numeric_columns.difference(keep_columns)
+    if columns_to_drop:
+        print(f"Dropping non-numeric columns: {', '.join(columns_to_drop)}")
+
+    data = data.drop(columns=columns_to_drop)
+
+    # Export non-numeric columns to a separate file if output_path is provided
+    if output_path:
+        output_file_path = os.path.join(output_path, "non_numeric.csv")
+        non_numeric_df = data[non_numeric_columns]
+        non_numeric_df.to_csv(output_file_path, index=False)
+        print(f"Non-numeric columns exported to: {output_file_path}")
+
+    return data
+
+
+######### SET DATAFRAME STRUCTURE #########
+
+
+def index_sorter(*dataframes, index_columns=None, drop_columns=None):
     if not dataframes:
         raise ValueError("At least one dataframe must be provided")
 
     def set_index(df):
-        if index1 and index2:
-            return df.set_index([index1, index2])
-        elif index1:
-            return df.set_index(index1)
-        elif index2:
-            return df.set_index(index2)
+        if index_columns:
+            return df.set_index(index_columns)
         else:
             return df
 
     result = [set_index(df) for df in dataframes]
+
+    if drop_columns:
+        result = [df.drop(columns=drop_columns, errors='ignore') for df in result]
+
     return result if len(result) > 1 else result[0]
-
-
-def combine_data(long_dataframes):
-    complete_data = pd.concat(long_dataframes, axis=0)
-    return complete_data
 
 
 def custom_melt(df, variable_name, value_name):
@@ -58,80 +112,112 @@ def custom_melt(df, variable_name, value_name):
     return melted_df
 
 
+def convert_to_dataframe(data):
+    try:
+        # Convert to DataFrame if input is not already a DataFrame
+        if isinstance(data, pd.DataFrame):
+            return data
+        elif isinstance(data, (list, tuple, set)):
+            return pd.DataFrame(data)
+        elif isinstance(data, np.ndarray):
+            return pd.DataFrame(data)
+        elif isinstance(data, pd.Series):
+            return pd.DataFrame({data.name: data})
+        elif isinstance(data, dict):
+            return pd.DataFrame(data)
+        else:
+            raise ValueError("Unsupported data type. Please provide a supported data type.")
+    except Exception as n:
+        print(f"An error occurred during data conversion: {n}")
+        return None
+
+
+######### CLEANING DATA #########
+
+
+def handle_nans_and_duplicates(dataframe):
+    # Find NaN values
+    nan_columns = dataframe.columns[dataframe.isna().any()]
+
+    # Check if there are any NaN values
+    if nan_columns.any():
+        # Drop columns with NaN values
+        cleaned_dataframe = dataframe.drop(columns=nan_columns)
+    else:
+        # The DataFrame remains unchanged if there are no NaN values
+        cleaned_dataframe = dataframe
+
+    # Check for duplicate rows
+    duplicate_rows = cleaned_dataframe[cleaned_dataframe.duplicated()]
+
+    # Check if there are any duplicate rows
+    if not duplicate_rows.empty:
+        # Remove duplicate rows from the DataFrame
+        cleaned_dataframe = cleaned_dataframe.drop_duplicates()
+
+    return cleaned_dataframe
+
+
 def function_remove_spaces(df: pd.DataFrame):
     df = df.applymap(lambda x: str(x).replace(' ', ''))
     return df
 
 
-def main(x, y, folder_path, index1, index2, wide_format, variable_name, value_name):
-    final_data = None
-
-    if x:
-        x_ = pd.read_csv(x, low_memory=False)
-        data = index_sorter(x_, index1=index1, index2=index2)
-        final_data = function_remove_spaces(data)
-        if wide_format is not None:
-            x1 = custom_melt(x_, variable_name, value_name)
-            data = index_sorter(x1, index1=variable_name)
-            final_data = function_remove_spaces(data)
-        if x and y:
-            x_, y_ = read_csvs(x, y)
-            x1 = index_sorter(x_, index1=index1, index2=index2)
-            y1 = index_sorter(y_, index1=index1, index2=index2)
-            data = pd.merge(x1, y1, left_index=True, right_index=True, how="left")
-            final_data = function_remove_spaces(data)
-        if wide_format is not None:
-            if x:
-                x_ = pd.read_csv(x, low_memory=False)
-                x1 = custom_melt(x_, variable_name, value_name)
-                data = index_sorter(x1, index1=variable_name)
-                final_data = function_remove_spaces(data)
-            if y:
-                y_ = pd.read_csv(y, low_memory=False)
-                y1 = custom_melt(y_, variable_name, value_name)
-                data = index_sorter(y1, index1=variable_name)
-                final_data = function_remove_spaces(data)
-            if x and y:
-                x_, y_ = read_csvs(x, y)
-                x1 = custom_melt(x_, variable_name, value_name)
-                y1 = custom_melt(y_, variable_name, value_name)
-                xfinal = index_sorter(x1, index1=variable_name)
-                yfinal = index_sorter(y1, index1=variable_name)
-                data = pd.merge(
-                    xfinal, yfinal, left_index=True, right_index=True, how="left"
-                )
-                final_data = function_remove_spaces(data)
-    elif folder_path:
-        dat = read_folder(folder_path)
-        if wide_format is not None:
-            dat_ = custom_melt(dat, variable_name, value_name)
-            dat1 = {
-                key: index_sorter(df, index1=index1, index2=index2)
-                for key, df in dat_.items()
-            }
-            data = combine_data(dat1)
-            final_data = function_remove_spaces(data)
-        else:
-            dat1 = {
-                key: index_sorter(df, index1=index1, index2=index2)
-                for key, df in dat.items()
-            }
-            data = combine_data(dat1)
-            final_data = function_remove_spaces(data)
-    print(final_data)
-    return final_data
+######### CLEANING DATA: specific functions #########
 
 
-if __name__ == "__main__":
-    index1 = 'SurveyYear'
-    index2 = 'HouseholdID'
-    x = r"E:\caf.ml\data_process_function\test_data\cb_tfn_v12_smallerversion.csv"
-    y = None
-    folder_path = None
-    wide_format = None
-    variable_name = None
-    value_name = None
-    result = main(
-        x, y, folder_path, index1, index2, wide_format, variable_name, value_name
-    )
-    print(result)
+def remove_and_export_outliers(df, outlier_threshold=None):
+    # Return the original DataFrame if no threshold is specified
+    if outlier_threshold is None:
+        return df
+
+    # Calculate z-scores for each column
+    z_scores = np.abs(zscore(df))
+
+    # Identify outliers based on the threshold
+    outliers = (z_scores > outlier_threshold).any(axis=1)
+
+    # Separate outliers and non-outliers
+    df_no_outliers = df[~outliers]
+    return df_no_outliers
+
+
+def assess_correlation(df, target_column, threshold=0.7, vif_threshold=10.0):
+    # Exclude the target column from correlation analysis
+    df_features = df.drop(columns=[target_column])
+
+    # Calculate the correlation matrix for numeric columns
+    correlation_matrix = df_features.corr()
+
+    # Identify highly correlated columns
+    highly_correlated_columns = correlation_matrix.columns[
+        (correlation_matrix.abs() > threshold).any(axis=0)
+    ].tolist()
+
+    # Drop highly correlated columns
+    df_no_correlation = df.drop(columns=highly_correlated_columns)
+
+    # Check if there are variables left after dropping highly correlated ones
+    if df_no_correlation.shape[1] == 0:
+        # Issue a warning if no variables are left
+        warnings.warn("No variables left after dropping highly correlated ones.", UserWarning)
+        return df
+
+    # Check for multicollinearity using VIF
+    variables = df_no_correlation.columns
+    vif_data = pd.DataFrame()
+    vif_data["Variable"] = variables
+    vif_data["VIF"] = [variance_inflation_factor(df_no_correlation.values.astype(float), i) for i in range(df_no_correlation.shape[1])]
+
+    # Identify variables with high VIF
+    high_vif_variables = vif_data[vif_data["VIF"] > vif_threshold]["Variable"].tolist()
+
+    if high_vif_variables is not None:
+        print(f"Columns removed due to high VIF: {high_vif_variables}")
+        return df_no_correlation
+
+    # Add the target column back to the modified dataframe
+    df_no_correlation[target_column] = df[target_column]
+
+    # If there are still variables left after correlation matrix evaluation, proceed with the modified dataframe
+    return df_no_correlation

@@ -12,10 +12,21 @@ from caf.toolkit import BaseConfig
 # Local imports here
 # pylint: enable=import-error,wrong-import-position
 from typing import Optional, List, Any
+import enum
+from sklearn.ensemble import (
+    ExtraTreesRegressor,
+    RandomForestRegressor,
+    GradientBoostingRegressor,
+    AdaBoostRegressor,
+    BaggingRegressor,
+)
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.svm import SVR
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.neural_network import MLPRegressor
 
 
-# # # CONSTANTS # # #
-# # # CLASSES # # #
 class LvuInputs(BaseConfig):
     folder_path: Path
     y_data_path: Path
@@ -54,5 +65,3 @@ class CarInputs2(BaseConfig):
 
 class LvuLog(BaseConfig):
     inputs: LvuInputs
-
-# # # FUNCTIONS # # #

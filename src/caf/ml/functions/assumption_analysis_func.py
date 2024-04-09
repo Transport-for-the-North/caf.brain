@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on: 12/28/2023
-Updated on:
-
 Original author: Adil Zaheer
-Last update made by:
-Other updates made by:
-
-File purpose:
-
 """
 # Local Imports
 # pylint: disable=import-error,wrong-import-position
@@ -20,11 +13,13 @@ from scipy.stats import shapiro
 from statsmodels.stats.diagnostic import het_breuschpagan, het_white
 from sklearn.metrics import accuracy_score
 
+from caf.ml.inputs.cafml_inputs import Models
+
 
 def assumption_analysis(model_type, model, x_train, x_test, y_train, y_test):
     alpha = 0.05  # Standard alpha level for significance
 
-    if model_type in ['Lasso', 'Ridge', 'ElasticNet', 'LinearRegression']:
+    if is_regressor(model_type):
         # Rainbow Test for Linearity
         rainbow_statistic, rainbow_p_value = linear_rainbow(model)
         print(f"Rainbow test p-value: {rainbow_p_value}")
@@ -49,21 +44,23 @@ def assumption_analysis(model_type, model, x_train, x_test, y_train, y_test):
         if white_test_p_value < alpha:
             print("Warning: White's test suggests heteroscedasticity.")
 
-    elif model_type in ['DecisionTreeRegressor', 'RandomForestRegressor']:
-        # Make predictions on the training set
+    elif isinstance(model_type, (Models.DECISION_TREE, Models.RANDOM_FOREST)):
+
         train_predictions = model.predict(x_train)
-
-        # Make predictions on the testing set
         test_predictions = model.predict(x_test)
-
-        # Calculate accuracy on training set
         train_accuracy = accuracy_score(y_train, train_predictions)
-
-        # Calculate accuracy on testing set
         test_accuracy = accuracy_score(y_test, test_predictions)
+
+        print(f"Accuracy on training set: {train_accuracy}")
+        print(f"Accuracy on testing set: {test_accuracy}")
 
         # Check for overfitting
         if train_accuracy > test_accuracy:
             print("Warning: The model may be overfitting as training accuracy is higher than testing accuracy.")
         else:
             print("The model does not show clear signs of overfitting.")
+
+def is_regressor(model_type):
+    # Check if the model type is a regression model
+    return model_type in [Models.LINEAR_REGRESSION, Models.RIDGE, Models.LASSO, Models.ELASTICNET]
+

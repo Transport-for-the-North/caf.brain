@@ -30,25 +30,67 @@ from sklearn.model_selection import (KFold,
                                      RepeatedStratifiedKFold)
 
 
-
-class CarInputs2(BaseConfig):
-    x: Optional[Path] = None
-    y: Optional[Path] = None
+class CarAccessInputs(BaseConfig):
+    #### PROCESS DATA ####
+    # imports
+    x_path: Optional[Path] = None
+    y_path: Optional[Path] = None
     folder_path: Optional[Path] = None
+
+    # data sorting imports
     index_columns: Optional[List[str]] = None
     drop_columns: Optional[List[str]] = None
+    keep_columns: Optional[List[str]] = None
+    target_column: Optional[str] = None
+    output_folder: Optional[Path] = None
+
+    # wide to long imports
     wide_format: Optional[str] = None
     variable_name: Optional[str] = None
     value_name: Optional[str] = None
-    model_type: Any  # abc.ABCMeta not supported by caf.toolkit currently
-    target_column: Optional[str] = None
-    folder: Optional[Path] = None
-    output_folder: Optional[Path] = None
+
+    # optional imports
     outlier_threshold: Optional[str] = None
+
+
+    #### FEATURE SELECTION ####
+    process_data_used: Optional[bool] = True
+
+
+
+
+    simple_feature_selection: Optional[str] = None
+    feature_selection_exhaustive: Optional[str] = None
+
+    model_type: Any  # abc.ABCMeta not supported by caf.toolkit currently
     cv_method: Optional[str] = None
     splits: Optional[str] = None
     repeats: Optional[str] = None
+
+
+    #### CROSS VALIDATION ####
+
+
+
+    folder: Optional[Path] = None
+
     hp_optimisation: Optional[str] = None
+
+    #### PREDICTION FUNCTIONS ####
+    single_year_prediction: Optional[str] = None
+    predict_data: Optional[Path] = None
+    year_range: Optional[tuple[str]] = None
+    index_columns_predict: Optional[List[str]] = None
+    drop_columns_predict: Optional[List[str]] = None
+    keep_columns_predict: Optional[List[str]] = None
+    outlier_threshold_predict: Optional[str] = None
+
+    #### STORE MODEL ####
+    saved_model: Optional[str] = None
+
+
+    threshold: Optional[float] = None
+    threshold_corr: Optional[float] = None
 
 
 class Models(enum.Enum):
@@ -79,7 +121,9 @@ class Models(enum.Enum):
     NEURAL_NETWORK = MLPRegressor
 
 
-Default_regression_methods = [Lasso(), Ridge(), ElasticNet()]
+Default_regression_methods = [Models.LASSO, Models.RIDGE, Models.ELASTICNET]
+
+#todo include more simple models from biogem
 
 
 class ModelGrids(enum.Enum):
@@ -126,6 +170,7 @@ class ModelGrids(enum.Enum):
     ELASTICNET = {"alpha": [0.1, 1.0, 10.0], "l1_ratio": [0.1, 0.5, 0.9]}
 
 
+
 class CV_models(enum.Enum):
     Kfold = KFold
 
@@ -134,3 +179,18 @@ class CV_models(enum.Enum):
     Repeated_kfold = RepeatedKFold
 
     Repeated_stratified_kfold = RepeatedStratifiedKFold
+
+
+class DefaultRegressionMethods(enum.Enum):
+    LASSO = {
+        "alpha": [0.1, 1.0, 10.0]
+    }
+
+    RIDGE = {
+        "alpha": [0.1, 1.0, 10.0]
+    }
+
+    ELASTICNET = {
+        "alpha": [0.1, 1.0, 10.0],
+        "l1_ratio": [0.1, 0.5, 0.9]
+    }

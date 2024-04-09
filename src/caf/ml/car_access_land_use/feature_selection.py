@@ -1,138 +1,116 @@
 # -*- coding: utf-8 -*-
 """
 Created on: 1/12/2024
-Updated on:
-
 Original author: Adil Zaheer
-Last update made by:
-Other updates made by:
-
-File purpose:
-
 """
+import os
+
 # pylint: disable=import-error,wrong-import-position
 # Local imports here
 # pylint: enable=import-error,wrong-import-position
-
-# todo notes to self below, ignore
-# training data testing data validation data, vald. data used to reign in the treating data, test dat. used at end. once we've got best combo then try on test data
-# instead of gridseach use find random as part of a grid etc. parameter sampler
-# leave one out and randomised search
-# break up feature selection and hyper param optim. should be able to do hyper param optim without feature selection,
-# functionalise in different way.
-
-
-
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import ElasticNet, Lasso, Ridge
-from sklearn.model_selection import KFold, RandomizedSearchCV, GridSearchCV, StratifiedKFold, RepeatedKFold, RepeatedStratifiedKFold
-from sklearn.linear_model import LinearRegression
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.svm import SVR
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.neural_network import MLPRegressor
+from sklearn.model_selection import KFold, StratifiedKFold, RepeatedKFold, RepeatedStratifiedKFold, \
+    cross_val_score
 from tqdm import tqdm
 from sklearn.feature_selection import SelectFromModel
-from sklearn.feature_selection import SelectKBest, f_classif, chi2, mutual_info_classif, RFE
+from sklearn.feature_selection import SelectKBest, f_classif, RFE
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import (
-    ExtraTreesRegressor,
-    RandomForestRegressor,
-    GradientBoostingRegressor,
-    AdaBoostRegressor,
-    BaggingRegressor,
-)
-from caf.ml.inputs.cafml_inputs import CarInputs2, Models, Default_regression_methods
+from caf.ml.inputs.cafml_inputs import CarAccessInputs, Models, Default_regression_methods, CV_models
 from caf.ml.car_access_land_use.process_data_class import process_data_numeric
+from caf.ml.functions.model_algorithm_evaluation import select_model
+from typing import Union
+from sklearn.metrics import mean_squared_error
 
 
-def feature_selection_(df, target_column, model_type, cv_method=None,
-                       splits=None, repeats=None,
-                       hp_optimisation=None):
+def feature_selection_cv(data,
+                         model_type,
+                         cv_method,
+                         splits,
+                         repeats,
+                         target_column):
+    # MODEL CHECKS
+    if cv_method is not None and cv_method not in CV_models:
+        raise ValueError(f"Invalid cross-validation method: {cv_method}")
 
-    ######## KEY MODEL CHECKS ########
-
+    valid_models = [model.value for model in Models] + Default_regression_methods
     if model_type is None:
-        regression_methods = Default_regression_methods
-    else:
-        if model_type not in Models:
+        model_type = Default_regression_methods
+    elif not isinstance(model_type, list):  # Ensure model_type is a list
+        model_type = [model_type]
+    for mod in model_type:
+        if mod is not None and mod not in valid_models:
             raise ValueError(
-                f"Selected algorithm {model_type} not in the list of regression methods.")
-        regression_methods = [Models[model_type]]
+                f"Invalid model type: {mod}. Please provide valid model types from Models class or Default_regression_methods.")
 
-    if hp_optimisation is None:
-        hp_optimisation = RandomizedSearchCV
-        print(
-            "A hyperparameter optimization method was not specified. RandomizedSearchCV is used as default and recommended")
-    elif hp_optimisation not in (RandomizedSearchCV, GridSearchCV):
-        raise ValueError(
-            f"Selected hyperparameter optimization method not in the recommended list. "
-            "Please use either RandomizedSearchCV or GridSearchCV")
+    # Split data into X and y
+    x = data.drop(columns=[target_column])
+    y = data[target_column]
+    scaler = StandardScaler()
 
-    ######## DATA PROCESSING ########
-
-    # Check if all columns are numeric
-    if not df.applymap(np.isreal).all().all():
-        print("Not all columns are numeric. Converting non-numeric columns to numeric.")
-
-        data = process_data_numeric(df)
-
+    # SELECT REGRESSION METHOD
+    if len(model_type) == 1:
+        model = model_type[0].value
+    elif len(model_type) > 1:
+        model = select_model(x, y, model_type)
     else:
-        data = df  # Initialise data if all columns are numeric
+        raise ValueError("No valid model provided.")
 
-    # Remove any rows with NaN values after conversion
-    data_to_model = data.dropna()
+    cv = get_cv_class(cv_method, splits=splits, repeats=repeats)
 
-    # split data into features and target
-    x = data_to_model.drop(target_column, axis=1)
-    y = data_to_model[target_column]
+    # Initialise dictionaries to store selected features and their performance metrics
+    best_features_model = []
+    best_features_f_classif = []
+    best_features_rfe = []
+    best_score_model = float('-inf')
+    best_score_f_classif = float('-inf')
+    best_score_rfe = float('-inf')
 
-    # scale features
-    scale = StandardScaler()
-    x_scaled = scale.fit_transform(x)
-    x_scaled = pd.DataFrame(x_scaled)
+    # Cross-validation loop
+    for train_index, test_index in cv.split(x, y):
+        X_train, X_test = x.iloc[train_index], x.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
-    ######## ALGORITHM SELECTION ########
-    cv_class = get_cv_class(cv_method, splits, repeats)
+        # Scale the data
+        X_train_scaled = scaler.fit_transform(X_train)
 
-    ######## FEATURE SELECTION CODE ########
+        # Fit the model
+        model.fit(X_train_scaled, y_train)
 
-    final_selected_features = []
+        # Feature selection using SelectFromModel
+        selected_model = SelectFromModel(model, prefit=True)
+        X_train_model = selected_model.transform(X_train_scaled)
+        score_model = cross_val_score(model, X_train_model, y_train,
+                                      scoring='neg_mean_squared_error', cv=cv).mean()
+        if score_model > best_score_model:
+            best_score_model = score_model
+            best_features_model = X_train.columns[selected_model.get_support()].tolist()
 
-    for regression_method in regression_methods:
-        selected_features = []
+        # Feature selection using f_classif
+        selected_f_classif = SelectKBest(f_classif, k='all').fit(X_train_scaled, y_train)
+        X_train_f_classif = selected_f_classif.transform(X_train_scaled)
+        score_f_classif = cross_val_score(model, X_train_f_classif, y_train,
+                                          scoring='neg_mean_squared_error', cv=cv).mean()
+        if score_f_classif > best_score_f_classif:
+            best_score_f_classif = score_f_classif
+            best_features_f_classif = X_train.columns[selected_f_classif.get_support()].tolist()
 
-        cv_class = get_cv_class(cv_method, splits, repeats)
-        for train_index, test_index in tqdm(cv_class.split(x_scaled),
-                                            desc=f"Feature selection progress - {regression_method.__name__}"):
-            x_train, x_test = x_scaled.iloc[train_index], x_scaled.iloc[test_index]
-            y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+        # Feature selection using RFE
+        selector_rfe = RFE(estimator=model, n_features_to_select=5, step=1)
+        selector_rfe.fit(X_train_scaled, y_train)
+        X_train_rfe = selector_rfe.transform(X_train_scaled)
+        score_rfe = cross_val_score(model, X_train_rfe, y_train, scoring='neg_mean_squared_error',
+                                    cv=cv).mean()
+        if score_rfe > best_score_rfe:
+            best_score_rfe = score_rfe
+            best_features_rfe = X_train.columns[selector_rfe.support_].tolist()
 
-            # Feature selection using different methods
-            feature1 = feat_select_func(x_train, y_train, x_test, regression_method)
-            feature2 = pvalue_feature_selection_(x_train, y_train, x_test)
-            feature3 = recursive_feature_elimination_(x_train, y_train, x_test)
+    print("Best score for SelectFromModel:", best_score_model)
+    print("Best score for f_classif:", best_score_f_classif)
+    print("Best score for RFE:", best_score_rfe)
 
-            # Combine features based on criteria
-            combined_features = combine_features([feature1, feature2, feature3])
-
-            # Append combined features for each fold
-            selected_features.append(combined_features)
-
-        # Take the average best features across all folds
-        average_selected_features = combine_features(selected_features)
-
-        # Append the average selected features for the current regression method
-        final_selected_features.append(average_selected_features)
-
-    final_selected_features_across_methods = combine_features(final_selected_features)
-    print('Final selected features:')
-    print('-------------------------------------')
-    print(final_selected_features_across_methods)
-
-    return final_selected_features_across_methods
+    return best_features_model, best_features_f_classif, best_features_rfe, model
 
 
 def get_cv_class(cv_method, splits, repeats):
@@ -152,92 +130,26 @@ def get_cv_class(cv_method, splits, repeats):
         return KFold(n_splits=5, shuffle=True)
 
 
+def filter_data(original_data, best_features_model, best_features_f_classif, best_features_rfe, output_folder, target_column):
+    # Combine all selected features into one list
+    all_selected_features = best_features_model + best_features_f_classif + best_features_rfe
 
-def feat_select_func(x_train, y_train, x_test, regression_method):
-    if not regression_method:
-        raise ValueError("Please provide a regression method for feature selection.")
+    # Count occurrences of each feature
+    feature_counts = pd.Series(all_selected_features).value_counts()
 
-    selector = SelectFromModel(estimator=regression_method())
-    selector.fit(x_train, y_train)
+    # Filter features that appear at least twice
+    selected_columns = feature_counts[feature_counts >= 2].index.tolist()
 
-    # Get the selected features indices
-    selected_feature_indices_train = selector.get_support(indices=True)
-    selected_feature_indices_test = selector.get_support(indices=True)
+    # Add the target column to the selected columns
+    selected_columns.append(target_column)
 
-    # Get the names of selected features
-    selected_features_train = x_train.columns[selected_feature_indices_train].tolist()
-    selected_features_test = x_test.columns[selected_feature_indices_test].tolist()
+    # Filter the original data
+    filtered_data = original_data[selected_columns]
 
-    return selected_features_train, selected_features_test
+    output_filename = 'feature_selection_data.csv'
+    output_path = os.path.join(output_folder, output_filename)
+    filtered_data.to_csv(output_path, index=True)
+    print('-------------------------------------------------------------')
+    print(f"Feature selected data exported to: {output_path}")
 
-
-def pvalue_feature_selection_(x_train, y_train, x_test):
-    significance_level = 0.05
-    methods = [f_classif, mutual_info_classif]  #todo,chi2 removed due to scaled data, works with just x not x_scaled
-
-    # Initialise a dictionary to store selected features counts
-    feature_counts = {}
-
-    # Loop through each statistical test method
-    for method in methods:
-        # Use SelectKBest with k='all' to compute scores for all features on training data
-        selector = SelectKBest(method, k='all')
-        selector.fit(x_train, y_train)
-
-        # Get selected features
-        selected_features = x_train.columns[selector.get_support()].tolist()
-
-        # Update feature counts
-        for feature in selected_features:
-            feature_counts[feature] = feature_counts.get(feature, 0) + 1
-
-    # Select features that appear at least twice
-    selected_features_train = [feature for feature, count in feature_counts.items() if count >= 2]
-    selected_feature_indices = [x_test.columns.get_loc(feature) for feature in
-                                selected_features_train]
-
-    # Index into x_test.columns using the selected feature indices
-    selected_features_test = x_test.columns[selected_feature_indices].tolist()
-
-    return selected_features_train, selected_features_test
-
-
-def recursive_feature_elimination_(x_train, y_train, x_test):
-    estimator = LogisticRegression()
-    n_features_to_select = x_train.shape[1]
-
-    # Use RFE with logistic regression on training data
-    selector = RFE(estimator, n_features_to_select=n_features_to_select)
-    X_selected_train = selector.fit_transform(x_train, y_train)
-
-    # Get selected features on both training and test data
-    selected_features_train = x_train.columns[selector.support_].tolist()
-    selected_features_test = x_test.columns[selector.support_].tolist()
-
-    return selected_features_train, selected_features_test
-
-
-def combine_features(feature_sets):
-    feature_counts = {}
-
-    # Loop through each feature set and feature, counting occurrences
-    for feature_set in feature_sets:
-        for feature in feature_set:
-            # Convert lists to tuples to make it work, unsure why it doesnt work otherwise #todo
-            feature_key = tuple(feature) if isinstance(feature, list) else feature
-            feature_counts[feature_key] = feature_counts.get(feature_key, 0) + 1
-
-    # Initialise a list to store the features selected based on occurrences
-    average_selected_features = []
-
-    # Loop through each feature and its count in the dictionary
-    for feature, count in feature_counts.items():
-        # If a feature appears at least twice, add it to the selected features
-        if count >= 2:
-            average_selected_features.append(feature)
-        # If no feature appears at least twice, add all features that appear at least once
-        elif count == 1 and all(count < 2 for count in feature_counts.values()):
-            average_selected_features.append(feature)
-
-    # Return the list of average selected features
-    return average_selected_features
+    return filtered_data

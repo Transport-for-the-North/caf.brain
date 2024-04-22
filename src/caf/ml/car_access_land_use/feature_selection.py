@@ -56,7 +56,9 @@ def feature_selection_cv(data,
         model = select_model(x, y, model_type)
     else:
         raise ValueError("No valid model provided.")
-
+    print('@@@@@@@@@@@@@@@@@@@')
+    print(model)
+    print('@@@@@@@@@@@@@@@@@@@')
     cv = get_cv_class(cv_method, splits=splits, repeats=repeats)
 
     # Initialise dictionaries to store selected features and their performance metrics

@@ -87,7 +87,7 @@ class DataProcessor:
                 final_data = function_remove_spaces(data)
                 final_data = convert_to_dataframe(final_data)
 
-        output_path = os.path.join(output_folder, 'final_data.csv')
+        output_path = os.path.join(output_folder, 'data_tidy_not_fully_processed.csv')
         final_data.to_csv(output_path, index=True)
 
         self.data = final_data
@@ -127,8 +127,8 @@ class DataProcessor:
         print(self.data)
 
     def output_processed_data(self):
-        output_filename = 'Tidy_data.csv'
+        output_filename = 'Tidy_processed_data.csv'
         output_path = os.path.join(self.output_folder, output_filename)
         self.data.to_csv(output_path, index=True)
         print('-------------------------------------------------------------')
-        print(f"Tidy data exported to: {output_path}")
+        print(f"Tidy and processed data exported to: {output_path}")

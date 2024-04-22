@@ -7,10 +7,6 @@ import os
 import pandas as pd
 import numpy as np
 from scipy.stats import zscore
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-import warnings
 
 
 ######### READ DATA FUNCTIONS #########
@@ -36,14 +32,13 @@ def read_csvs(x: pd.DataFrame, y: pd.DataFrame):
 
 def find_numeric_target_column(data: pd.DataFrame, target_column):
     # todo fix this to work without target column
-    if target_column is None:
-        raise ValueError("Target column is None")
+    if target_column not in data.columns:
+        return data
 
     # Check if the target column is present in the data
     if target_column in data.columns:
         # Check if the target column is numeric
         if not pd.to_numeric(data[target_column], errors='coerce').notna().all():
-            # Try to convert the target column to numeric
             data[target_column] = pd.to_numeric(data[target_column], errors='coerce')
             if not data[target_column].notna().all():
                 raise ValueError(
@@ -57,23 +52,17 @@ def find_numeric_target_column(data: pd.DataFrame, target_column):
 
 
 def process_data_numeric(data, keep_columns=None, target_column=None, output_folder=None):
-    # Convert to DataFrame if input is not dataframe
     if not isinstance(data, pd.DataFrame):
         data = convert_to_dataframe(data)
 
-    # Convert remaining columns to numeric
     data = data.apply(pd.to_numeric, errors='coerce')
 
-    # Identify non-numeric columns
     non_numeric_columns = data.columns[~data.applymap(np.isreal).all()]
 
-    # Set keep_columns to an empty set if not provided
     keep_columns = keep_columns or set()
 
-    # Drop non-numeric columns, but only if they are not in the keep_columns set
     columns_to_drop = non_numeric_columns.difference(keep_columns)
 
-    # Check if the target_column is in columns_to_drop
     if target_column and target_column in columns_to_drop:
         raise ValueError(
             f"Target column '{target_column}' is still not numeric. Please review the data.")
@@ -82,7 +71,6 @@ def process_data_numeric(data, keep_columns=None, target_column=None, output_fol
         print(f"Dropping non-numeric columns: {', '.join(columns_to_drop)}")
         data = data.drop(columns=columns_to_drop)
 
-    # Export non-numeric columns to a separate file if output_path is provided
     if output_folder:
         output_file_path = os.path.join(output_folder, "non_numeric.csv")
         non_numeric_df = data[non_numeric_columns]
@@ -142,38 +130,28 @@ def convert_to_dataframe(data):
 ######### CLEANING DATA #########
 
 def handle_nans_and_duplicates(dataframe: pd.DataFrame, target_column=None, output_folder=None):
-    # Check if target_column has NaN values
     if target_column and dataframe[target_column].isna().any():
         raise ValueError(
             f"Target column '{target_column}' has NaN values. Please review the data.")
 
-    # Find NaN values
     nan_columns = dataframe.columns[dataframe.isna().any()]
 
-    # Check if there are any NaN values
     if nan_columns.any():
-        # Drop columns with NaN values
         cleaned_dataframe = dataframe.drop(columns=nan_columns)
 
-        # Output NaN values to a CSV file
         if output_folder:
             nan_output_path = os.path.join(output_folder, "nans.csv")
             nan_dataframe = dataframe[nan_columns]
             nan_dataframe.to_csv(nan_output_path, index=False)
             print(f"NaN values exported to: {nan_output_path}")
     else:
-        # The DataFrame remains unchanged if there are no NaN values
         cleaned_dataframe = dataframe
 
-    # Check for duplicate rows
     duplicate_rows = cleaned_dataframe[cleaned_dataframe.duplicated()]
 
-    # Check if there are any duplicate rows
     if not duplicate_rows.empty:
-        # Remove duplicate rows from the DataFrame
         cleaned_dataframe = cleaned_dataframe.drop_duplicates()
 
-        # Output duplicate rows to a CSV file
         if output_folder:
             duplicates_output_path = os.path.join(output_folder, "duplicates.csv")
             duplicate_rows.to_csv(duplicates_output_path, index=False)
@@ -183,7 +161,6 @@ def handle_nans_and_duplicates(dataframe: pd.DataFrame, target_column=None, outp
 
 
 def function_remove_spaces(df: pd.DataFrame):
-
     df = df.applymap(lambda x: str(x).replace(' ', ''))
     return df
 
@@ -192,27 +169,21 @@ def function_remove_spaces(df: pd.DataFrame):
 
 
 def remove_and_export_outliers(df: pd.DataFrame, outlier_threshold=None, target_column=None, output_folder=None):
-    # Return the original DataFrame if no threshold is specified
     if outlier_threshold is None:
         return df
 
-    # Exclude target_column from z-score calculations
     columns_for_zscore = df.columns.difference([target_column]) if target_column else df.columns
 
-    # Calculate z-scores for each column (excluding target_column)
     z_scores = np.abs(zscore(df[columns_for_zscore]))
 
-    # Identify outliers based on the threshold
     outliers = (z_scores > outlier_threshold).any(axis=1)
 
-    # Output outliers to a CSV file
     if output_folder and outliers.any():
         outliers_output_path = os.path.join(output_folder, "outliers.csv")
         outliers_df = df[outliers]
         outliers_df.to_csv(outliers_output_path, index=False)
         print(f"Outliers exported to: {outliers_output_path}")
 
-    # Separate outliers and non-outliers
     df_no_outliers = df[~outliers]
 
     return df_no_outliers

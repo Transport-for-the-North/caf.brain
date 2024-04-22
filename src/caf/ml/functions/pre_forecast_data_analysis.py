@@ -35,12 +35,14 @@ def pre_forecast_data_analysis(data,
                                target_column,
                                threshold,
                                threshold_corr,
-                               output_folder):
+                               output_folder,
+                               index_col):
     alpha = 0.05
     x = data.drop(columns=[target_column])
     y = data[target_column]
     any_issue_present = False
     dataframe = None
+    transformations = []
 
     if regression_method in [Models.RIDGE, Models.LASSO, Models.ELASTICNET,
                              Models.LINEAR_REGRESSION, Models.SVR]:
@@ -86,31 +88,26 @@ def pre_forecast_data_analysis(data,
         print('------------------------------------------------------------')
         print('Due to warnings, Logarithmic transformation being applied')
 
-        transformed_data = data.applymap(lambda x: np.log(x + 1))
-        dataframe = assess_multicolinearity(dataframe=transformed_data,
+        transformed_data = x.applymap(lambda x: np.log(x + 1))
+        transformations.append(('log', None))
+        dataframe, transformations_done = assess_multicolinearity(dataframe=transformed_data,
                                             input_data=data,
                                             target_column=target_column,
                                             threshold=threshold,
                                             threshold_corr=threshold_corr)
+        transformations.extend(transformations_done)
 
-        scale = StandardScaler()
-        x_scaled = scale.fit_transform(dataframe)
-
-        # Convert to DataFrame if needed
-        dataframe = convert_to_dataframe(x_scaled)
-        dataframe = pd.DataFrame(data=x_scaled, columns=dataframe.columns.values,
+        dataframe = pd.DataFrame(data=dataframe, columns=dataframe.columns.values,
                                 index=dataframe.index.values)
         dataframe = dataframe.astype(float)
 
-        # Add y back to the dataframe
-        dataframe[target_column] = y.values
+        if output_folder is not None:
+            output_filename = 'Final_data_ready_to_model.csv'
+            output_path = os.path.join(output_folder, output_filename)
+            dataframe.to_csv(output_path, index_label=index_col, index=True)
+            print(f"Final data to model exported to: {output_path}")
 
-        output_filename = 'Final_data_to_model.csv'
-        output_path = os.path.join(output_folder, output_filename)
-        dataframe.to_csv(output_path, index=True)
-        print(f"Final data to model exported to: {output_path}")
-
-        return dataframe
+        return dataframe, transformations
 
 
     if regression_method in [Models.RANDOM_FOREST]:
@@ -137,30 +134,24 @@ def pre_forecast_data_analysis(data,
         # need to consider: Nonlinearity, Model Complexity
         pass
 
-    dataframe = assess_multicolinearity(dataframe=data,
+    dataframe, transformations_done = assess_multicolinearity(dataframe=data,
                                         input_data=None,
                                         target_column=target_column,
                                         threshold=threshold,
                                         threshold_corr=threshold_corr)
+    transformations.extend(transformations_done)
 
-    scale = StandardScaler()
-    x_scaled = scale.fit_transform(dataframe)
-
-    # Convert to DataFrame if needed
-    dataframe = convert_to_dataframe(x_scaled)
-    dataframe = pd.DataFrame(data=x_scaled, columns=dataframe.columns.values,
+    dataframe = pd.DataFrame(data=dataframe, columns=dataframe.columns.values,
                              index=dataframe.index.values)
     dataframe = dataframe.astype(float)
 
-    # Add y back to the dataframe
-    dataframe[target_column] = y.values
+    if output_folder is not None:
+        output_filename = 'Final_data_ready_to_model.csv'
+        output_path = os.path.join(output_folder, output_filename)
+        dataframe.to_csv(output_path, index_label=index_col, index=True)
+        print(f"Final data ready to model exported to: {output_path}")
 
-    output_filename = 'Final_data_ready_to_model.csv'
-    output_path = os.path.join(output_folder, output_filename)
-    dataframe.to_csv(output_path, index=True)
-    print(f"Final data ready to model exported to: {output_path}")
-
-    return dataframe
+    return dataframe, transformations
 
 
 def assess_multicolinearity(dataframe,
@@ -173,14 +164,15 @@ def assess_multicolinearity(dataframe,
     #### VARIANCE INFLATION FACTOR ####
     X = None
     y = None
+    transformations_done = []
     # No log transformation
     if dataframe is not None and not dataframe.empty:
-        X = dataframe
+        X = dataframe.drop(columns=[target_column])
         y = dataframe[target_column]
 
     # Post log transformation
     if input_data is not None and not input_data.empty:
-        X = dataframe
+        X = dataframe.drop(columns=[target_column])
         y = input_data[target_column]
 
     if X is not None:
@@ -188,6 +180,7 @@ def assess_multicolinearity(dataframe,
         # Check for multicollinearity using VIF
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
+        transformations_done.append(('scaling', scaler))
         vif_data = pd.DataFrame()
         vif_data["Feature"] = X.columns
         vif_data["VIF"] = [variance_inflation_factor(X_scaled, i) for i in range(X_scaled.shape[1])]
@@ -196,8 +189,9 @@ def assess_multicolinearity(dataframe,
         high_vif_variables = vif_data[vif_data["VIF"] > threshold]["Feature"].tolist()
 
         if len(high_vif_variables) == 0:
-            print('All columns are highly correlated based on VIF. Please reassess data')
-            return dataframe
+            print('All columns are highly correlated based on VIF. Please reassess data. Data has been scaled')
+            dat = pd.merge(X_scaled, y, left_index=True, right_index=True, how='outer')
+            return dat, transformations_done
 
         #### CORRELATION MATRIX ####
         print('Correlation Matrix analysis underway')
@@ -209,8 +203,9 @@ def assess_multicolinearity(dataframe,
             (correlation_matrix.abs() > threshold_corr).any(axis=0)].tolist()
 
         if len(high_correlation_columns) == 0:
-            print('All columns are highly correlated based on correlation matrix. Please reassess data')
-            return dataframe
+            print('All columns are highly correlated based on correlation matrix. Please reassess data. Data has been scaled.')
+            dat = pd.merge(X_scaled, y, left_index=True, right_index=True, how='outer')
+            return dat, transformations_done
 
         #### OUTCOMES ####
         print('High VIF variables:')
@@ -227,11 +222,59 @@ def assess_multicolinearity(dataframe,
             # Apply PCA
             pca = PCA()
             X_pca = pca.fit_transform(X_scaled)
+            transformations_done.append(('PCA', pca))
             X_pca = pd.DataFrame(X_pca, columns=X.columns, index=y.index)
 
             # merge the PCA data
             dataframe_with_selected_features_pca = pd.merge(X_pca, y, left_index=True, right_index=True, how='outer')
 
-            return dataframe_with_selected_features_pca
+            return dataframe_with_selected_features_pca, transformations_done
 
-    return dataframe
+    if input_data is not None and not input_data.empty:
+        if target_column not in dataframe.columns:
+            dataframe[target_column] = y.values
+
+    return dataframe, transformations_done
+
+
+def apply_transformations(predict_data, transformations):
+    print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+    print(type(predict_data))
+
+    for transform_name, transform_obj in transformations:
+        if transform_name == 'log':
+            transformed_data = predict_data.apply(lambda x: np.log(x + 1))
+        elif transform_name == 'scaling':
+            scaler = transform_obj
+            transformed_data = scaler.transform(transformed_data)
+        elif transform_name == 'PCA':
+            pca = transform_obj
+            transformed_data = pca.transform(transformed_data)
+
+    data = pd.DataFrame(data=transformed_data, columns=predict_data.columns.values,
+                        index=predict_data.index.values)
+    final_predict_data = data.astype(float)
+
+    return final_predict_data
+
+
+
+def apply_transformations(predict_data, transformations):
+
+    transformed_data = predict_data.copy()
+
+    for transform_name, transform_obj in transformations:
+        if transform_name == 'log':
+            transformed_data = transformed_data.apply(lambda x: np.log(x + 1))
+        elif transform_name == 'scaling':
+            scaler = transform_obj
+            transformed_data = scaler.transform(transformed_data)
+        elif transform_name == 'PCA':
+            pca = transform_obj
+            transformed_data = pca.transform(transformed_data)
+
+    data = pd.DataFrame(data=transformed_data, columns=predict_data.columns.values,
+                        index=predict_data.index.values)
+    final_predict_data = data.astype(float)
+
+    return final_predict_data

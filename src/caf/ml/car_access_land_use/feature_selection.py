@@ -9,19 +9,13 @@ import os
 # Local imports here
 # pylint: enable=import-error,wrong-import-position
 import pandas as pd
-import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold, StratifiedKFold, RepeatedKFold, RepeatedStratifiedKFold, \
     cross_val_score
-from tqdm import tqdm
 from sklearn.feature_selection import SelectFromModel
 from sklearn.feature_selection import SelectKBest, f_classif, RFE
-from sklearn.linear_model import LogisticRegression
-from caf.ml.inputs.cafml_inputs import CarAccessInputs, Models, Default_regression_methods, CV_models
-from caf.ml.car_access_land_use.process_data_class import process_data_numeric
+from caf.ml.inputs.cafml_inputs import Models, Default_regression_methods, CV_models, ModelGrids
 from caf.ml.functions.model_algorithm_evaluation import select_model
-from typing import Union
-from sklearn.metrics import mean_squared_error
 
 
 def feature_selection_cv(data,
@@ -133,19 +127,14 @@ def get_cv_class(cv_method, splits, repeats):
 
 
 def filter_data(original_data, best_features_model, best_features_f_classif, best_features_rfe, output_folder, target_column):
-    # Combine all selected features into one list
     all_selected_features = best_features_model + best_features_f_classif + best_features_rfe
 
-    # Count occurrences of each feature
     feature_counts = pd.Series(all_selected_features).value_counts()
 
-    # Filter features that appear at least twice
     selected_columns = feature_counts[feature_counts >= 2].index.tolist()
 
-    # Add the target column to the selected columns
     selected_columns.append(target_column)
 
-    # Filter the original data
     filtered_data = original_data[selected_columns]
 
     output_filename = 'feature_selection_data.csv'

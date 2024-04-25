@@ -15,7 +15,7 @@ from tqdm import tqdm
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn import metrics
-from caf.ml.car_access_land_use.feature_selection import get_cv_class
+from caf.ml.functions.feature_selection import get_cv_class
 
 
 def cross_validation(

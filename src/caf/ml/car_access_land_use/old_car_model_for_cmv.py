@@ -18,7 +18,7 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 from caf.ml.inputs.general_inputs import CarInputs2
 ALLOWED_MODELS = (ElasticNet, Lasso, Ridge)
 
-from process_data_class import DataProcessor
+from caf.ml.functions.process_data_class import DataProcessor
 from tidy_data_function import main_tdf
 from feature_selection_function_storage import feature_selection
 from numeric_data import process_data_numeric

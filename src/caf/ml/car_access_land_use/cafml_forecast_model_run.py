@@ -8,8 +8,8 @@ import warnings
 warnings.filterwarnings("ignore")
 
 from caf.ml.inputs.cafml_inputs import CarAccessInputs
-from caf.ml.car_access_land_use.process_data_class import DataProcessor
-from caf.ml.car_access_land_use.feature_selection import feature_selection_cv, filter_data
+from caf.ml.functions.process_data_class import DataProcessor
+from caf.ml.functions.feature_selection import feature_selection_cv, filter_data
 from caf.ml.functions.hyper_optim_gridsearch import select_param
 from caf.ml.functions.forecast_model_functions import predict, process_data_loaded_model, process_forecast_data, align_dataframes
 from caf.ml.functions.save_model import save_model_and_parameters, load_model_and_parameters

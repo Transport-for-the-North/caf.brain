@@ -60,7 +60,7 @@ class CarAccessInputs(BaseConfig):
 
 
     simple_feature_selection: Optional[str] = None
-    feature_selection_exhaustive: Optional[str] = None
+    exhaustive_feature_selection: Optional[str] = None
 
     model_type: Any  # abc.ABCMeta not supported by caf.toolkit currently
     cv_method: Optional[str] = None
@@ -84,6 +84,8 @@ class CarAccessInputs(BaseConfig):
     drop_columns_predict: Optional[List[str]] = None
     keep_columns_predict: Optional[List[str]] = None
     outlier_threshold_predict: Optional[str] = None
+
+    multiple_year_prediction: Optional[str] = None
 
     #### STORE MODEL ####
     saved_model: Optional[str] = None

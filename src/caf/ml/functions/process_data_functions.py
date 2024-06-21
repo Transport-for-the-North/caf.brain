@@ -30,12 +30,14 @@ def read_csvs(x: pd.DataFrame, y: pd.DataFrame):
 ######### NUMERIC CONVERSION #########
 
 
-def find_numeric_target_column(data: pd.DataFrame, target_column):
+def find_numeric_target_column(data: pd.DataFrame, target_column, categorical_target):
+    if categorical_target is None:
+        return data
+
     # todo fix this to work without target column
     if target_column not in data.columns:
         return data
 
-    # Check if the target column is present in the data
     if target_column in data.columns:
         # Check if the target column is numeric
         if not pd.to_numeric(data[target_column], errors='coerce').notna().all():
@@ -81,9 +83,31 @@ def process_data_numeric(data, keep_columns=None, target_column=None, output_fol
 
 
 ######### SET DATAFRAME STRUCTURE #########
+def index_sorter(df: pd.DataFrame, index_columns, drop_columns):
+    # index_columns treated as list
+    if isinstance(index_columns, str):
+        index_columns = [index_columns]
+
+    # Check if  index_columns are in the DataFrame
+    for col in index_columns:
+        if col not in df.columns:
+            raise ValueError(f"Column '{col}' not found in DataFrame.")
 
 
-def index_sorter(*dataframes: pd.DataFrame, index_columns=None, drop_columns=None):
+    df_indexed = df.copy()
+
+    # Set cols as index
+    df_indexed.set_index(index_columns, inplace=True, verify_integrity=True)
+
+    if drop_columns:
+        if drop_columns not in df_indexed.columns.values:
+            return df_indexed
+        elif drop_columns:
+            df_indexed = df_indexed.drop(columns=drop_columns)
+
+    return df_indexed
+
+'''def index_sorter(*dataframes: pd.DataFrame, index_columns=None, drop_columns=None):
 
     if not dataframes:
         raise ValueError("At least one dataframe must be provided")
@@ -99,7 +123,27 @@ def index_sorter(*dataframes: pd.DataFrame, index_columns=None, drop_columns=Non
     if drop_columns:
         result = [df.drop(columns=drop_columns, errors='ignore') for df in result]
 
-    return result if len(result) > 1 else result[0]
+    result = [df.reset_index() for df in result]
+
+    return result if len(result) > 1 else result[0]'''
+
+
+'''def index_sorter(*dataframes: pd.DataFrame, index_columns=None, drop_columns=None):
+    if not dataframes:
+        raise ValueError("At least one dataframe must be provided")
+
+    def set_multi_index(df: pd.DataFrame):
+        if index_columns:
+            missing_cols = [col for col in index_columns if col not in df.columns]
+            if missing_cols:
+                raise KeyError(f"DataFrame is missing columns: {missing_cols}")
+            return df.set_index(index_columns)
+        else:
+            return df
+    result = [set_multi_index(df) for df in dataframes]
+    if drop_columns:
+        result = [df.drop(columns=drop_columns, errors='ignore') for df in result]
+    return result if len(result) > 1 else result[0]'''
 
 
 def custom_melt(df: pd.DataFrame, variable_name, value_name):
@@ -107,21 +151,27 @@ def custom_melt(df: pd.DataFrame, variable_name, value_name):
     return melted_df
 
 
-def convert_to_dataframe(data):
+def convert_to_dataframe(data, columns=None, index=None):
     try:
-        # Convert to DataFrame if input is not already a DataFrame
         if isinstance(data, pd.DataFrame):
-            return data
+            df = data
         elif isinstance(data, (list, tuple, set)):
-            return pd.DataFrame(data)
+            df = pd.DataFrame(data)
         elif isinstance(data, np.ndarray):
-            return pd.DataFrame(data)
+            df = pd.DataFrame(data)
         elif isinstance(data, pd.Series):
-            return pd.DataFrame({data.name: data})
+            df = pd.DataFrame({data.name: data})
         elif isinstance(data, dict):
-            return pd.DataFrame(data)
+            df = pd.DataFrame(data)
         else:
             raise ValueError("Unsupported data type. Please provide a supported data type.")
+
+        if columns is not None:
+            df.columns = columns
+        if index is not None:
+            df.index = index
+
+        return df
     except Exception as n:
         print(f"An error occurred during data conversion: {n}")
         return None
@@ -131,31 +181,29 @@ def convert_to_dataframe(data):
 
 def handle_nans_and_duplicates(dataframe: pd.DataFrame, target_column=None, output_folder=None):
     if target_column and dataframe[target_column].isna().any():
-        raise ValueError(
-            f"Target column '{target_column}' has NaN values. Please review the data.")
+        raise ValueError(f"Target column '{target_column}' has NaN values. Please review the data.")
 
-    nan_columns = dataframe.columns[dataframe.isna().any()]
+    rows_with_nans = dataframe[dataframe.isna().any(axis=1)]
 
-    if nan_columns.any():
-        cleaned_dataframe = dataframe.drop(columns=nan_columns)
+    cleaned_dataframe = dataframe.dropna()
+
+    if not rows_with_nans.empty and output_folder:
+        nan_output_path = os.path.join(output_folder, "nans.csv")
+        rows_with_nans.to_csv(nan_output_path, index=True)
+        print(f"NaN rows exported to: {nan_output_path}")
+
+    exact_duplicates = cleaned_dataframe[cleaned_dataframe.duplicated(keep=False)]
+
+    if not exact_duplicates.empty:
+        print('Exact duplicate rows found:')
+        print(exact_duplicates)
 
         if output_folder:
-            nan_output_path = os.path.join(output_folder, "nans.csv")
-            nan_dataframe = dataframe[nan_columns]
-            nan_dataframe.to_csv(nan_output_path, index=False)
-            print(f"NaN values exported to: {nan_output_path}")
-    else:
-        cleaned_dataframe = dataframe
+            duplicates_output_path = os.path.join(output_folder, "exact_duplicates.csv")
+            exact_duplicates.to_csv(duplicates_output_path, index=True)
+            print(f"Exact duplicate rows exported to: {duplicates_output_path}")
 
-    duplicate_rows = cleaned_dataframe[cleaned_dataframe.duplicated()]
-
-    if not duplicate_rows.empty:
         cleaned_dataframe = cleaned_dataframe.drop_duplicates()
-
-        if output_folder:
-            duplicates_output_path = os.path.join(output_folder, "duplicates.csv")
-            duplicate_rows.to_csv(duplicates_output_path, index=False)
-            print(f"Duplicate rows exported to: {duplicates_output_path}")
 
     return cleaned_dataframe
 
@@ -187,3 +235,16 @@ def remove_and_export_outliers(df: pd.DataFrame, outlier_threshold=None, target_
     df_no_outliers = df[~outliers]
 
     return df_no_outliers
+
+
+def drop_rows(df, column_name_to_drop_rows, value_in_row):
+    df = df.astype(str)
+
+    for col, val in zip(column_name_to_drop_rows, value_in_row):
+        if col in df.columns:
+            df = df[df[col] != val]
+            print(f"Rows where {col} is {val} have been dropped.")
+        else:
+            print(f"Column {col} does not exist in the DataFrame.")
+    return df
+

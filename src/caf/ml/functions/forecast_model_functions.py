@@ -15,6 +15,7 @@ from caf.ml.functions.process_data_functions import (index_sorter,
                                                      process_data_numeric,
                                                      handle_nans_and_duplicates,
                                                      remove_and_export_outliers)
+from sklearn.linear_model import LinearRegression
 
 
 def process_data_loaded_model(df,
@@ -22,19 +23,25 @@ def process_data_loaded_model(df,
                               drop_columns,
                               target_column,
                               keep_columns,
-                              outlier_threshold):
-
+                              outlier_threshold,
+                              categorical_target):
 
     df.columns = df.columns.astype(str)
-
-    dat = index_sorter(df, index_columns=index_columns, drop_columns=drop_columns)
-    dat = dat.astype(float)
+    dat = process_data_numeric(df, keep_columns=keep_columns)
+    dat = index_sorter(dat, index_columns=index_columns, drop_columns=drop_columns)
+    #dat = dat.astype(float)
     dat = function_remove_spaces(dat)
-    dat = find_numeric_target_column(dat, target_column=target_column)
-    dat = process_data_numeric(dat, keep_columns=keep_columns)
-    dat = handle_nans_and_duplicates(dat)
+    dat = convert_to_dataframe(dat)
+
+
+    dat = find_numeric_target_column(dat, target_column=target_column, categorical_target=categorical_target)
+    #dat = handle_nans_and_duplicates(dat)
     dat = remove_and_export_outliers(dat, outlier_threshold=outlier_threshold)
     data = convert_to_dataframe(dat)
+
+    print("Final_training_data:")
+    print(data.shape)
+    print(data)
 
     return data
 
@@ -44,18 +51,32 @@ def process_forecast_data(df,
                           drop_columns_p,
                           target_column,
                           keep_columns_p,
-                          outlier_threshold_p):
+                          outlier_threshold_p,
+                          categorical_target,
+                          output_folder):
 
     x_ = pd.read_csv(df, low_memory=False)
+
     x_.columns = x_.columns.astype(str)
-    dat = index_sorter(x_, index_columns=index_columns_p, drop_columns=drop_columns_p)
-    dat = dat.astype(float)
+    dat = process_data_numeric(x_, keep_columns=keep_columns_p)
+
+    dat = index_sorter(dat, index_columns=index_columns_p, drop_columns=drop_columns_p)
+
+    #dat = dat.astype(float)
     dat = function_remove_spaces(dat)
-    dat = find_numeric_target_column(dat, target_column=target_column)
-    dat = process_data_numeric(dat, keep_columns=keep_columns_p)
-    dat = handle_nans_and_duplicates(dat)
+    dat = convert_to_dataframe(dat)
+
+    dat = find_numeric_target_column(dat, target_column=target_column, categorical_target=categorical_target)
+
+    #dat = handle_nans_and_duplicates(dat, output_folder=output_folder)
+
     dat = remove_and_export_outliers(dat, outlier_threshold=outlier_threshold_p)
+
     data = convert_to_dataframe(dat)
+
+    print("Tidy_processed_data_PREDICT:")
+    print(data.shape)
+    print(data)
 
     return data
 
@@ -63,6 +84,11 @@ def process_forecast_data(df,
 def align_dataframes(df1, df2):
     common_columns = df1.columns.intersection(df2.columns)
     aligned_df2 = df2[common_columns]
+
+    print('_________________________________________________________________')
+    print("final_predict_data:")
+    print(aligned_df2.shape)
+    print(aligned_df2)
 
     return aligned_df2
 
@@ -85,25 +111,134 @@ def predict(single_year_prediction,
             target_column,
             output_folder,
             FinalModelParameters,
-            index_col):
+            index_col,
+            skip_hyperparameter_optimisation,
+            basic_model,
+            multiple_year_prediction,
+            categorical_data):
+
+    missing_columns_train = set(predict_data.columns) - set(trained_data.columns)
+    if missing_columns_train:
+        for col in missing_columns_train:
+            if col in trained_data.columns:
+                trained_data = trained_data.drop(col, axis=1)
+        print(
+            f'Columns missing in trained_data: {missing_columns_train}. This may affect model accuracy')
+
+    missing_columns_predict = set(trained_data.columns) - set(predict_data.columns)
+    if missing_columns_predict:
+        for col in missing_columns_predict:
+            if col in predict_data.columns:
+                predict_data = predict_data.drop(col, axis=1)
+        print(
+            f'Columns missing in predict_data: {missing_columns_predict}. This may affect model accuracy')
 
     predictions = None
+    x_train = trained_data.drop(target_column, axis=1)
+    y_train = trained_data[target_column]
+
+
     if single_year_prediction is not None:
 
-        trained_model.set_params(**FinalModelParameters)
-        trained_model.fit(trained_data.drop(target_column, axis=1), trained_data[target_column])
-        predictions = trained_model.predict(predict_data)
+        if isinstance(trained_model, LinearRegression):
+            trained_model.fit(trained_data.drop(target_column, axis=1),
+                              trained_data[target_column])
+            predictions = trained_model.predict(predict_data)
 
-        prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
+            prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
 
-        prediction_file_path = os.path.join(output_folder, 'predictions.csv')
-        prediction_df.to_csv(prediction_file_path, index_label=index_col, index=True)
-        print(f"Predictions saved to: {prediction_file_path}")
+            prediction_file_path = os.path.join(output_folder, 'predictions.csv')
+            prediction_df.to_csv(prediction_file_path, index_label=index_col, index=True)
+            print(f"Predictions saved to: {prediction_file_path}")
 
-    else:
-        pass
+            return predictions
 
-    return predictions
+
+        elif skip_hyperparameter_optimisation is not None:
+            trained_model.fit(trained_data.drop(target_column, axis=1),
+                              trained_data[target_column])
+            predictions = trained_model.predict(predict_data)
+
+            prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
+
+            prediction_file_path = os.path.join(output_folder, 'predictions.csv')
+            prediction_df.to_csv(prediction_file_path, index_label=index_col, index=True)
+            print(f"Predictions saved to: {prediction_file_path}")
+
+            return predictions
+
+
+        elif basic_model is not None:
+            print("Hyperparameters used for the model:")
+            print(trained_model.get_params())
+
+            trained_model.fit(trained_data.drop(target_column, axis=1),
+                              trained_data[target_column])
+            predictions = trained_model.predict(predict_data)
+
+            prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
+
+            prediction_file_path = os.path.join(output_folder, 'predictions.csv')
+            prediction_df.to_csv(prediction_file_path, index_label=index_col, index=True)
+            print(f"Predictions saved to: {prediction_file_path}")
+
+            return predictions
+
+
+        elif categorical_data is not None:
+
+            return predictions
+
+        else:
+            trained_model.set_params(**FinalModelParameters)
+            trained_model.fit(trained_data.drop(target_column, axis=1), trained_data[target_column])
+            predictions = trained_model.predict(predict_data)
+
+            prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
+
+            prediction_file_path = os.path.join(output_folder, 'predictions.csv')
+            prediction_df.to_csv(prediction_file_path, index_label=index_col, index=True)
+            print(f"Predictions saved to: {prediction_file_path}")
+
+        return predictions
+
+    elif multiple_year_prediction is not None:
+        if isinstance(trained_model, LinearRegression):
+            return predictions
+
+        elif categorical_data is not None:
+            trained_model.set_params(**FinalModelParameters)
+            trained_model.fit(x_train, y_train)
+            predictions = trained_model.predict(predict_data)
+
+
+            prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
+
+            prediction_file_path = os.path.join(output_folder, 'predictions.csv')
+            prediction_df.to_csv(prediction_file_path, index=True)
+            print(f"Predictions saved to: {prediction_file_path}")
+
+            return predictions
+
+        elif skip_hyperparameter_optimisation is not None:
+            return predictions
+
+        elif basic_model is not None:
+            return predictions
+
+        else:
+            trained_model.set_params(**FinalModelParameters)
+            trained_model.fit(trained_data.drop(target_column, axis=1), trained_data[target_column])
+            predictions = trained_model.predict(predict_data)
+
+            prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
+
+            prediction_file_path = os.path.join(output_folder, 'predictions.csv')
+            prediction_df.to_csv(prediction_file_path, index_label=index_col, index=True)
+            print(f"Predictions saved to: {prediction_file_path}")
+
+            return predictions
+
 
 
 '''

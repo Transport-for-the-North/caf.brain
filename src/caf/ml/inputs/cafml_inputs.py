@@ -2,23 +2,28 @@
 """
 input classes for caf.ml models
 """
+import numpy as np
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
+from sklearn.linear_model import LogisticRegression
+import statsmodels.api as sm
+
+
 
 import abc
 from pathlib import Path
 from caf.toolkit import BaseConfig
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Union
 import enum
 from sklearn.ensemble import (
     ExtraTreesRegressor,
     RandomForestRegressor,
     GradientBoostingRegressor,
     AdaBoostRegressor,
-    BaggingRegressor,
-
+    BaggingRegressor, RandomForestClassifier, ExtraTreesClassifier,
+)
 from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neural_network import MLPRegressor
@@ -27,7 +32,7 @@ from sklearn.model_selection import (KFold,
                                      GridSearchCV,
                                      StratifiedKFold,
                                      RepeatedKFold,
-                                     RepeatedStratifiedKFold)
+                                     RepeatedStratifiedKFold, TimeSeriesSplit)
 
 
 class CarAccessInputs(BaseConfig):
@@ -56,11 +61,6 @@ class CarAccessInputs(BaseConfig):
     #### FEATURE SELECTION ####
     process_data_used: Optional[bool] = True
 
-
-
-
-    simple_feature_selection: Optional[str] = None
-    exhaustive_feature_selection: Optional[str] = None
 
     model_type: Any  # abc.ABCMeta not supported by caf.toolkit currently
     cv_method: Optional[str] = None
@@ -94,8 +94,27 @@ class CarAccessInputs(BaseConfig):
     threshold: Optional[float] = None
     threshold_corr: Optional[float] = None
 
+    validation_data: Optional[Path] = None
+    skip_feature_selection: Optional[str] = None
+    skip_data_analysis: Optional[str] = None
+    skip_hyperparameter_optimisation: Optional[str] = None
+    basic_model: Optional[str] = None
+
+    categorical_data: Optional[str] = None
+    numerical_features: Optional[List[str]] = None
+    categorical_features: Optional[List[str]] = None
+    categorical_target: Optional[str] = None
+
+    column_name_to_drop_rows: Optional[List[str]] = None
+    value_in_row: Optional[List[Union[str, int, float]]] = None
+
 
 class Models(enum.Enum):
+    LOGIT_REGRESSION_L1 = (LogisticRegression, {'penalty': 'l1', 'solver': 'liblinear'})
+    LOGIT_REGRESSION_L2 = (LogisticRegression, {'penalty': 'l2'})
+    LOGIT_REGRESSION_ELASTICNET = (LogisticRegression, {'penalty': 'elasticnet', 'solver': 'saga', 'l1_ratio': 0.5})
+    MULTINOMIAL = (LogisticRegression, {'multi_class': 'multinomial', 'solver': 'lbfgs'})
+
     RANDOM_FOREST = RandomForestRegressor
 
     EXTRA_TREES = ExtraTreesRegressor
@@ -122,10 +141,25 @@ class Models(enum.Enum):
 
     NEURAL_NETWORK = MLPRegressor
 
+    PROBIT = sm.Probit
+
+    RANDOM_FOREST_CLASSIFIER = RandomForestClassifier
+
+    EXTRA_TREES_CLASSIFIER = ExtraTreesClassifier
+
+    DECISION_TREE_CLASSIFIER = DecisionTreeClassifier
+
+    def get_model_instance(self):
+        model_class, params = self.value
+        return model_class(**params) if model_class == LogisticRegression else model_class
+
 
 Default_regression_methods = [Models.LASSO, Models.RIDGE, Models.ELASTICNET]
-
-#todo include more simple models from biogem
+Models_List_ = [Models.RANDOM_FOREST, Models.EXTRA_TREES, Models.GRADIENT_BOOSTING, Models.ADABOOST,
+               Models.BAGGING, Models.SVR, Models.KNN, Models.RIDGE, Models.LASSO, Models.ELASTICNET,
+               Models.LINEAR_REGRESSION, Models.DECISION_TREE, Models.NEURAL_NETWORK, Models.LOGIT_REGRESSION_L1,
+                Models.LOGIT_REGRESSION_L2, Models.LOGIT_REGRESSION_ELASTICNET, Models.PROBIT, Models.MULTINOMIAL, Models.RANDOM_FOREST_CLASSIFIER,
+                Models.EXTRA_TREES_CLASSIFIER, Models.DECISION_TREE_CLASSIFIER]
 
 
 class ModelGrids(enum.Enum):
@@ -171,6 +205,43 @@ class ModelGrids(enum.Enum):
 
     ELASTICNET = {"alpha": [0.1, 1.0, 10.0], "l1_ratio": [0.1, 0.5, 0.9]}
 
+    DECISION_TREE = {
+        "max_depth": [None, 10, 20, 30],
+        "min_samples_split": [2, 5, 10],
+        "min_samples_leaf": [1, 2, 4],
+    }
+
+    LOGIT_REGRESSION_L1 = {"C": [0.1, 1.0, 10.0]}
+    LOGIT_REGRESSION_L2 = {"C": [0.1, 1.0, 10.0]}
+    LOGIT_REGRESSION_ELASTICNET = {"C": [0.1, 1.0, 10.0], "l1_ratio": [0.1, 0.5, 0.9]}
+
+    PROBIT = {"method": ["newton", "bfgs", "lbfgs"], "disp": [False]}
+
+    #MULTINOMIAL = {"C": [0.1, 1.0, 10.0], "solver": ["lbfgs", "newton-cg", "sag", "saga"]}
+    MULTINOMIAL = {"C": np.arange(0.1, 10, 0.1).tolist(), "solver": ["lbfgs", "newton-cg", "sag", "saga"]}
+
+    RANDOM_FOREST_CLASSIFIER = {
+        "n_estimators": [10, 50, 100, 200],
+        "max_depth": [None, 10, 20, 30],
+        "min_samples_split": [2, 5, 10],
+        "min_samples_leaf": [1, 2, 4],
+        "bootstrap": [True, False],
+    }
+
+    EXTRA_TREES_CLASSIFIER = {
+        "n_estimators": [50, 100, 200],
+        "max_depth": [None, 10, 20, 30],
+        "min_samples_split": [2, 5, 10],
+        "min_samples_leaf": [1, 2, 4],
+        "bootstrap": [True, False],
+    }
+
+    DECISION_TREE_CLASSIFIER = {
+        "max_depth": [None, 10, 20, 30],
+        "min_samples_split": [2, 5, 10],
+        "min_samples_leaf": [1, 2, 4],
+        "criterion": ["gini", "entropy"],
+    }
 
 
 class CV_models(enum.Enum):
@@ -181,6 +252,8 @@ class CV_models(enum.Enum):
     Repeated_kfold = RepeatedKFold
 
     Repeated_stratified_kfold = RepeatedStratifiedKFold
+
+    Time_series_split = TimeSeriesSplit
 
 
 class DefaultRegressionMethods(enum.Enum):

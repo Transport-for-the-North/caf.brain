@@ -40,14 +40,14 @@ def test_function(df11, num_folds=5, regression_method=ElasticNet):
 
     The test_function conducts feature selection in order to determine a combination of features
     that can best explain and therefore predict the target variable.
-    The function utilises machine learning through the train and car_access_land_use split being applied to
+    The function utilises machine learning through the train and caf_ml_run_files split being applied to
     the chosen regression algorithm.
     GridSearch (another machine learning method) is then used to score each iteration, eventually
     selected_features_df is produced which is a potential optimal combination of features.
     This may not be the final best combination but this improvement is to be added in the future.
 
     In order to provide some understanding within this model, the final selected features are then
-    reapplied to a train and car_access_land_use (ML) split in another function. Hyper-Parameter optimisation is
+    reapplied to a train and caf_ml_run_files (ML) split in another function. Hyper-Parameter optimisation is
     then again conducted with a score being produced. This score can help validate how well
     the feature selection performed.
     """
@@ -73,7 +73,7 @@ def test_function(df11, num_folds=5, regression_method=ElasticNet):
     selected_features = None
     X_selected_combined = None
 
-    # data split into training and car_access_land_use with 5 folds
+    # data split into training and caf_ml_run_files with 5 folds
     for train_index, test_index in tqdm(KFold(n_splits=num_folds, shuffle=True).split(X_scaled),
                                         desc="Outer CV Progress"):
         X_train, X_test = X_scaled[train_index], X_scaled[test_index]
@@ -111,7 +111,7 @@ def test_function(df11, num_folds=5, regression_method=ElasticNet):
         final_model_inner.alpha = best_alpha_inner
         final_model_inner.fit(X_selected, y_train)
 
-        # Evaluate the model on the outer car_access_land_use set
+        # Evaluate the model on the outer caf_ml_run_files set
         X_selected_test = selector.transform(X_test)
         outer_score = final_model_inner.score(X_selected_test, y_test)
         outer_scores.append(outer_score)
@@ -187,7 +187,7 @@ def evaluate_independence(x1, x2, y1, y2):
     return results
 
 
-# multicollinearity car_access_land_use using the VIF formula
+# multicollinearity caf_ml_run_files using the VIF formula
 def test_multicollinearity(x):
     vif_results = pd.DataFrame()
     vif_results["Feature"] = x.columns
@@ -237,7 +237,7 @@ def retrained_model(x_train, x_test, y_train, alpha: float,
     return y_pred
 
 
-# Performs cross validation on train and car_access_land_use data
+# Performs cross validation on train and caf_ml_run_files data
 def cross_validation(x: np.ndarray, y: np.ndarray, alpha: float, k_folds: int = 5) -> float:
     # define number of folds for kfold cv (based on size of data)
     kf = KFold(n_splits=k_folds)
@@ -246,7 +246,7 @@ def cross_validation(x: np.ndarray, y: np.ndarray, alpha: float, k_folds: int = 
     all_test = list()
     all_pred = list()
 
-    # provides train/car_access_land_use indices to split data into train/car_access_land_use, repeated k times, represented by i
+    # provides train/caf_ml_run_files indices to split data into train/caf_ml_run_files, repeated k times, represented by i
     for i, (train_index, test_index) in enumerate(kf.split(x, y)):
         x_train, y_train = x[train_index], y[train_index]
         x_test, y_test = x[test_index], y[test_index]
@@ -320,7 +320,7 @@ def main(params: CarInputs2, output_folder, reg_method, custom_regression_method
 
     print('hi', selected_features_df)
 
-    # applying feature selection to 2021 census data (car_access_land_use data (21) must match training data (11))
+    # applying feature selection to 2021 census data (caf_ml_run_files data (21) must match training data (11))
     scaled_df = apply_feature_selection(selected_features_df, df21)
     modified_df_11 = selected_features_df
     modified_df_21 = scaled_df
@@ -337,7 +337,7 @@ def main(params: CarInputs2, output_folder, reg_method, custom_regression_method
     # calculate independent and identical assumption
     iid = evaluate_independence(x1, x2, y1, y2)
 
-    # Multicollinearity car_access_land_use (VIF)
+    # Multicollinearity caf_ml_run_files (VIF)
     vif_results_1 = test_multicollinearity(x1)
     vif_results_2 = test_multicollinearity(x2)
 

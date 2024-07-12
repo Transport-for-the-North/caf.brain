@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-input classes for caf.ml models
+input classes for caf_ml models
 """
 import numpy as np
 # pylint: disable=import-error,wrong-import-position
@@ -49,7 +49,7 @@ class CarAccessInputs(BaseConfig):
     target_column: Optional[str] = None
     output_folder: Optional[Path] = None
 
-    # wide to long imports
+    # wide to long importshow can
     wide_format: Optional[str] = None
     variable_name: Optional[str] = None
     value_name: Optional[str] = None

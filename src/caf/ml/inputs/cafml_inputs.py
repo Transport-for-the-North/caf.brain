@@ -55,26 +55,16 @@ class CarAccessInputs(BaseConfig):
     value_name: Optional[str] = None
 
     # optional imports
-    outlier_threshold: Optional[str] = None
+    outlier_threshold: Optional[int] = None
 
 
     #### FEATURE SELECTION ####
-    process_data_used: Optional[bool] = True
-
-
+    #process_data_used: Optional[bool] = True
     model_type: Any  # abc.ABCMeta not supported by caf.toolkit currently
     cv_method: Optional[str] = None
     splits: Optional[str] = None
     repeats: Optional[str] = None
 
-
-    #### CROSS VALIDATION ####
-
-
-
-    folder: Optional[Path] = None
-
-    hp_optimisation: Optional[str] = None
 
     #### PREDICTION FUNCTIONS ####
     single_year_prediction: Optional[str] = None

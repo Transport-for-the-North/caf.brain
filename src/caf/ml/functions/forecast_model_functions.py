@@ -137,6 +137,9 @@ def predict(single_year_prediction,
     x_train = trained_data.drop(target_column, axis=1)
     y_train = trained_data[target_column]
 
+    if target_column in predict_data.columns:
+        predict_data = predict_data.drop(columns=[target_column])
+
 
     if single_year_prediction is not None:
 
@@ -238,41 +241,6 @@ def predict(single_year_prediction,
             print(f"Predictions saved to: {prediction_file_path}")
 
             return predictions
-
-
-
-'''
-    # Generate forecasts
-    if year_range:
-        start_year, end_year = year_range
-        forecast_years = range(start_year, end_year + 1)
-    else:
-        # If year_range is not provided, use the range of years in the input (forecast) data
-        forecast_years = range(data.index.min(), data.index.max() + 1)
-
-    forecasts = []
-    for year in forecast_years:
-
-        # Make predictions using FinalModel with optimized hyperparameters
-        predictions = FinalModel(**FinalModelParameters).predict(prediction_data)
-
-        # Store predictions along with index (year)
-        forecasts.extend(zip([year] * len(predictions), predictions))
-
-    # Convert forecasts to DataFrame
-    forecast_df = pd.DataFrame(forecasts, columns=['Year', 'Predicted'])
-
-    # Save forecasted results
-    forecast_file_path = os.path.join(output_folder, 'forecasts.csv')
-    forecast_df.to_csv(forecast_file_path, index=False)
-    print(f"Forecasted results saved to: {forecast_file_path}")
-
-    # Evaluate forecast accuracy
-    if FinalDataframe is not None:
-        evaluate_forecast_accuracy(forecast_df, FinalDataframe[target_column])
-
-    return forecast_df
-'''
 
 
 def evaluate_forecast_accuracy(forecast_df: pd.DataFrame, actual_values: pd.Series):

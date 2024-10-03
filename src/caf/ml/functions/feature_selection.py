@@ -127,7 +127,7 @@ def feature_selection_cv(data,
     cv = TimeSeriesSplit(n_splits=5) if multiple_year_prediction is not None else get_cv_class(cv_method, splits=splits, repeats=repeats)
 
     if categorical_data is not None:
-        for train_index, test_index in tqdm(cv.split(x, y), total=cv.get_n_splits(x, y), desc="Cross-validation progress"):
+        for train_index, test_index in tqdm(cv.split(x, y), total=cv.get_n_splits(x, y), desc="Feature selection progress"):
             X_train, X_test = x.iloc[train_index], x.iloc[test_index]
             y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
@@ -191,7 +191,7 @@ def feature_selection_cv(data,
 
     else:
 
-        for train_index, test_index in tqdm(cv.split(x, y), total=cv.get_n_splits(x, y), desc="Cross-validation progress"):
+        for train_index, test_index in tqdm(cv.split(x, y), total=cv.get_n_splits(x, y), desc="Feature selection progress"):
             X_train, X_test = x.iloc[train_index], x.iloc[test_index]
             y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 

@@ -81,7 +81,7 @@ def process_forecast_data(df,
     return data
 
 
-def align_dataframes(df1, df2):
+def align_dataframes(df1, df2, output_folder):
     common_columns = df1.columns.intersection(df2.columns)
     aligned_df2 = df2[common_columns]
 
@@ -89,6 +89,15 @@ def align_dataframes(df1, df2):
     print("final_predict_data:")
     print(aligned_df2.shape)
     print(aligned_df2)
+
+    predict_data_path = os.path.join(output_folder, 'Final_prediction_data.csv')
+
+    if os.path.exists(predict_data_path):
+        print(
+            f"The file Final_prediction_data.csv already exists in {output_folder} and is being replaced.")
+
+    aligned_df2.to_csv(predict_data_path, index=True)
+    print(f"Predict data post transformations saved to: {predict_data_path}")
 
     return aligned_df2
 
@@ -104,7 +113,7 @@ def apply_feature_selection_single_year(trained_data, predict_data):
     return df_final
 
 
-def predict(single_year_prediction,
+'''def predict_complex(single_year_prediction,
             trained_data,
             predict_data,
             trained_model,
@@ -241,6 +250,40 @@ def predict(single_year_prediction,
             print(f"Predictions saved to: {prediction_file_path}")
 
             return predictions
+'''
+
+
+def predict_refined(trained_data, predict_data, trained_model, target_column,
+                    output_folder, index_col, FinalModelParameters):
+    # Handle missing columns
+    common_columns = set(trained_data.columns) & set(predict_data.columns)
+    common_columns = list(common_columns - {target_column})
+
+    x_train = trained_data[common_columns]
+    y_train = trained_data[target_column]
+    x_predict = predict_data[common_columns]
+
+    # Set hyperparameters
+    if FinalModelParameters:
+        trained_model.set_params(**FinalModelParameters)
+        print("Using provided hyperparameters:")
+        print(trained_model.get_params())
+    else:
+        print("Using default model parameters")
+
+
+    trained_model.fit(x_train, y_train)
+    predictions = trained_model.predict(x_predict)
+    y_proba = trained_model.predict_proba(x_predict)
+
+    # Save predictions
+    prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
+    prediction_file_path = os.path.join(output_folder, 'predictions.csv')
+    prediction_df.to_csv(prediction_file_path, index_label=index_col, index=True)
+    print(f"Predictions saved to: {prediction_file_path}")
+
+    return predictions, y_proba
+
 
 
 def evaluate_forecast_accuracy(forecast_df: pd.DataFrame, actual_values: pd.Series):

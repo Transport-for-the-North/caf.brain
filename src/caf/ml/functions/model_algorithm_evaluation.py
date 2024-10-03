@@ -5,6 +5,9 @@ Original author: Adil Zaheer
 """
 import os
 
+from sklearn.inspection import permutation_importance
+from sklearn.linear_model import LogisticRegression
+import numpy as np
 import scipy.stats as stats
 from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
 import pandas as pd
@@ -30,8 +33,8 @@ def select_model(x: pd.DataFrame, y: pd.DataFrame, models_to_test: list[Models],
         model_instance = model_enum.value()
         model_name = model_enum.name.lower()
 
-        scores_r2 = cross_val_score(model_instance, x, y, cv=5, scoring="r2")
-        scores_mse = -cross_val_score(model_instance, x, y, cv=5, scoring="neg_mean_squared_error")
+        scores_r2 = cross_val_score(model_instance, x, y, cv=5, scoring="r2", n_jobs=-1)
+        scores_mse = -cross_val_score(model_instance, x, y, cv=5, scoring="neg_mean_squared_error", n_jobs=-1)
 
         mean_r2 = scores_r2.mean()
         mean_mse = scores_mse.mean()
@@ -58,7 +61,8 @@ def eval_model(data_used_to_predict,
                model,
                target_column,
                output_folder,
-               categorical_target):
+               categorical_target,
+               y_proba):
     y_truth = None
 
     if data_contains_truth_values_only is not None:
@@ -92,6 +96,68 @@ def eval_model(data_used_to_predict,
         metrics_df = pd.DataFrame([metrics_dict])
         metrics_df.to_csv(os.path.join(output_folder, 'model_evaluation_metrics.csv'), index=False)
 
+        # Confusion Matrix Plot
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues')
+        plt.title('Confusion Matrix')
+        plt.xlabel('Predicted')
+        plt.ylabel('True')
+        plt.savefig(os.path.join(output_folder, 'confusion_matrix.png'))
+        plt.close()
+
+        stats_df = simple_logistic_regression_stats(model, data_used_to_predict, output_folder, target_column, model_predicted_data, y_proba)
+
+        # ROC Curve
+        if 'fpr' in locals() and 'tpr' in locals():
+            plt.figure(figsize=(8, 6))
+            plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {roc_auc:.2f})')
+            plt.plot([0, 1], [0, 1], linestyle='--', label='Random Classifier')
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title('Receiver Operating Characteristic (ROC) Curve')
+            plt.legend()
+            plt.savefig(os.path.join(output_folder, 'roc_curve.png'))
+            plt.close()
+
+        # Precision-Recall Curve
+        if 'precision_curve' in locals() and 'recall_curve' in locals():
+            plt.figure(figsize=(8, 6))
+            plt.plot(recall_curve, precision_curve, label=f'PR Curve (AUC = {pr_auc:.2f})')
+            plt.xlabel('Recall')
+            plt.ylabel('Precision')
+            plt.title('Precision-Recall Curve')
+            plt.legend()
+            plt.savefig(os.path.join(output_folder, 'precision_recall_curve.png'))
+            plt.close()
+
+        # Calibration Curve
+        if 'prob_true' in locals() and 'prob_pred' in locals():
+            plt.figure(figsize=(8, 6))
+            plt.plot(prob_pred, prob_true, marker='o')
+            plt.plot([0, 1], [0, 1], linestyle='--')
+            plt.xlabel('Mean Predicted Probability')
+            plt.ylabel('Fraction of Positives')
+            plt.title('Calibration Curve')
+            plt.savefig(os.path.join(output_folder, 'calibration_curve.png'))
+            plt.close()
+
+        # Feature Importance
+        if hasattr(model, "feature_importances_"):
+            feature_importance = pd.DataFrame({
+                'feature': data_used_to_predict.drop(columns=[target_column]).columns,
+                'importance': model.feature_importances_
+            }).sort_values('importance', ascending=False)
+
+            plt.figure(figsize=(10, 8))
+            sns.barplot(x='importance', y='feature', data=feature_importance.head(20))
+            plt.title('Top 20 Feature Importances')
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_folder, 'feature_importances.png'))
+            plt.close()
+
+            feature_importance.to_csv(os.path.join(output_folder, 'feature_importances.csv'),
+                                      index=False)
+
         return
 
     metrics_dict = {
@@ -100,7 +166,6 @@ def eval_model(data_used_to_predict,
         'R-squared': r2_score(y_truth, model_predicted_data),
         'MAE': mean_absolute_error(y_truth, model_predicted_data),
         'MAPE': mean_absolute_percentage_error(y_truth, model_predicted_data),
-        'MSLE': None,
         'Explained Variance': explained_variance_score(y_truth, model_predicted_data),
         'Median AE': median_absolute_error(y_truth, model_predicted_data)
     }
@@ -119,6 +184,20 @@ def eval_model(data_used_to_predict,
     else:
         metrics_df = pd.DataFrame([metrics_dict])
 
+    metrics_df.to_csv(os.path.join(output_folder, 'model_evaluation_metrics.csv'), index=False)
+
+    plot_regression_diagnostics(y_truth, model_predicted_data, model, output_folder)
+
+    # Feature Importance
+    if hasattr(model, "feature_importances_"):
+        plot_feature_importance(model, data_used_to_predict, target_column, output_folder)
+
+    # Coefficients and p-values
+    if isinstance(model, (LinearRegression, Ridge, Lasso, ElasticNet)):
+        calculate_non_categorical_model_stats(model, data_used_to_predict, target_column, output_folder)
+
+
+def plot_regression_diagnostics(y_truth, model_predicted_data, model, output_folder):
 
     # Plot predictions vs true labels
     plt.figure(figsize=(8, 6))
@@ -131,19 +210,6 @@ def eval_model(data_used_to_predict,
              verticalalignment='top')
     plt.savefig(os.path.join(output_folder, f'predictions_vs_true.png'))
     plt.close()
-
-    # Plot residuals
-    residuals = y_truth - model_predicted_data
-    plt.figure(figsize=(8, 6))
-    sns.histplot(residuals, kde=True)
-    plt.xlabel('Residuals')
-    plt.ylabel('Frequency')
-    plt.title(f'{model} - Residuals Distribution')
-    plt.text(0.05, 0.95, f'R-squared: {metrics_dict["R-squared"]:.2f}', transform=plt.gca().transAxes, fontsize=12,
-             verticalalignment='top')
-    plt.savefig(os.path.join(output_folder, f'residuals_distribution.png'))
-    plt.close()
-
 
     # Plot Q-Q plot
     plt.figure(figsize=(8, 6))
@@ -162,18 +228,104 @@ def eval_model(data_used_to_predict,
     plt.savefig(os.path.join(output_folder, f'residuals_vs_fitted.png'))
     plt.close()
 
-    # Prediction interval plot
+    # Plot residuals
+    residuals = y_truth - model_predicted_data
     plt.figure(figsize=(8, 6))
-    pred_interval_low = model_predicted_data - 1.96 * residuals.std()
-    pred_interval_high = model_predicted_data + 1.96 * residuals.std()
-    sns.scatterplot(x=y_truth, y=model_predicted_data, label='Predicted vs True')
-    plt.fill_between(y_truth, pred_interval_low, pred_interval_high, color='gray', alpha=0.2, label='95% Prediction Interval')
-    sns.lineplot(x=y_truth, y=y_truth, color='red', label='Trend Line')
-    plt.xlabel('True Labels')
-    plt.ylabel('Predicted Labels')
-    plt.title(f'{model} - Predictions with Prediction Interval')
-    plt.legend()
-    plt.savefig(os.path.join(output_folder, f'prediction_interval.png'))
+    sns.histplot(residuals, kde=True)
+    plt.xlabel('Residuals')
+    plt.ylabel('Frequency')
+    plt.title(f'{model} - Residuals Distribution')
+    plt.text(0.05, 0.95, f'R-squared: {metrics_dict["R-squared"]:.2f}', transform=plt.gca().transAxes, fontsize=12,
+             verticalalignment='top')
+    plt.savefig(os.path.join(output_folder, f'residuals_distribution.png'))
     plt.close()
 
-    metrics_df.to_csv(os.path.join(output_folder, 'model_evaluation_metrics.csv'), index=False)
+
+def plot_feature_importance(model, data, target_column, output_folder):
+    feature_importance = pd.DataFrame({
+        'feature': data.drop(columns=[target_column]).columns,
+        'importance': model.feature_importances_
+    }).sort_values('importance', ascending=False)
+
+    plt.figure(figsize=(12, 10))
+    sns.barplot(x='importance', y='feature', data=feature_importance.head(20))
+    plt.title('Top 20 Feature Importances')
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_folder, 'feature_importances.png'))
+    plt.close()
+
+    feature_importance.to_csv(os.path.join(output_folder, 'feature_importances.csv'), index=False)
+
+
+def calculate_non_categorical_model_stats(model, data_used_to_predict, target_column, output_folder):
+    X = data_used_to_predict.drop(columns=target_column)
+    y = data_used_to_predict[target_column]
+    feature_names = X.columns.tolist()
+
+    if hasattr(model, 'feature_importances_'):
+        importances = model.feature_importances_
+    else:
+        # Use permutation importance if feature_importances_ not available
+        perm_importance = permutation_importance(model, X, y, n_repeats=10, random_state=42)
+        importances = perm_importance.importances_mean
+
+    results_df = pd.DataFrame({
+        'Feature': feature_names,
+        'Importance': importances
+    })
+
+    results_df = results_df.sort_values('Importance', ascending=False)
+    results_df.to_csv(os.path.join(output_folder, 'non_categorical_model_stats.csv'), index=False)
+
+    return results_df
+
+
+def simple_logistic_regression_stats(model, data_used_to_predict, output_folder, target_column, model_predicted_data, y_proba):
+    X = data_used_to_predict
+    pred = model_predicted_data
+    print('debug coef @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+    print('x:')
+    print(X)
+    print('predicted:')
+    print(pred)
+    if not isinstance(model, LogisticRegression):
+        raise ValueError("Model must be an instance of LogisticRegression")
+
+    feature_names = X.columns.tolist()
+    results = []
+
+    # For binary classification, we only have one set of coefficients
+    coef = model.coef_[0]
+    intercept = model.intercept_[0]
+
+    # Calculate standard errors
+    residuals = pred - y_proba[:, 1]
+    mse = np.mean(residuals ** 2)
+    std_errors = np.sqrt(mse * (1 / np.sum((X - X.mean()) ** 2, axis=0)))
+
+    # Intercept
+    results.append({
+        'Feature': 'Intercept',
+        'Coefficient': round(intercept, 5),
+        'Std_Error': 'N/A',
+        'Z_Score': 'N/A',
+        'P_Value': 'N/A',
+        'Odds_Ratio': round(np.exp(intercept), 5)
+    })
+
+    # Features
+    for feature, coef_value, std_err in zip(feature_names, coef, std_errors):
+        z_score = coef_value / std_err
+        p_value = 2 * (1 - stats.norm.cdf(abs(z_score)))
+        results.append({
+            'Feature': feature,
+            'Coefficient': round(coef_value, 5),
+            'Std_Error': round(std_err, 5),
+            'Z_Score': round(z_score, 5),
+            'P_Value': round(p_value, 5),
+            'Odds_Ratio': round(np.exp(coef_value), 5)
+        })
+
+    results_df = pd.DataFrame(results)
+    results_df.to_csv(os.path.join(output_folder, 'logistic_regression_stats.csv'), index=False)
+    return results_df

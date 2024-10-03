@@ -98,6 +98,11 @@ class CarAccessInputs(BaseConfig):
     column_name_to_drop_rows: Optional[List[str]] = None
     value_in_row: Optional[List[Union[str, int, float]]] = None
 
+    #experimantal functions
+    features_to_transform: Optional[List[str]] = None
+
+
+
 
 class Models(enum.Enum):
     LOGIT_REGRESSION_L1 = (LogisticRegression, {'penalty': 'l1', 'solver': 'liblinear'})
@@ -201,8 +206,8 @@ class ModelGrids(enum.Enum):
         "min_samples_leaf": [1, 2, 4],
     }
 
-    LOGIT_REGRESSION_L1 = {"C": [0.1, 1.0, 10.0]}
-    LOGIT_REGRESSION_L2 = {"C": [0.1, 1.0, 10.0]}
+    LOGIT_REGRESSION_L1 = {"C": [1.0, 0.1, 0.01, 0.001]}
+    LOGIT_REGRESSION_L2 = {"C": [1.0, 0.1, 0.01, 0.001]}
     LOGIT_REGRESSION_ELASTICNET = {"C": [0.1, 1.0, 10.0], "l1_ratio": [0.1, 0.5, 0.9]}
 
     PROBIT = {"method": ["newton", "bfgs", "lbfgs"], "disp": [False]}

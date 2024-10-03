@@ -3,10 +3,7 @@
 # Local imports here
 # pylint: enable=import-error,wrong-import-position
 import os
-
-import numpy as np
 import warnings
-
 from caf.ml.functions.data_pipeline_functions import process_data_pipeline
 from caf.ml.functions.model_algorithm_evaluation import eval_model
 
@@ -16,7 +13,7 @@ from caf.ml.inputs.cafml_inputs import CarAccessInputs
 from caf.ml.functions.process_data_class import DataProcessor
 from caf.ml.functions.feature_selection import feature_selection_cv, filter_data
 from caf.ml.functions.hyper_optim_gridsearch import select_param
-from caf.ml.functions.forecast_model_functions import predict, process_data_loaded_model, process_forecast_data, align_dataframes
+from caf.ml.functions.forecast_model_functions import predict_refined, process_data_loaded_model, process_forecast_data, align_dataframes
 from caf.ml.functions.save_model import save_model_and_parameters, load_model_and_parameters
 from caf.ml.functions.pre_forecast_data_analysis import pre_forecast_data_analysis, apply_transformations
 # todo add interpolation function from lvu to dataprocessor class
@@ -30,21 +27,11 @@ def main(params: CarAccessInputs):
 
 
 def process_saved_model(params):
-    (model,
-     hyperparameters,
-     trained_data,
-     transformations) = load_model_and_parameters(params.output_folder)
-
-    forecasted_data = saved_model_functions(params,
-                                            model,
-                                            hyperparameters,
-                                            trained_data,
-                                            transformations)
-
+    forecasted_data = saved_model_functions(params)
     return forecasted_data
 
 
-def saved_model_functions(params, model, hyperparameters, trained_data, transformations):
+def saved_model_functions(params):
     regression_method, hyperparameters, trained_data, transformations = load_model_and_parameters(
         params.output_folder)
 
@@ -70,30 +57,19 @@ def saved_model_functions(params, model, hyperparameters, trained_data, transfor
                                                              target_column=params.target_column,
                                                              numerical_features=params.numerical_features,
                                                              categorical_features=params.categorical_features,
-                                                             output_folder=params.output_folder)
+                                                             output_folder=params.output_folder,
+                                                             training_data=trained_data)
 
-    final_predict_data = align_dataframes(df1=trained_data, df2=predict_data_post_transformation)
+    final_predict_data = align_dataframes(df1=trained_data, df2=predict_data_post_transformation, output_folder=params.output_folder)
 
-    file_path = os.path.join(params.output_folder, 'Final_prediction_data.csv')
-    if os.path.exists(file_path):
-        print(
-            f"The file Final_prediction_data.csv already exists in {params.output_folder} and is being replaced.")
-    final_predict_data_path = os.path.join(params.output_folder, 'Final_prediction_data.csv')
-    final_predict_data.to_csv(final_predict_data_path, index=True)
-    print(f"Final prediction data saved to: {final_predict_data_path}")
 
-    forecasted_data = predict(params.single_year_prediction,
-                              trained_data=trained_data,
-                              predict_data=final_predict_data,
-                              trained_model=regression_method,
-                              target_column=params.target_column,
-                              output_folder=params.output_folder,
-                              FinalModelParameters=hyperparameters,
-                              index_col=params.index_columns,
-                              skip_hyperparameter_optimisation=params.skip_hyperparameter_optimisation,
-                              basic_model=params.basic_model,
-                              multiple_year_prediction=params.multiple_year_prediction,
-                              categorical_data=params.categorical_data)
+    forecasted_data, y_proba = predict_refined(trained_data=trained_data,
+                                              predict_data=final_predict_data,
+                                              trained_model=regression_method,
+                                              target_column=params.target_column,
+                                              output_folder=params.output_folder,
+                                              FinalModelParameters=hyperparameters,
+                                              index_col=params.index_columns)
 
     print(forecasted_data)
 
@@ -103,7 +79,8 @@ def saved_model_functions(params, model, hyperparameters, trained_data, transfor
                model=regression_method,
                target_column=params.target_column,
                output_folder=params.output_folder,
-               categorical_target=params.categorical_target)
+               categorical_target=params.categorical_target,
+               y_proba=y_proba)
 
     return forecasted_data
 
@@ -229,28 +206,24 @@ def process_skip_feature_selection(params, processed_data, transformations_, mod
     predict_data.to_csv(predict_data_path, index=True)
     print(f"Predict data post transformations saved to: {predict_data_path}")
 
-    forecasted_data = predict(params.single_year_prediction,
-                              trained_data=df_final_to_model,
-                              predict_data=final_predict_data,
-                              trained_model=model,
-                              target_column=params.target_column,
-                              output_folder=params.output_folder,
-                              FinalModelParameters=hyperparameters,
-                              index_col=params.index_columns,
-                              skip_hyperparameter_optimisation=params.skip_hyperparameter_optimisation,
-                              basic_model=params.basic_model,
-                              multiple_year_prediction=params.multiple_year_prediction,
-                              categorical_data=params.categorical_data)
+    forecasted_data, y_proba = predict_refined(trained_data=df_final_to_model,
+                                      predict_data=final_predict_data,
+                                      trained_model=model,
+                                      target_column=params.target_column,
+                                      output_folder=params.output_folder,
+                                      FinalModelParameters=hyperparameters,
+                                      index_col=params.index_columns)
 
     print(forecasted_data)
 
     eval_model(data_used_to_predict=final_predict_data,
                data_contains_truth_values_only=params.validation_data,
                model_predicted_data=forecasted_data,
-               model=model,
+               model=regression_method,
                target_column=params.target_column,
                output_folder=params.output_folder,
-               categorical_target=params.categorical_target)
+               categorical_target=params.categorical_target,
+               y_proba=y_proba)
 
     return forecasted_data
 
@@ -312,28 +285,24 @@ def process_skip_data_analysis(params, preprocessed_df, transformations_, model,
     predict_data.to_csv(predict_data_path, index=True)
     print(f"Predict data post transformations saved to: {predict_data_path}")
 
-    forecasted_data = predict(params.single_year_prediction,
-                              trained_data=df_final_to_model,
-                              predict_data=final_predict_data,
-                              trained_model=model,
-                              target_column=params.target_column,
-                              output_folder=params.output_folder,
-                              FinalModelParameters=hyperparameters,
-                              index_col=params.index_columns,
-                              skip_hyperparameter_optimisation=params.skip_hyperparameter_optimisation,
-                              basic_model=params.basic_model,
-                              multiple_year_prediction=params.multiple_year_prediction,
-                              categorical_data=params.categorical_data)
+    forecasted_data, y_proba = predict_refined(trained_data=df_final_to_model,
+                                      predict_data=final_predict_data,
+                                      trained_model=model,
+                                      target_column=params.target_column,
+                                      output_folder=params.output_folder,
+                                      FinalModelParameters=hyperparameters,
+                                      index_col=params.index_columns)
 
     print(forecasted_data)
 
     eval_model(data_used_to_predict=final_predict_data,
                data_contains_truth_values_only=params.validation_data,
                model_predicted_data=forecasted_data,
-               model=model,
+               model=regression_method,
                target_column=params.target_column,
                output_folder=params.output_folder,
-               categorical_target=params.categorical_target)
+               categorical_target=params.categorical_target,
+               y_proba=y_proba)
 
     return forecasted_data
 
@@ -398,28 +367,24 @@ def process_skip_hyperparameter_optimisation(params, preprocessed_df, transforma
     predict_data.to_csv(predict_data_path, index=True)
     print(f"Predict data post transformations saved to: {predict_data_path}")
 
-    forecasted_data = predict(params.single_year_prediction,
-                              trained_data=df_final_to_model,
-                              predict_data=final_predict_data,
-                              trained_model=model,
-                              target_column=params.target_column,
-                              output_folder=params.output_folder,
-                              FinalModelParameters=None,
-                              index_col=params.index_columns,
-                              skip_hyperparameter_optimisation=params.skip_hyperparameter_optimisation,
-                              basic_model=params.basic_model,
-                              multiple_year_prediction=params.multiple_year_prediction,
-                              categorical_data=params.categorical_data)
+    forecasted_data, y_proba = predict_refined(trained_data=df_final_to_model,
+                                      predict_data=final_predict_data,
+                                      trained_model=model,
+                                      target_column=params.target_column,
+                                      output_folder=params.output_folder,
+                                      FinalModelParameters=None,
+                                      index_col=params.index_columns)
 
     print(forecasted_data)
 
     eval_model(data_used_to_predict=final_predict_data,
                data_contains_truth_values_only=params.validation_data,
                model_predicted_data=forecasted_data,
-               model=model,
+               model=regression_method,
                target_column=params.target_column,
                output_folder=params.output_folder,
-               categorical_target=params.categorical_target)
+               categorical_target=params.categorical_target,
+               y_proba=y_proba)
 
 
     return forecasted_data
@@ -450,28 +415,25 @@ def process_basic_model(params, preprocessed_df, transformations_, model):
     dat = align_dataframes(df1=preprocessed_df, df2=predict_data)
     print(type(dat))
 
-    forecasted_data = predict(params.single_year_prediction,
-                              trained_data=preprocessed_df,
-                              predict_data=dat,
-                              trained_model=model,
-                              target_column=params.target_column,
-                              output_folder=params.output_folder,
-                              FinalModelParameters=None,
-                              index_col=params.index_columns,
-                              skip_hyperparameter_optimisation=params.skip_hyperparameter_optimisation,
-                              basic_model=params.basic_model,
-                              multiple_year_prediction=params.multiple_year_prediction,
-                              categorical_data=params.categorical_data
-                              )
+    forecasted_data, y_proba = predict_refined(trained_data=preprocessed_df,
+                                      predict_data=dat,
+                                      trained_model=model,
+                                      target_column=params.target_column,
+                                      output_folder=params.output_folder,
+                                      FinalModelParameters=None,
+                                      index_col=params.index_columns)
+
 
     print(forecasted_data)
 
-    eval_model(data_used_to_predict=dat,
+    eval_model(data_used_to_predict=final_predict_data,
                data_contains_truth_values_only=params.validation_data,
                model_predicted_data=forecasted_data,
-               model=model,
+               model=regression_method,
                target_column=params.target_column,
-               output_folder=params.output_folder)
+               output_folder=params.output_folder,
+               categorical_target=params.categorical_target,
+               y_proba=y_proba)
 
     return forecasted_data
 
@@ -503,7 +465,8 @@ def process_regular_model(params, preprocessed_df, transformations_, model,
                                                                     index_col=params.index_columns,
                                                                     categorical_data=params.categorical_data,
                                                                     categorical_features=params.categorical_features,
-                                                                    categorical_transformations=transformations_)
+                                                                    categorical_transformations=transformations_,
+                                                                    features_to_transform=params.features_to_transform)
 
     ## HYPERPARAMETER OPTIMISATION ##
     hyperparameters = select_param(data=df_final_to_model,
@@ -535,26 +498,21 @@ def process_regular_model(params, preprocessed_df, transformations_, model,
                                 target_column=params.target_column,
                                 numerical_features=params.numerical_features,
                                 categorical_features=params.categorical_features,
-                                output_folder=params.output_folder)
+                                output_folder=params.output_folder,
+                                training_data=df_final_to_model,
+                                features_to_transform=params.features_to_transform)
 
-    final_predict_data = align_dataframes(df1=df_final_to_model, df2=dat)
+    final_predict_data = align_dataframes(df1=df_final_to_model, df2=dat, output_folder=params.output_folder)
 
-    predict_data_path = os.path.join(params.output_folder, 'Final_prediction_data.csv')
-    predict_data.to_csv(predict_data_path, index=True)
-    print(f"Predict data post transformations saved to: {predict_data_path}")
 
-    forecasted_data = predict(params.single_year_prediction,
-                              trained_data=df_final_to_model,
-                              predict_data=final_predict_data,
-                              trained_model=model,
-                              target_column=params.target_column,
-                              output_folder=params.output_folder,
-                              FinalModelParameters=hyperparameters,
-                              index_col=params.index_columns,
-                              skip_hyperparameter_optimisation=params.skip_hyperparameter_optimisation,
-                              basic_model=params.basic_model,
-                              multiple_year_prediction=params.multiple_year_prediction,
-                              categorical_data=params.categorical_data)
+    forecasted_data, y_proba = predict_refined(trained_data=df_final_to_model,
+                                      predict_data=final_predict_data,
+                                      trained_model=model,
+                                      target_column=params.target_column,
+                                      output_folder=params.output_folder,
+                                      FinalModelParameters=hyperparameters,
+                                      index_col=params.index_columns)
+
 
     print(forecasted_data)
 
@@ -564,7 +522,8 @@ def process_regular_model(params, preprocessed_df, transformations_, model,
                model=model,
                target_column=params.target_column,
                output_folder=params.output_folder,
-               categorical_target=params.categorical_target)
+               categorical_target=params.categorical_target,
+               y_proba=y_proba)
 
     return forecasted_data
 

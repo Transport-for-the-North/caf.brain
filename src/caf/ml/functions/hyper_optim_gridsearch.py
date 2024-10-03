@@ -103,12 +103,18 @@ def select_param(data,
         print(best_params)
         print('CV results:')
         print(random_search.cv_results_)
+        print('---------------------------------')
+        print('hyperparameter optimisation is finished')
+        print('---------------------------------')
         return best_params
 
 
 
     if categorical_data is not None:
         if model_name in ['LOGIT_REGRESSION_L1', 'LOGIT_REGRESSION_L2', 'LOGIT_REGRESSION_ELASTICNET', 'MULTINOMIAL']:
+            print('---------------------------------')
+            print('Categorical hyperparameter optimisation starting')
+            print('---------------------------------')
             if model_name == 'LOGIT_REGRESSION_L1':
                 model_instance = LogisticRegression(penalty='l1', solver='saga')
             elif model_name == 'LOGIT_REGRESSION_L2':

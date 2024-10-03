@@ -47,6 +47,17 @@ def preprocess_categorical_data(df, categorical_features):
 
 
 def process_data_pipeline(df, numerical_features, categorical_features, target_column, output_folder):
+    print('----------------------------------------------')
+    print('Process data pipeline starting')
+    print('----------------------------------------------')
+
+    def save_df(df_to_save, path):
+        # is the index is meaningful
+        if isinstance(df_to_save.index, pd.RangeIndex):
+            df_to_save.to_csv(path, index=False)
+        else:
+            df_to_save.to_csv(path, index=True)
+
 
     transformations_ = []
     numerical_df = None
@@ -74,7 +85,7 @@ def process_data_pipeline(df, numerical_features, categorical_features, target_c
         transformations_.append(('Scaling and encoding', None))
 
         if not os.path.exists(output_path):
-            numerical_df.to_csv(output_path, index=True)
+            save_df(numerical_df, output_path)
             print('-------------------------------------------------------------')
             print(f"Encoded and scaled exported to: {output_path}")
 
@@ -93,7 +104,7 @@ def process_data_pipeline(df, numerical_features, categorical_features, target_c
         transformations_.append(('Scaling and encoding', None))
 
         if not os.path.exists(output_path):
-            categorical_df.to_csv(output_path, index=True)
+            save_df(categorical_df, output_path)
             print('-------------------------------------------------------------')
             print(f"Encoded and scaled exported to: {output_path}")
 
@@ -114,7 +125,7 @@ def process_data_pipeline(df, numerical_features, categorical_features, target_c
         preprocessed_df[target_column] = y
 
     if not os.path.exists(output_path):
-        preprocessed_df.to_csv(output_path, index=True)
+        save_df(preprocessed_df, output_path)
         print('-------------------------------------------------------------')
         print(f"Encoded and scaled exported to: {output_path}")
 
@@ -123,5 +134,8 @@ def process_data_pipeline(df, numerical_features, categorical_features, target_c
     print("Encoded_and_scaled_data:")
     print(preprocessed_df.shape)
     print(preprocessed_df)
+    print('----------------------------------------------')
+    print('Process data pipeline ended')
+    print('----------------------------------------------')
 
     return preprocessed_df, transformations_

@@ -16,10 +16,12 @@ from sklearn.decomposition import PCA
 from sklearn.ensemble import (RandomForestRegressor, ExtraTreesRegressor,
                               GradientBoostingRegressor, AdaBoostRegressor,
                               BaggingRegressor)
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import Ridge, Lasso, ElasticNet, LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neural_network import MLPRegressor
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, PolynomialFeatures
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 from statsmodels.regression.linear_model import OLS, WLS
@@ -27,6 +29,7 @@ from statsmodels.stats.diagnostic import linear_rainbow, het_breuschpagan, het_w
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tools import add_constant
+from sklearn.linear_model import LogisticRegression
 
 from caf.ml.functions.data_pipeline_functions import preprocess_categorical_data, \
     preprocess_numerical_data, process_data_pipeline
@@ -44,7 +47,8 @@ def pre_forecast_data_analysis(data,
                                index_col,
                                categorical_data,
                                categorical_features,
-                               categorical_transformations):
+                               categorical_transformations,
+                               features_to_transform):
     alpha = 0.05
     x_ = data.drop(columns=[target_column])
     y = data[target_column]
@@ -54,42 +58,33 @@ def pre_forecast_data_analysis(data,
 
     if categorical_transformations is not None:
         transformations.extend(categorical_transformations)
-
-    if regression_method in [Models.LOGIT_REGRESSION_L1, Models.LOGIT_REGRESSION_L2,
-                             Models.LOGIT_REGRESSION_ELASTICNET, Models.MULTINOMIAL, Models.PROBIT]:
+    if isinstance(regression_method, (LogisticRegression, ElasticNet)):
         print('-------------------------------------------------')
         print('Assessing assumptions for logistic/multinomial/probit regression')
 
-        x = pd.get_dummies(x_, columns=categorical_features, drop_first=True)
-        model_fit = regression_method.fit()
-        X_with_const = add_constant(x)
+        # Fit the model
+        model_fit = regression_method.fit(x_, y)
+        y_pred = model_fit.predict(x_)
+        y = pd.to_numeric(y, errors='coerce')
+        y_pred = pd.to_numeric(y_pred, errors='coerce')
+        residuals = y - y_pred
 
-        # Use statsmodels model for assumption checks
-        if regression_method == Models.PROBIT:
-            residuals = model_fit.resid
-            exog = model_fit.model.exog
-        else:
-            residuals = y - regression_method.predict(X_with_const)
-            exog = X_with_const
+        if isinstance(regression_method, LogisticRegression):
+            y_pred_proba = model_fit.predict_proba(x_)[:, 1]
 
         # Linearity
         print('Checking linearity')
-        for col in x.columns:
-            logit = np.log((y.value_counts()[1] + 1e-5) / (y.value_counts()[0] + 1e-5))
-            linearity_check = pd.DataFrame({
-                'x': x[col],
-                'logit': logit
-            })
-            linearity_check = linearity_check.groupby('x').mean()
-            if not linearity_check.corr().iloc[0, 1] > 0.9:
-                print(f"Warning: {col} may not be linearly related to the logit.")
+        for col in x_.columns:
+            correlation = np.corrcoef(x_[col], residuals)[0, 1]
+            if abs(correlation) > 0.1:
+                print(f"Warning: {col} may not be linearly related to the target.")
                 any_issue_present = True
 
-        # Multicollinearity
+        # multicolinearity
         print('Checking for multicollinearity')
         vif_data = pd.DataFrame()
-        vif_data["Feature"] = x.columns
-        vif_data["VIF"] = [variance_inflation_factor(x.values, i) for i in range(x.shape[1])]
+        vif_data["Feature"] = x_.columns
+        vif_data["VIF"] = [variance_inflation_factor(x_.values, i) for i in range(x_.shape[1])]
         high_vif = vif_data[vif_data["VIF"] > threshold]
         if not high_vif.empty:
             print("High VIF variables:")
@@ -105,14 +100,16 @@ def pre_forecast_data_analysis(data,
 
         # Heteroscedasticity
         print('Checking for heteroscedasticity')
-        bp_test_statistic, bp_test_p_value, _, _ = het_breuschpagan(residuals, exog)
+        X_with_const = add_constant(x_)
+        bp_test_statistic, bp_test_p_value, _, _ = het_breuschpagan(residuals, X_with_const)
         print(f"Breusch-Pagan test p-value: {bp_test_p_value}")
         if bp_test_p_value < alpha:
             print("Warning: Breusch-Pagan test suggests heteroscedasticity.")
             any_issue_present = True
 
-    if regression_method in [Models.RIDGE, Models.LASSO, Models.ELASTICNET,
-                             Models.LINEAR_REGRESSION, Models.SVR]:
+        print(f'Any issue present: {any_issue_present}')
+    if isinstance(regression_method, (Ridge, Lasso, ElasticNet, LinearRegression, SVR)):
+
         print('-------------------------------------------------')
         print('Assessing linearity, normality and heteroscedasticity')
         # Convert scikit-learn model to statsmodels OLS equivalent
@@ -164,18 +161,38 @@ def pre_forecast_data_analysis(data,
         pass
 
     if any_issue_present and categorical_data is not None:
-        transformed_data = x_.applymap(lambda x: np.log(x + 1))
+        transformed_data = x_.map(lambda x: np.log(x + 1))
         transformations.append(('log', None))
 
+        ##experimental functions##
+        df_final_to_model, transformations = experimental_functions(data=transformed_data,
+                                                                    categorical_transformations=transformations,
+                                                                    features_to_interact=x_.columns,
+                                                                    features_to_transform=features_to_transform)
+
+
+        numerical_pipeline = Pipeline([
+            ('imputer', SimpleImputer(strategy='median')),
+            ('scaler', StandardScaler())
+        ])
+        numerical_data = numerical_pipeline.fit_transform(df_final_to_model)
+        transformations.append(('scaling', None))
+
         pca = PCA()
-        dataframe = pca.fit_transform(transformed_data)
+        dataframe = pca.fit_transform(numerical_data)
+        print('DEBUG @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+        print(dataframe)
+        print(dataframe.shape)
         transformations.append(('PCA', pca))
 
 
         dataframe = pd.DataFrame(dataframe, columns=x_.columns, index=data.index)
 
         dataframe_final = pd.concat([dataframe, y], axis=1)
-
+        print('DEBUG 2 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+        print(dataframe_final)
+        print(dataframe_final.shape)
+        print(dataframe_final.columns)
         if output_folder is not None:
             output_filename = 'Final_data_ready_to_model.csv'
             output_path = os.path.join(output_folder, output_filename)
@@ -185,6 +202,7 @@ def pre_forecast_data_analysis(data,
         print("Final_data_ready_to_model:")
         print(dataframe_final.shape)
         print(dataframe_final)
+        print(dataframe_final.columns)
 
         return dataframe_final, transformations
 
@@ -231,7 +249,7 @@ def pre_forecast_data_analysis(data,
         print("Final_data_ready_to_model:")
         print(dataframe.shape)
         print(dataframe)
-
+        print(dataframe.columns)
         return dataframe, transformations
 
     dataframe, transformations_done = assess_multicolinearity(dataframe=data,
@@ -255,6 +273,7 @@ def pre_forecast_data_analysis(data,
     print("Final_data_ready_to_model:")
     print(dataframe.shape)
     print(dataframe)
+    print(dataframe.columns)
 
     return dataframe, transformations
 
@@ -343,11 +362,15 @@ def assess_multicolinearity(dataframe,
     return dataframe, transformations_done
 
 
-def apply_transformations(predict_data, transformations, target_column, numerical_features, categorical_features, output_folder):
+def apply_transformations(predict_data, transformations,
+                          target_column, numerical_features,
+                          categorical_features, output_folder,
+                          training_data, features_to_transform):
 
     transformed_data = predict_data.copy()
     columns_changed = False
     new_columns = predict_data.columns.values
+    # transformed_data['car'] = 0
 
     for transform_name, transform_obj in transformations:
         if transform_name == 'Scaling and encoding':
@@ -360,14 +383,32 @@ def apply_transformations(predict_data, transformations, target_column, numerica
                 transformed_data = transformed_data[0]
             columns_changed = True
             new_columns = transformed_data.columns.values
+            print(transformed_data.columns)
         elif transform_name == 'log':
             transformed_data = transformed_data.apply(lambda x: np.log(x + 1))
 
+
+        elif transform_name == 'interaction_terms_and_poly_features':
+            transformed_data, _ = experimental_functions(data=transformed_data,
+                                                         categorical_transformations=transformations,
+                                                         features_to_interact=transformed_data.columns,
+                                                         features_to_transform=features_to_transform)
+
         elif transform_name == 'scaling':
-            scaler = transform_obj
-            transformed_data = scaler.transform(transformed_data)
+            # scaler = transform_obj
+            numerical_pipeline = Pipeline([
+                ('imputer', SimpleImputer(strategy='median')),
+                ('scaler', StandardScaler())
+            ])
+            scaled_data = numerical_pipeline.fit_transform(transformed_data)
+            transformed_data = pd.DataFrame(scaled_data, columns=transformed_data.columns, index=transformed_data.index)
+
+            # transformed_data = scaler.transform(transformed_data)
 
         elif transform_name == 'PCA':
+            print(training_data.columns)
+            training_data = training_data.drop(columns=target_column)
+            transformed_data = transformed_data[training_data.columns]
             pca = transform_obj
             transformed_data = pca.transform(transformed_data)
 
@@ -383,9 +424,44 @@ def apply_transformations(predict_data, transformations, target_column, numerica
         raise ValueError('Transformation application failed')
 
     final_predict_data = data.astype(float)
-
     print("Predict_data_post_transformations:")
-    print(final_predict_data.shape)
     print(final_predict_data)
-
     return final_predict_data
+
+
+
+
+def experimental_functions(data, categorical_transformations, features_to_interact, features_to_transform):
+    transformations = []
+    transformations.extend(categorical_transformations)
+
+    if isinstance(features_to_interact, pd.Index):
+        features_to_interact = list(features_to_interact)
+
+    interaction_terms = {}
+    for i, f1 in enumerate(features_to_interact):
+        for f2 in features_to_interact[i + 1:]:
+            interaction_terms[f'{f1}_{f2}_interaction'] = data[f1] * data[f2]
+
+    interaction_df = pd.DataFrame(interaction_terms)
+    final_df = pd.concat([data, interaction_df], axis=1)
+
+
+    if features_to_transform is None or len(features_to_transform) == 0:
+        features_to_transform = data.columns.tolist()
+
+    poly = PolynomialFeatures(degree=2, include_bias=False, interaction_only=True)
+    if len(features_to_transform) > 10:  # Arbitrary threshold, adjust as needed
+        features_to_transform = features_to_transform[:10]
+    poly_features = poly.fit_transform(final_df[features_to_transform])
+    feature_names = poly.get_feature_names_out(features_to_transform)
+
+    poly_df = pd.DataFrame(poly_features, columns=feature_names, index=final_df.index)
+    final_df = pd.concat([final_df, poly_df], axis=1)
+
+    transformations.append(('interaction_terms_and_poly_features', None))
+
+
+    print(f'Experimental function results: {final_df.shape}')
+
+    return final_df, transformations

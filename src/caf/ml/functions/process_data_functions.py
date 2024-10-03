@@ -59,7 +59,7 @@ def process_data_numeric(data, keep_columns=None, target_column=None, output_fol
 
     data = data.apply(pd.to_numeric, errors='coerce')
 
-    non_numeric_columns = data.columns[~data.applymap(np.isreal).all()]
+    non_numeric_columns = data.columns[~data.map(np.isreal).all()]
 
     keep_columns = keep_columns or set()
 
@@ -209,7 +209,7 @@ def handle_nans_and_duplicates(dataframe: pd.DataFrame, target_column=None, outp
 
 
 def function_remove_spaces(df: pd.DataFrame):
-    df = df.applymap(lambda x: str(x).replace(' ', ''))
+    df = df.map(lambda x: str(x).replace(' ', ''))
     return df
 
 

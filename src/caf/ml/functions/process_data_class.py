@@ -35,7 +35,9 @@ class DataProcessor:
                  categorical_target,
                  column_name_to_drop_rows,
                  value_in_row):
+        print('----------------------------------------------')
         print('Data Processor is running')
+        print('----------------------------------------------')
         final_data = None
         if x is not None and wide_format is None:
             x_ = pd.read_csv(x, low_memory=False)
@@ -115,6 +117,10 @@ class DataProcessor:
         self.print_final_data_info()
         self.output_folder = output_folder
         self.output_processed_data()
+        print('----------------------------------------------')
+        print('Data Processor is finished')
+        print('----------------------------------------------')
+
 
     def find_numeric_target_column(self):
         return find_numeric_target_column(self.data, target_column=self.target_column, categorical_target=self.categorical_target)
@@ -145,15 +151,4 @@ class DataProcessor:
         print('-------------------------------------------------------------')
         print(f"Tidy and processed data exported to: {output_path}")
 
-
-
-
-'''
-        self.data = self.process_data_numeric()
-
-
-    def process_data_numeric(self):
-        return process_data_numeric(self.data, keep_columns=self.keep_columns)
-
-'''
 

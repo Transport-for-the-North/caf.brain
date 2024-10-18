@@ -107,39 +107,6 @@ def eval_model(data_used_to_predict,
 
         stats_df = simple_logistic_regression_stats(model, data_used_to_predict, output_folder, target_column, model_predicted_data, y_proba)
 
-        # ROC Curve
-        if 'fpr' in locals() and 'tpr' in locals():
-            plt.figure(figsize=(8, 6))
-            plt.plot(fpr, tpr, label=f'ROC Curve (AUC = {roc_auc:.2f})')
-            plt.plot([0, 1], [0, 1], linestyle='--', label='Random Classifier')
-            plt.xlabel('False Positive Rate')
-            plt.ylabel('True Positive Rate')
-            plt.title('Receiver Operating Characteristic (ROC) Curve')
-            plt.legend()
-            plt.savefig(os.path.join(output_folder, 'roc_curve.png'))
-            plt.close()
-
-        # Precision-Recall Curve
-        if 'precision_curve' in locals() and 'recall_curve' in locals():
-            plt.figure(figsize=(8, 6))
-            plt.plot(recall_curve, precision_curve, label=f'PR Curve (AUC = {pr_auc:.2f})')
-            plt.xlabel('Recall')
-            plt.ylabel('Precision')
-            plt.title('Precision-Recall Curve')
-            plt.legend()
-            plt.savefig(os.path.join(output_folder, 'precision_recall_curve.png'))
-            plt.close()
-
-        # Calibration Curve
-        if 'prob_true' in locals() and 'prob_pred' in locals():
-            plt.figure(figsize=(8, 6))
-            plt.plot(prob_pred, prob_true, marker='o')
-            plt.plot([0, 1], [0, 1], linestyle='--')
-            plt.xlabel('Mean Predicted Probability')
-            plt.ylabel('Fraction of Positives')
-            plt.title('Calibration Curve')
-            plt.savefig(os.path.join(output_folder, 'calibration_curve.png'))
-            plt.close()
 
         # Feature Importance
         if hasattr(model, "feature_importances_"):
@@ -283,18 +250,14 @@ def calculate_non_categorical_model_stats(model, data_used_to_predict, target_co
 def simple_logistic_regression_stats(model, data_used_to_predict, output_folder, target_column, model_predicted_data, y_proba):
     X = data_used_to_predict
     pred = model_predicted_data
-    print('debug coef @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-    print('x:')
-    print(X)
-    print('predicted:')
-    print(pred)
+
     if not isinstance(model, LogisticRegression):
         raise ValueError("Model must be an instance of LogisticRegression")
 
     feature_names = X.columns.tolist()
     results = []
 
-    # For binary classification, we only have one set of coefficients
+    # binary classification, one set of coefficients
     coef = model.coef_[0]
     intercept = model.intercept_[0]
 
@@ -322,7 +285,7 @@ def simple_logistic_regression_stats(model, data_used_to_predict, output_folder,
             'Coefficient': round(coef_value, 5),
             'Std_Error': round(std_err, 5),
             'Z_Score': round(z_score, 5),
-            'P_Value': round(p_value, 5),
+            'P_Value': round(p_value, 10),
             'Odds_Ratio': round(np.exp(coef_value), 5)
         })
 

@@ -85,7 +85,6 @@ def align_dataframes(df1, df2, output_folder):
     common_columns = df1.columns.intersection(df2.columns)
     aligned_df2 = df2[common_columns]
 
-    print('_________________________________________________________________')
     print("final_predict_data:")
     print(aligned_df2.shape)
     print(aligned_df2)

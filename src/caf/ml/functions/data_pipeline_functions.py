@@ -47,9 +47,6 @@ def preprocess_categorical_data(df, categorical_features):
 
 
 def process_data_pipeline(df, numerical_features, categorical_features, target_column, output_folder):
-    print('----------------------------------------------')
-    print('Process data pipeline starting')
-    print('----------------------------------------------')
 
     def save_df(df_to_save, path):
         # is the index is meaningful
@@ -134,8 +131,6 @@ def process_data_pipeline(df, numerical_features, categorical_features, target_c
     print("Encoded_and_scaled_data:")
     print(preprocessed_df.shape)
     print(preprocessed_df)
-    print('----------------------------------------------')
-    print('Process data pipeline ended')
-    print('----------------------------------------------')
+
 
     return preprocessed_df, transformations_

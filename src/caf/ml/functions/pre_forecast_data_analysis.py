@@ -8,32 +8,23 @@ Original author: Adil Zaheer
 import os
 import numpy as np
 import pandas as pd
-import scipy.stats as stats
-from scipy.special import boxcox
+
 from scipy.stats import shapiro
-from sklearn.compose import ColumnTransformer
 from sklearn.decomposition import PCA
-from sklearn.ensemble import (RandomForestRegressor, ExtraTreesRegressor,
-                              GradientBoostingRegressor, AdaBoostRegressor,
-                              BaggingRegressor)
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import Ridge, Lasso, ElasticNet, LinearRegression
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.neural_network import MLPRegressor
+
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, OneHotEncoder, PolynomialFeatures
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.svm import SVR
-from sklearn.tree import DecisionTreeRegressor
-from statsmodels.regression.linear_model import OLS, WLS
+from statsmodels.regression.linear_model import OLS
 from statsmodels.stats.diagnostic import linear_rainbow, het_breuschpagan, het_white
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tools import add_constant
 from sklearn.linear_model import LogisticRegression
 
-from caf.ml.functions.data_pipeline_functions import preprocess_categorical_data, \
-    preprocess_numerical_data, process_data_pipeline
-from caf.ml.functions.feature_selection import identify_feature_types
+from caf.ml.functions.data_pipeline_functions import  process_data_pipeline
 from caf.ml.functions.process_data_functions import convert_to_dataframe
 from caf.ml.inputs.cafml_inputs import Models
 
@@ -49,6 +40,7 @@ def pre_forecast_data_analysis(data,
                                categorical_features,
                                categorical_transformations,
                                features_to_transform):
+    print(regression_method)
     alpha = 0.05
     x_ = data.drop(columns=[target_column])
     y = data[target_column]
@@ -149,17 +141,6 @@ def pre_forecast_data_analysis(data,
             any_issue_present = True
 
 
-    if regression_method in [Models.RANDOM_FOREST, Models.EXTRA_TREES,
-                             Models.GRADIENT_BOOSTING, Models.ADABOOST,
-                             Models.BAGGING, Models.DECISION_TREE]:
-        pass
-
-    if regression_method in [Models.KNN]:
-        pass
-
-    if regression_method in [Models.NEURAL_NETWORK]:
-        pass
-
     if any_issue_present and categorical_data is not None:
         transformed_data = x_.map(lambda x: np.log(x + 1))
         transformations.append(('log', None))
@@ -168,7 +149,8 @@ def pre_forecast_data_analysis(data,
         df_final_to_model, transformations = experimental_functions(data=transformed_data,
                                                                     categorical_transformations=transformations,
                                                                     features_to_interact=x_.columns,
-                                                                    features_to_transform=features_to_transform)
+                                                                    features_to_transform=features_to_transform,
+                                                                    output_folder=output_folder)
 
 
         numerical_pipeline = Pipeline([
@@ -180,26 +162,23 @@ def pre_forecast_data_analysis(data,
 
         pca = PCA()
         dataframe = pca.fit_transform(numerical_data)
-        print('DEBUG @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-        print(dataframe)
-        print(dataframe.shape)
         transformations.append(('PCA', pca))
 
 
-        dataframe = pd.DataFrame(dataframe, columns=x_.columns, index=data.index)
+        # dataframe = pd.DataFrame(dataframe, index=data.index)
+        dataframe = pd.DataFrame(dataframe, columns=df_final_to_model.columns, index=data.index)
 
         dataframe_final = pd.concat([dataframe, y], axis=1)
-        print('DEBUG 2 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
         print(dataframe_final)
         print(dataframe_final.shape)
         print(dataframe_final.columns)
         if output_folder is not None:
-            output_filename = 'Final_data_ready_to_model.csv'
+            output_filename = 'data_analysis_dataframe.csv'
             output_path = os.path.join(output_folder, output_filename)
             dataframe_final.to_csv(output_path, index=True)
-            print(f"Final data to model exported to: {output_path}")
+            print(f"data_analysis_dataframe: {output_path}")
 
-        print("Final_data_ready_to_model:")
+        print("data_analysis_dataframe:")
         print(dataframe_final.shape)
         print(dataframe_final)
         print(dataframe_final.columns)
@@ -210,12 +189,12 @@ def pre_forecast_data_analysis(data,
     elif not any_issue_present and categorical_data is not None:
 
         if output_folder is not None:
-            output_filename = 'Final_data_ready_to_model.csv'
+            output_filename = 'data_analysis_dataframe.csv'
             output_path = os.path.join(output_folder, output_filename)
             data.to_csv(output_path, index=True)
-            print(f"Final data to model exported to: {output_path}")
+            print(f"data_analysis_dataframe: {output_path}")
 
-        print("Final_data_ready_to_model:")
+        print("data_analysis_dataframe:")
         print(data.shape)
         print(data)
 
@@ -241,12 +220,12 @@ def pre_forecast_data_analysis(data,
         dataframe = dataframe.astype(float)
 
         if output_folder is not None:
-            output_filename = 'Final_data_ready_to_model.csv'
+            output_filename = 'data_analysis_dataframe.csv'
             output_path = os.path.join(output_folder, output_filename)
             dataframe.to_csv(output_path, index=True)
-            print(f"Final data to model exported to: {output_path}")
+            print(f"data_analysis_dataframe: {output_path}")
 
-        print("Final_data_ready_to_model:")
+        print("data_analysis_dataframe:")
         print(dataframe.shape)
         print(dataframe)
         print(dataframe.columns)
@@ -265,12 +244,12 @@ def pre_forecast_data_analysis(data,
     dataframe = dataframe.astype(float)
 
     if output_folder is not None:
-        output_filename = 'Final_data_ready_to_model.csv'
+        output_filename = 'data_analysis_dataframe.csv'
         output_path = os.path.join(output_folder, output_filename)
         dataframe.to_csv(output_path, index=True)
-        print(f"Final data ready to model exported to: {output_path}")
+        print(f"data_analysis_dataframe: {output_path}")
 
-    print("Final_data_ready_to_model:")
+    print("data_analysis_dataframe:")
     print(dataframe.shape)
     print(dataframe)
     print(dataframe.columns)
@@ -392,7 +371,8 @@ def apply_transformations(predict_data, transformations,
             transformed_data, _ = experimental_functions(data=transformed_data,
                                                          categorical_transformations=transformations,
                                                          features_to_interact=transformed_data.columns,
-                                                         features_to_transform=features_to_transform)
+                                                         features_to_transform=features_to_transform,
+                                                         output_folder=output_folder)
 
         elif transform_name == 'scaling':
             # scaler = transform_obj
@@ -430,8 +410,7 @@ def apply_transformations(predict_data, transformations,
 
 
 
-
-def experimental_functions(data, categorical_transformations, features_to_interact, features_to_transform):
+def experimental_functions(data, categorical_transformations, features_to_interact, features_to_transform, output_folder):
     transformations = []
     transformations.extend(categorical_transformations)
 
@@ -454,14 +433,28 @@ def experimental_functions(data, categorical_transformations, features_to_intera
     if len(features_to_transform) > 10:  # Arbitrary threshold, adjust as needed
         features_to_transform = features_to_transform[:10]
     poly_features = poly.fit_transform(final_df[features_to_transform])
-    feature_names = poly.get_feature_names_out(features_to_transform)
+    # feature_names = poly.get_feature_names_out(features_to_transform)
+
+    feature_names = []
+    for feature_indices, _ in zip(poly.powers_, poly_features.T):
+        feature_name = ' * '.join(
+            [features_to_transform[i] for i, p in enumerate(feature_indices) if p > 0])
+        feature_names.append(feature_name)
 
     poly_df = pd.DataFrame(poly_features, columns=feature_names, index=final_df.index)
+
+    for col in poly_df.columns:
+        if col in final_df.columns:
+            poly_df = poly_df.rename(columns={col: f'poly_{col}'})
+
     final_df = pd.concat([final_df, poly_df], axis=1)
 
     transformations.append(('interaction_terms_and_poly_features', None))
 
 
+    output_filename = 'experimental_function_results.csv'
+    output_path = os.path.join(output_folder, output_filename)
+    final_df.to_csv(output_path, index=True)
     print(f'Experimental function results: {final_df.shape}')
 
     return final_df, transformations

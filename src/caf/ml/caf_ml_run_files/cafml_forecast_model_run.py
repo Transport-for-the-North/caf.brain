@@ -6,10 +6,11 @@ import os
 import warnings
 from caf.ml.functions.data_pipeline_functions import process_data_pipeline
 from caf.ml.functions.model_algorithm_evaluation import eval_model
+from caf.ml.functions.NorCom_caf_ml.norcom_specific_functions import norcom_run_functions
+from caf.ml.inputs.cafml_inputs import CarAccessInputs
 
 warnings.filterwarnings("ignore")
 
-from caf.ml.inputs.cafml_inputs import CarAccessInputs
 from caf.ml.functions.process_data_class import DataProcessor
 from caf.ml.functions.feature_selection import feature_selection_cv, filter_data
 from caf.ml.functions.hyper_optim_gridsearch import select_param
@@ -112,22 +113,33 @@ def process_prediction(params):
                                                               target_column=params.target_column,
                                                               output_folder=params.output_folder)
 
-    (selected_features_model,
-     selected_f_regressor,
-     selected_rfe,
-     selected_sfs,
-     selected_mutual_info,
-     model) = feature_selection_cv(data=preprocessed_df,
-                                   model_type=params.model_type,
-                                   cv_method=params.cv_method,
-                                   splits=params.splits,
-                                   repeats=params.repeats,
-                                   target_column=params.target_column,
-                                   output_folder=params.output_folder,
-                                   skip_feature_selection=params.skip_feature_selection,
-                                   basic_model=params.basic_model,
-                                   multiple_year_prediction=params.multiple_year_prediction,
-                                   categorical_data=params.categorical_data)
+    if params.norcom_run is not None:
+        return process_regular_model(params,
+                                     preprocessed_df,
+                                     transformations_,
+                                     model=None,
+                                     selected_features_model=None,
+                                     selected_f_regressor=None,
+                                     selected_rfe=None,
+                                     selected_sfs=None,
+                                     selected_mutual_info=None)
+    else:
+        (selected_features_model,
+         selected_f_regressor,
+         selected_rfe,
+         selected_sfs,
+         selected_mutual_info,
+         model) = feature_selection_cv(data=preprocessed_df,
+                                       model_type=params.model_type,
+                                       cv_method=params.cv_method,
+                                       splits=params.splits,
+                                       repeats=params.repeats,
+                                       target_column=params.target_column,
+                                       output_folder=params.output_folder,
+                                       skip_feature_selection=params.skip_feature_selection,
+                                       basic_model=params.basic_model,
+                                       multiple_year_prediction=params.multiple_year_prediction,
+                                       categorical_data=params.categorical_data)
 
     if params.skip_feature_selection:
         return process_skip_feature_selection(params, preprocessed_df, transformations_, model)
@@ -444,6 +456,9 @@ def process_regular_model(params, preprocessed_df, transformations_, model,
                           selected_rfe,
                           selected_sfs,
                           selected_mutual_info):
+
+    if params.norcom_run is not None:
+        return norcom_run_functions(params, preprocessed_df=preprocessed_df, transformations_=transformations_)
 
     data = filter_data(original_data=preprocessed_df,
                        best_features_model=selected_features_model,

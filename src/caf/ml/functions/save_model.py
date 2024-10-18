@@ -59,10 +59,12 @@ def load_model_and_parameters(output_folder):
     hyperparameters_file_path = output_folder / 'hyperparameters.pkl'
     dataframe_file_path = output_folder / 'final_data_ready_to_model.csv'
     transformations_file_path = output_folder / 'transformations.pkl'
+    data_analysis_data_file_path = output_folder / 'data_analysis_dataframe.csv'
 
     regression_method = joblib.load(regression_method_file_path)
     df_final = pd.read_csv(dataframe_file_path)
-
+    data_analysis_data = pd.read_csv(data_analysis_data_file_path
+                                     )
     print(f"Model loaded from: {regression_method_file_path}")
     print(f"Parameters loaded from: {hyperparameters_file_path}")
     print(f"DataFrame loaded from: {dataframe_file_path}")
@@ -82,4 +84,4 @@ def load_model_and_parameters(output_folder):
         transformations = None
         print(f"Transformations file not found at: {transformations_file_path}")
 
-    return regression_method, parameters, df_final, transformations
+    return regression_method, parameters, df_final, transformations, data_analysis_data

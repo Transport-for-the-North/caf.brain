@@ -84,11 +84,9 @@ def process_data_numeric(data, keep_columns=None, target_column=None, output_fol
 
 ######### SET DATAFRAME STRUCTURE #########
 def index_sorter(df: pd.DataFrame, index_columns, drop_columns):
-    # index_columns treated as list
     if isinstance(index_columns, str):
         index_columns = [index_columns]
 
-    # Check if  index_columns are in the DataFrame
     for col in index_columns:
         if col not in df.columns:
             raise ValueError(f"Column '{col}' not found in DataFrame.")
@@ -96,8 +94,7 @@ def index_sorter(df: pd.DataFrame, index_columns, drop_columns):
 
     df_indexed = df.copy()
 
-    # Set cols as index
-    df_indexed.set_index(index_columns, inplace=True, verify_integrity=True)
+    df_indexed.set_index(index_columns, inplace=True, verify_integrity=False)
 
     if drop_columns:
         if drop_columns not in df_indexed.columns.values:

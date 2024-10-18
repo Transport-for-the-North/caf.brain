@@ -10,7 +10,6 @@ import statsmodels.api as sm
 
 
 
-import abc
 from pathlib import Path
 from caf.toolkit import BaseConfig
 from typing import Optional, List, Any, Union
@@ -100,7 +99,7 @@ class CarAccessInputs(BaseConfig):
 
     #experimantal functions
     features_to_transform: Optional[List[str]] = None
-
+    norcom_run: Optional[str] = None
 
 
 
@@ -264,3 +263,46 @@ class DefaultRegressionMethods(enum.Enum):
         "alpha": [0.1, 1.0, 10.0],
         "l1_ratio": [0.1, 0.5, 0.9]
     }
+
+
+class TensorFlowModelInputs(BaseConfig):
+    training_data: Optional[Path] = None
+    prediction_data: Optional[Path] = None
+    validation_data: Optional[Path] = None
+    output_folder: Optional[Path] = None
+    target_column: Optional[str] = None
+    index_columns: Optional[List[str]] = None
+    drop_columns: Optional[List[str]] = None
+    categorical_target: Optional[str] = None
+    column_name_to_drop_rows: Optional[List[str]] = None
+    value_in_row: Optional[List[Union[str, int, float]]] = None
+    numerical_features: Optional[List[str]] = None
+    categorical_features: Optional[List[str]] = None
+    simple_model: Optional[str] = None
+
+
+class NorCom_cafml_inputs(BaseConfig):
+    saved_model: Optional[str] = None
+    x_path: Optional[Path] = None
+    output_folder: Optional[Path] = None
+    predict_data: Optional[Path] = None
+    validation_data: Optional[Path] = None
+    categorical_data: Optional[str] = None
+    numerical_features: Optional[List[str]] = None
+    categorical_features: Optional[List[str]] = None
+    categorical_target: Optional[str] = None
+    index_columns: Optional[List[str]] = None
+    drop_columns: Optional[List[str]] = None
+    keep_columns: Optional[List[str]] = None
+    target_column: Optional[str] = None
+    model_type: Any  # abc.ABCMeta not supported by caf.toolkit currently
+    cv_method: Optional[str] = None
+    splits: Optional[str] = None
+    repeats: Optional[str] = None
+    single_year_prediction: Optional[str] = None
+    multiple_year_prediction: Optional[str] = None
+    index_columns_predict: Optional[List[str]] = None
+    drop_columns_predict: Optional[List[str]] = None
+    keep_columns_predict: Optional[List[str]] = None
+    column_name_to_drop_rows: Optional[List[str]] = None
+    value_in_row: Optional[List[Union[str, int, float]]] = None

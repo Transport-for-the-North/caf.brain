@@ -133,50 +133,24 @@ def feature_selection_cv(data,
 
             model.fit(X_train, y_train)
 
-            if isinstance(model, sm.Probit):
-                # Feature selection using mutual_info_classif
-                selected_f_regressor = SelectKBest(mutual_info_classif, k='all').fit(X_train_scaled, y_train)
-                X_train_f_regressor = selected_f_regressor.transform(X_train_scaled)
-                score_f_regressor = cross_val_score(model, X_train_f_regressor, y_train, scoring='f1', cv=cv).mean()
+            # RFECV for feature selection
+            rfecv = RFECV(estimator=model, step=1, cv=cv, scoring='accuracy')
+            selector = rfecv.fit(X_train, y_train)
+            X_train_rfe = selector.transform(X_train)
+            score_rfe = cross_val_score(model, X_train_rfe, y_train, scoring='accuracy', cv=cv).mean()
+            if score_rfe > best_score_rfe:
+                best_score_rfe = score_rfe
+                support_mask_rfe = selector.support_
+                best_features_rfe = X_train.columns[support_mask_rfe].to_list()
 
-                if score_f_regressor > best_score_f_regressor:
-                    best_score_f_regressor = score_f_regressor
-                    best_features_f_regressor = X_train.columns[selected_f_regressor.get_support()].tolist()
-
-                # Feature selection using RFE
-                selector_rfe = RFE(estimator=model, n_features_to_select=5, step=1)
-                selector_rfe.fit(X_train_scaled, y_train)
-                X_train_rfe = selector_rfe.transform(X_train_scaled)
-                score_rfe = cross_val_score(model, X_train_rfe, y_train, scoring='f1', cv=cv).mean()
-
-                if score_rfe > best_score_rfe:
-                    best_score_rfe = score_rfe
-                    best_features_rfe = X_train.columns[selector_rfe.support_].tolist()
-
-                if best_score_f_regressor != float('-inf'):
-                    print("Best score for mutual_info_classif:", best_score_f_regressor)
-                if best_score_rfe != float('-inf'):
-                    print("Best score for RFE:", best_score_rfe)
-
-            else:
-                # RFECV for feature selection
-                rfecv = RFECV(estimator=model, step=1, cv=cv, scoring='accuracy')
-                selector = rfecv.fit(X_train, y_train)
-                X_train_rfe = selector.transform(X_train)
-                score_rfe = cross_val_score(model, X_train_rfe, y_train, scoring='accuracy', cv=cv).mean()
-                if score_rfe > best_score_rfe:
-                    best_score_rfe = score_rfe
-                    support_mask_rfe = selector.support_
-                    best_features_rfe = X_train.columns[support_mask_rfe].to_list()
-
-                # Mutual Information for feature selection
-                selector_mi = SelectKBest(mutual_info_classif, k='all').fit(X_train, y_train)
-                X_selected_mi = selector_mi.transform(X_train)
-                score_f_regressor = cross_val_score(model, X_selected_mi, y_train, scoring='accuracy', cv=cv).mean()
-                if score_f_regressor > best_score_f_regressor:
-                    best_score_f_regressor = score_f_regressor
-                    support_mask_mi = selector_mi.get_support()
-                    best_features_f_regressor = X_train.columns[support_mask_mi].to_list()
+            # Mutual Information for feature selection
+            selector_mi = SelectKBest(mutual_info_classif, k='all').fit(X_train, y_train)
+            X_selected_mi = selector_mi.transform(X_train)
+            score_f_regressor = cross_val_score(model, X_selected_mi, y_train, scoring='accuracy', cv=cv).mean()
+            if score_f_regressor > best_score_f_regressor:
+                best_score_f_regressor = score_f_regressor
+                support_mask_mi = selector_mi.get_support()
+                best_features_f_regressor = X_train.columns[support_mask_mi].to_list()
 
 
         if best_score_model != float('-inf'):

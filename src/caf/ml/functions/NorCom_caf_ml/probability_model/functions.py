@@ -121,7 +121,7 @@ def refined_data_processor_function(df,
     return final_data
 
 
-def encode_and_sort(df, target_column, output_folder, categorical_feat, training_year, weight_column):
+def encode_and_sort(df, target_column, output_folder, categorical_feat, training_year, weight_column, binary_prediction):
     """
     :param df: This is the input data and is set to the output from the
                refined_data_processor_function.
@@ -132,6 +132,7 @@ def encode_and_sort(df, target_column, output_folder, categorical_feat, training
                           and is used as a splitting point in the time series
                           data. Data before this point is
     :param weight_column: see refined_data_processor_function documentation.
+    :param binary_prediction:
     :return: returns the final data split into three separate dataframes that
              represent training, test and validation. Training is what the
              model is trained on. Test is left as unseen and the trained
@@ -152,6 +153,8 @@ def encode_and_sort(df, target_column, output_folder, categorical_feat, training
     if y is not None:
         data_encoded[target_column] = y
 
+    df[target_column] = df[target_column].astype(int)
+
     training_df = data_encoded.loc[df.index.get_level_values('surveyyear') <= int(training_year)]
     test_df = data_encoded.loc[df.index.get_level_values('surveyyear') > int(training_year)]
     test_df = test_df.drop(columns=weight_column)
@@ -161,10 +164,22 @@ def encode_and_sort(df, target_column, output_folder, categorical_feat, training
     else:
         raise ValueError('Check test dataframe for target column')
 
-    for df in [training_df, validation_df]:
-        df[target_column] = df[target_column].apply(lambda x: x if x in [0, 1] else 2)
-        df[target_column] = df[target_column].astype(int)
+    if binary_prediction == '0vs1':
+        print('0 vs 1 model selected')
+        for df in [training_df, validation_df]:
+            df = df[df[target_column].isin([0, 1])]
+            df[target_column] = df[target_column].astype(int)
 
+    if binary_prediction == '1vs2':
+        print('1 vs 2 model selected')
+        for df in [training_df, validation_df]:
+            df = df[df[target_column].isin([1, 2])]
+            df[target_column] = df[target_column].astype(int)
+
+    if binary_prediction is None:
+        for df in [training_df, validation_df]:
+            df[target_column] = df[target_column].apply(lambda x: x if x in [0, 1] else 2)
+            df[target_column] = df[target_column].astype(int)
 
     training_df.to_csv(os.path.join(output_folder, 'training_data.csv'))
     test_df.to_csv(os.path.join(output_folder, 'test_data.csv'))
@@ -499,7 +514,9 @@ def model_prep(training_df, target_column, output_folder, weight_column, model_t
                                                  multi_class='multinomial',
                                                  l1_ratio=0.5, n_jobs=-1, max_iter=1000),
                      'filename': 'logistic_basic_cafml_modelfit.pkl',
-                     'params': {'C': [0.1, 1, 10], 'l1_ratio': [0.1, 0.5, 0.9]}}
+                     'params': {'C': [0.1, 1, 10], 'l1_ratio': [0.1, 0.5, 0.9]}},
+        'svm_binary': {'model': model_storage.svm_binary, 'filename': 'svm_binary_basic_cafml_modelfit.pkl',
+                       'params': param_grid_storage.svm_binary_params}
     }
 
     if model_to_use not in models or model_to_use is None:

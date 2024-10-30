@@ -57,7 +57,8 @@ def main(params: NorCom_probability_model_inputs_cafml):
                                                               output_folder=params.output_folder,
                                                               categorical_feat=params.categorical_features,
                                                               training_year=params.training_year,
-                                                              weight_column=params.weight_column)
+                                                              weight_column=params.weight_column,
+                                                              binary_prediction=params.binary_prediction)
 
     if params.stats_model is not None:
         generate_stats_model(training_df=training_df,

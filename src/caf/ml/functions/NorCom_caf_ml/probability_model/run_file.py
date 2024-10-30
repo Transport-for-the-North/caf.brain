@@ -60,20 +60,23 @@ if __name__ == "__main__":
                   mca being added in order to attempt to fix the issues 
                   present in the data. MCA will also be done which aims
                   to fix the issues in a way similar to PCA. 
-    model_to_use: string, either: gb, rf, dt, svm or None. These link to the 
-                  cafml_version argument only. This allows the choice of 
-                  gradient boosting, random forest, decision tree or 
-                  support vector machine being used in the caf.ml model. 
+    model_to_use: string, either: gb, rf, dt, svm , svm_binary or None. 
+                  These link to the cafml_version argument only. This allows 
+                  the choice of gradient boosting, random forest, decision tree 
+                  or support vector machine being used in the caf.ml model. 
+    binary_prediction: If prediction is binary, 0 vs 1 or 1 vs 2 then this 
+                       must be specified as a string. If left as None then a
+                       multiclass prediction will be made (0 vs 1 vs 2+). 
     """
     params = NorCom_probability_model_inputs_cafml(
                                                    classified_build=Path(r"E:\2024 work streams\norcom caf.ml integration\FINAL\new_functions_testing\cb_tfn_v15.csv"),
-                                                   output_folder=Path(r"E:\2024 work streams\norcom caf.ml integration\redo_norcom\cafml\logistic_v1"),
+                                                   output_folder=Path(r"E:\2024 work streams\norcom caf.ml integration\redo_norcom\cafml\0vs1\svm"),
                                                    target_column='numcarvan',
                                                    index_columns=['householdid', 'surveyyear', 'hholdua_b01id'],
                                                    categorical_features=['tfn_at', 'hh_child', 'ns', 'hholdnumadults'],
                                                    numerical_features=None,
                                                    weight_column='w2',
-                                                   training_year='2019',
+                                                   training_year='2022',
                                                    column_name_to_drop_rows=['tfn_at'],
                                                    value_in_row=['20'],
                                                    stats_model=None,
@@ -81,6 +84,9 @@ if __name__ == "__main__":
                                                    svm_adaptation=None,
                                                    cafml_version='Yes',
                                                    improve_data='yes',
-                                                   model_to_use='logistic'
+                                                   model_to_use='svm_binary',
+                                                   binary_prediction='0vs1'
+
+
     )
     main(params)

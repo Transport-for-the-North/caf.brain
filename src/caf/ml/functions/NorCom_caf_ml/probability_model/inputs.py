@@ -32,6 +32,7 @@ class NorCom_probability_model_inputs_cafml(BaseConfig):
     cafml_version: Optional[str] = None
     improve_data: Optional[str] = None
     model_to_use: Optional[str] = None
+    binary_prediction: Optional[str] = None
 
 
 class ModelStorage:
@@ -40,6 +41,7 @@ class ModelStorage:
         self.rf = RandomForestClassifier()
         self.dt = DecisionTreeClassifier()
         self.svm = OneVsRestClassifier(LinearSVC())
+        self.svm_binary = LinearSVC()
 
 
 class ParamGridStorage:
@@ -60,6 +62,10 @@ class ParamGridStorage:
             'min_samples_leaf': [1, 2, 4]
         }
         self.svm_params = {
+            'estimator__C': [0.1, 1, 10],
+            'estimator__loss': ['hinge', 'squared_hinge'],
+        }
+        self.svm_binary_params = {
             'estimator__C': [0.1, 1, 10],
             'estimator__loss': ['hinge', 'squared_hinge'],
         }

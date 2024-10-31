@@ -76,7 +76,7 @@ if __name__ == "__main__":
                                                    categorical_features=['tfn_at', 'hh_child', 'ns', 'hholdnumadults'],
                                                    numerical_features=None,
                                                    weight_column='w2',
-                                                   training_year='2022',
+                                                   training_year='2021',
                                                    column_name_to_drop_rows=['tfn_at'],
                                                    value_in_row=['20'],
                                                    stats_model=None,

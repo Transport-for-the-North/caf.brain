@@ -66,6 +66,7 @@ class ParamGridStorage:
             'estimator__loss': ['hinge', 'squared_hinge'],
         }
         self.svm_binary_params = {
-            'estimator__C': [0.1, 1, 10],
-            'estimator__loss': ['hinge', 'squared_hinge'],
+            'C': [0.1, 1, 10],
+            'loss': ['hinge', 'squared_hinge'],
+            'penalty': ['l2'],
         }

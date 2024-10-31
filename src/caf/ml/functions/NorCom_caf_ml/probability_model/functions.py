@@ -672,7 +672,7 @@ def modified_hyper_optimisation(model, data, target_column, output_folder, weigh
         return best_params
 
     param_grid_storage = ParamGridStorage()
-
+    print(model)
     if isinstance(model, GradientBoostingClassifier):
         param_grid = param_grid_storage.gb_params
     elif isinstance(model, RandomForestClassifier):
@@ -687,6 +687,8 @@ def modified_hyper_optimisation(model, data, target_column, output_folder, weigh
             "l1_ratio": [0.1, 0.3, 0.5, 0.7, 0.9],
             "max_iter": [1000, 2000, 3000]
         }
+    elif isinstance(model, LinearSVC):
+        param_grid = param_grid_storage.svm_binary_params
     else:
         raise ValueError(f"Unsupported model type: {type(model)}")
 

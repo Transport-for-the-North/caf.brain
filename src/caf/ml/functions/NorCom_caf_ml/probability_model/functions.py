@@ -520,7 +520,18 @@ def model_prep(training_df, target_column, output_folder, weight_column, model_t
                      'filename': 'logistic_basic_cafml_modelfit.pkl',
                      'params': {'C': [0.1, 1, 10], 'l1_ratio': [0.1, 0.5, 0.9]}},
         'svm_binary': {'model': model_storage.svm_binary, 'filename': 'svm_binary_basic_cafml_modelfit.pkl',
-                       'params': param_grid_storage.svm_binary_params}
+                       'params': param_grid_storage.svm_binary_params},
+        'logit_l1': {'model': model_storage.logit_l1, 'filename': 'logit_l1_basic_cafml_modelfit.pkl',
+                     'params': param_grid_storage.logit_l1_params},
+        'logit_l2': {'model': model_storage.logit_l2,
+                     'filename': 'logit_l1_basic_cafml_modelfit.pkl',
+                     'params': param_grid_storage.logit_l2_params},
+        'logit_elastic_net': {'model': model_storage.logit_elastic_net,
+                              'filename': 'logit_l1_basic_cafml_modelfit.pkl',
+                              'params': param_grid_storage.logit_elastic_net_params},
+        'logit_multinomial': {'model': model_storage.logit_multinomial,
+                              'filename': 'logit_l1_basic_cafml_modelfit.pkl',
+                              'params': param_grid_storage.logit_multinomial_params}
     }
 
     if model_to_use not in models or model_to_use is None:

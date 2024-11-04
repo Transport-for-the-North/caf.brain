@@ -6,13 +6,15 @@ Created on: 10/17/2024
 Original author: Adil Zaheer
 """
 from pathlib import Path
+
+import numpy as np
 from caf.toolkit import BaseConfig
-from typing import Optional, List, Any, Union
-import enum
+from typing import Optional, List, Union
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import LinearSVC
+from sklearn.linear_model import LogisticRegression
 
 
 class NorCom_probability_model_inputs_cafml(BaseConfig):
@@ -31,7 +33,7 @@ class NorCom_probability_model_inputs_cafml(BaseConfig):
     svm_adaptation: Optional[str] = None
     cafml_version: Optional[str] = None
     improve_data: Optional[str] = None
-    model_to_use: Optional[str] = None
+    model_choice: Optional[str] = None
     binary_prediction: Optional[str] = None
 
 
@@ -42,12 +44,16 @@ class ModelStorage:
         self.dt = DecisionTreeClassifier()
         self.svm = OneVsRestClassifier(LinearSVC())
         self.svm_binary = LinearSVC()
+        self.logit_l1 = (LogisticRegression, {'penalty': 'l1', 'solver': 'liblinear'})
+        self.logit_l2 = (LogisticRegression, {'penalty': 'l2'})
+        self.logit_elastic_net = (LogisticRegression, {'penalty': 'elasticnet', 'solver': 'saga', 'l1_ratio': 0.5})
+        self.logit_multinomial = (LogisticRegression, {'multi_class': 'multinomial', 'solver': 'lbfgs'})
 
 
 class ParamGridStorage:
     def __init__(self):
         self.gb_params = {
-            'n_estimators': [100, 200, 300],
+            'n_estimators': [50, 100, 200],
             'learning_rate': [0.01, 0.1, 0.3],
             'max_depth': [3, 5, 7]
         }
@@ -70,3 +76,7 @@ class ParamGridStorage:
             'loss': ['hinge', 'squared_hinge'],
             'penalty': ['l2'],
         }
+        self.logit_l1_params = {"C": [1.0, 0.1, 0.01, 0.001]}
+        self.logit_l2_params = {"C": [1.0, 0.1, 0.01, 0.001]}
+        self.logit_elastic_net_params = {"C": [0.1, 1.0, 10.0], "l1_ratio": [0.1, 0.5, 0.9]}
+        self.logit_multinomial_params = {"C": np.arange(0.1, 10, 0.1).tolist(), "solver": ["lbfgs", "newton-cg", "sag", "saga"]}

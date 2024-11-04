@@ -89,8 +89,9 @@ def main(params: NorCom_probability_model_inputs_cafml):
                              output_folder=params.output_folder,
                              weight_column=params.weight_column,
                              improve_data=params.improve_data,
-                             model_to_use=params.model_to_use,
-                             index_columns=params.index_columns)
+                             model_to_use=params.model_choice,
+                             index_columns=params.index_columns,
+                             binary_prediction=params.binary_prediction)
 
 
     return

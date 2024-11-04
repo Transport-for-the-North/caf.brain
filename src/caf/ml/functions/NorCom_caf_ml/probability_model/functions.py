@@ -13,6 +13,7 @@ import statsmodels.api as sm
 from sklearn.decomposition import TruncatedSVD
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.feature_selection import SelectFromModel
+from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from sklearn.model_selection import (RandomizedSearchCV,
                                      train_test_split,
@@ -21,7 +22,8 @@ from sklearn.model_selection import (RandomizedSearchCV,
                                      )
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
-from sklearn.preprocessing import PolynomialFeatures
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.svm import LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 from statsmodels.stats.diagnostic import het_breuschpagan
@@ -153,7 +155,7 @@ def encode_and_sort(df, target_column, output_folder, categorical_feat, training
     if y is not None:
         data_encoded[target_column] = y
 
-    df[target_column] = df[target_column].astype(int)
+    df.loc[:, target_column] = df[target_column].astype(int)
 
     training_df = data_encoded.loc[df.index.get_level_values('surveyyear') <= int(training_year)]
     test_df = data_encoded.loc[df.index.get_level_values('surveyyear') > int(training_year)]
@@ -168,18 +170,18 @@ def encode_and_sort(df, target_column, output_folder, categorical_feat, training
         print('0 vs 1 model selected')
         for df in [training_df, validation_df]:
             df = df[df[target_column].isin([0, 1])]
-            df[target_column] = df[target_column].astype(int)
+            df.loc[:, target_column] = df[target_column].astype(int)
 
     if binary_prediction == '1vs2':
         print('1 vs 2 model selected')
         for df in [training_df, validation_df]:
             df = df[df[target_column].isin([1, 2])]
-            df[target_column] = df[target_column].astype(int)
+            df.loc[:, target_column] = df[target_column].astype(int)
 
     if binary_prediction is None:
         for df in [training_df, validation_df]:
             df[target_column] = df[target_column].apply(lambda x: x if x in [0, 1] else 2)
-            df[target_column] = df[target_column].astype(int)
+            df.loc[:, target_column] = df[target_column].astype(int)
 
     training_df.to_csv(os.path.join(output_folder, 'training_data.csv'))
     test_df.to_csv(os.path.join(output_folder, 'test_data.csv'))
@@ -367,7 +369,8 @@ def generate_cafml_model(training_df,
                          weight_column,
                          improve_data,
                          model_to_use,
-                         index_columns):
+                         index_columns,
+                         binary_prediction):
     print('Cafml modelling beginning')
     model_filename = os.path.join(output_folder, 'cafml_final_model.pkl')
     if os.path.exists(model_filename):
@@ -415,7 +418,7 @@ def generate_cafml_model(training_df,
                                                              target_column=target_column,
                                                              residuals=residuals,
                                                              weight_column=weight_column)
-
+            print(any_issues_present)
             if any_issues_present is True or improve_data is not None:
                 improved_data, transformations = modifying_data(data=training_df,
                                                                 features_to_interact=training_df.columns,
@@ -431,7 +434,8 @@ def generate_cafml_model(training_df,
                                                                  regression_method=model,
                                                                  output_folder=output_folder,
                                                                  weight_column=weight_column,
-                                                                 index_columns=index_columns)
+                                                                 index_columns=index_columns,
+                                                                 binary_prediction=binary_prediction)
 
             else:
                 improved_data = training_df
@@ -600,7 +604,14 @@ def refined_cafml_data_analysis(data,
     return any_issue_present
 
 
-def refined_feature_selection(data, target_column, cv, regression_method, output_folder, weight_column, index_columns):
+def refined_feature_selection(data,
+                              target_column,
+                              cv,
+                              regression_method,
+                              output_folder,
+                              weight_column,
+                              index_columns,
+                              binary_prediction):
     print('Feature selection beginning')
     final_train_filename = os.path.join(output_folder, 'final_training_data.csv')
     if os.path.exists(final_train_filename):
@@ -633,8 +644,12 @@ def refined_feature_selection(data, target_column, cv, regression_method, output
 
     with tqdm(total=num_folds, desc="Cross-validation") as pbar:
         for _ in range(num_folds):
-            score = cross_val_score(regression_method, X[selected_features], y, cv=cv, scoring='roc_auc_ovr',
-                                    n_jobs=-1, verbose=0)
+            if binary_prediction is None:
+                score = cross_val_score(regression_method, X[selected_features], y, cv=cv, scoring='roc_auc_ovr',
+                                        n_jobs=-1, verbose=0)
+            else:
+                score = cross_val_score(regression_method, X[selected_features], y, cv=cv, scoring='roc_auc',
+                                        n_jobs=-1, verbose=0)
             scores.append(score.mean())
             pbar.update(1)
 
@@ -655,14 +670,21 @@ def modified_hyper_optimisation(model, data, target_column, output_folder, weigh
     print('Hyperparameter optimisation beginning')
     x = data.drop(columns=[target_column])
     y = data[target_column]
-    cv = TimeSeriesSplit(n_splits=5)
+    cv = TimeSeriesSplit(n_splits=3)
 
     weight_df = original_training_data[weight_column]
     weight = weight_df.values.flatten()
 
     def rand_search(model_instance, param_grid, cv, scoring):
-        rand_search = RandomizedSearchCV(model_instance, param_grid, cv=cv, scoring=scoring,
-                                         verbose=2, n_jobs=-1)
+        rand_search = RandomizedSearchCV(model_instance,
+                                         param_grid,
+                                         cv=cv,
+                                         scoring=scoring,
+                                         verbose=2,
+                                         n_jobs=-1,
+                                         n_iter=10,
+                                         return_train_score=False,
+                                         pre_dispatch='2*n_jobs')
         rand_search.fit(x, y, sample_weight=weight)
         best_params = rand_search.best_params_
         print('Best parameters for model are:')
@@ -719,6 +741,11 @@ def modified_hyper_optimisation(model, data, target_column, output_folder, weigh
 
 
 def apply_feat_selection(trained_data, test_data, output_folder, target_column):
+    print('final_training_data')
+    print(trained_data)
+
+    print('test_data_pre_feat_selection')
+    print(test_data)
     if target_column in trained_data.columns:
         trained_data = trained_data.drop(columns=target_column)
 
@@ -736,7 +763,7 @@ def apply_feat_selection(trained_data, test_data, output_folder, target_column):
 
     aligned_test_data.to_csv(predict_data_path, index=True)
 
-    print('Final prediction data:')
+    print('Final prediction data (post feature selection):')
     print(aligned_test_data)
 
     return aligned_test_data
@@ -744,11 +771,18 @@ def apply_feat_selection(trained_data, test_data, output_folder, target_column):
 
 def final_prediction(model, data, target_column, output_folder, validation):
     print('Prediction beginning')
-    pred_probs = model.predict_proba(data)
-    pred_classes = np.argmax(pred_probs, axis=1)
-    y_true = validation[target_column].values
+    if isinstance(model, LinearSVC):
+        pred_classes = model.predict(data)
+        y_true = validation[target_column].values
+        accuracy = accuracy_score(y_true, pred_classes)
 
-    accuracy = accuracy_score(y_true, pred_classes)
+    else:
+        pred_probs = model.predict_proba(data)
+        pred_classes = np.argmax(pred_probs, axis=1)
+        y_true = validation[target_column].values
+        accuracy = accuracy_score(y_true, pred_classes)
+
+
     print(f'Accuracy: {accuracy}')
     accuracy_df = pd.DataFrame({'accuracy': [accuracy]})
     accuracy_df.to_csv(os.path.join(output_folder, 'accuracy.csv'))
@@ -838,14 +872,14 @@ def simple_eval_model(training_df,
     metrics_df.to_csv(os.path.join(output_folder, 'model_evaluation_metrics.csv'), index=False)
 
     # Feat importance
-    if hasattr(model, "feature_importances_"):
-        feature_importance = pd.DataFrame({
-            'feature': training_df.drop(columns=[target_column]).columns,
-            'importance': model.feature_importances_
-        }).sort_values('importance', ascending=False)
+    # if hasattr(model, "feature_importances_"):
+    #   feature_importance = pd.DataFrame({
+    #        'feature': training_df.drop(columns=[target_column]).columns,
+    #        'importance': model.feature_importances_
+    #    }).sort_values('importance', ascending=False)
 
-        feature_importance.to_csv(os.path.join(output_folder, 'feature_importances.csv'),
-                                  index=False)
+    #    feature_importance.to_csv(os.path.join(output_folder, 'feature_importances.csv'),
+    #                              index=False)
 
     return
 
@@ -864,6 +898,7 @@ def modifying_data(data,
             data_ = data_.drop(columns=weight_column)
         data_ = data_.drop(columns=target_column)
 
+        # interaction terms
         if isinstance(features_to_interact, pd.Index):
             features_to_interact = list(features_to_interact)
 
@@ -880,6 +915,7 @@ def modifying_data(data,
         interaction_df = pd.DataFrame(interaction_terms)
         final_df = pd.concat([data_, interaction_df], axis=1)
 
+        # poly
         if features_to_transform is None or len(features_to_transform) == 0:
             features_to_transform = data_.columns.tolist()
 
@@ -902,7 +938,18 @@ def modifying_data(data,
                 poly_df = poly_df.rename(columns={col: f'poly_{col}'})
 
         final_df = pd.concat([final_df, poly_df], axis=1)
+        final_df = pd.DataFrame(final_df)
 
+        # scale
+        numerical_pipeline = Pipeline([
+            ('imputer', SimpleImputer(strategy='median')),
+            ('scaler', StandardScaler())
+        ])
+        scaled_df = numerical_pipeline.fit_transform(final_df)
+        final_df_scale = pd.DataFrame(scaled_df, columns=final_df.columns)
+        final_df = final_df_scale.set_index(final_df.index)
+
+        # mca
         n_components = 2
         svd = TruncatedSVD(n_components=n_components, random_state=42)
         mca_result = svd.fit_transform(final_df)
@@ -911,7 +958,7 @@ def modifying_data(data,
 
         mca_features = pd.DataFrame(mca_result,
                                     columns=[f'MCA{i + 1}' for i in range(n_components)],
-                                    index=final_df.index)
+                                    index=final_df.index) #changed from final_df to data
 
         final_df = pd.concat([final_df, mca_features], axis=1)
 
@@ -986,6 +1033,16 @@ def modifying_data(data,
 
         final_df = pd.concat([final_df, poly_df], axis=1)
 
+        # scale
+        numerical_pipeline = Pipeline([
+            ('imputer', SimpleImputer(strategy='median')),
+            ('scaler', StandardScaler())
+        ])
+        scaled_df = numerical_pipeline.fit_transform(final_df)
+        final_df = pd.DataFrame(scaled_df, columns=final_df.columns)
+        final_df = final_df.set_index(final_df.index)
+
+        # mca
         n_components = 2
         svd = TruncatedSVD(n_components=n_components, random_state=42)
         mca_result = svd.fit_transform(final_df)

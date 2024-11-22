@@ -72,7 +72,7 @@ if __name__ == "__main__":
     """
     params = NorCom_probability_model_inputs_cafml(
                                                    classified_build=Path(r"E:\2024 work streams\norcom caf.ml integration\FINAL\new_functions_testing\cb_tfn_v15.csv"),
-                                                   output_folder=Path(r"E:\2024 work streams\norcom caf.ml integration\redo_norcom\cafml\0vs1\logit_l1"),
+                                                   output_folder=Path(r"E:\2024 work streams\norcom caf.ml integration\refined_version_for_methodology\1vs2\gb"),
                                                    target_column='numcarvan',
                                                    index_columns=['householdid', 'surveyyear', 'hholdua_b01id'],
                                                    categorical_features=['tfn_at', 'hh_child', 'ns', 'hholdnumadults'],
@@ -84,10 +84,12 @@ if __name__ == "__main__":
                                                    stats_model=None,
                                                    sklearn_model=None,
                                                    svm_adaptation=None,
-                                                   cafml_version='Yes',
-                                                   improve_data='yes',
-                                                   model_choice='logit_l1',
-                                                   binary_prediction='0vs1'
+                                                   cafml_version=None,
+                                                   refined_cafml='yes',
+                                                   improve_data=None,
+                                                   model_choice='gb',
+                                                   binary_prediction='1vs2',
+                                                   skip_feature_selection=None
 
 
     )

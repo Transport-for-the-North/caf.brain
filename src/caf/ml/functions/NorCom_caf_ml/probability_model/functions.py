@@ -5,6 +5,7 @@
 Created on: 10/10/2024
 Original author: Adil Zaheer
 """
+import gc
 import os
 import joblib
 import numpy as np
@@ -14,7 +15,8 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.feature_selection import SelectFromModel
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support, make_scorer, \
+    roc_auc_score
 from sklearn.model_selection import (RandomizedSearchCV,
                                      train_test_split,
                                      cross_val_score,
@@ -40,6 +42,7 @@ from caf.ml.functions.process_data_functions import (process_data_numeric,
 from sklearn.linear_model import Lasso, Ridge
 from sklearn.feature_selection import RFE
 from caf.ml.functions.NorCom_caf_ml.probability_model.inputs import ModelStorage, ParamGridStorage
+from multiprocessing import cpu_count
 
 
 def refined_data_processor_function(df,
@@ -90,6 +93,8 @@ def refined_data_processor_function(df,
 
     """
     df = pd.read_csv(df, low_memory=False)
+    new_df = df[index_columns]
+    new_df.to_csv(os.path.join(output_folder, 'index_columns_csv.csv'), index=False)
     target_column_ = None
     weight_column_ = None
     if isinstance(target_column, str):
@@ -120,7 +125,28 @@ def refined_data_processor_function(df,
     final_data.to_csv(output_path, index=True)
     print('-------------------------------------------------------------')
     print(f"initial_processed_data exported to: {output_path}")
-    return final_data
+    return final_data, new_df
+
+
+def transform_target_column(df, target_column, binary_prediction):
+    if binary_prediction == '0vs1':
+        print('0 vs 1 model selected')
+        df = df[df[target_column].isin([0, 1])]
+    if binary_prediction == '1vs2':
+        print('1 vs 2 model selected')
+        # df = df[df[target_column] != 0]
+        df = df[df[target_column].isin([1, 2])]
+        # df[target_column] = df[target_column].apply(lambda x: 2 if x > 2 else x)
+    if binary_prediction is None:
+        print('0 vs 1 vs 2+ model selected')
+        df[target_column] = df[target_column].apply(lambda x: x if x in [0, 1] else 2)
+
+
+    df[target_column] = df[target_column].astype(int)
+    unique_values = df[target_column].unique()
+    print(f"Unique values in {target_column} after transformation: {unique_values}")
+
+    return df
 
 
 def encode_and_sort(df, target_column, output_folder, categorical_feat, training_year, weight_column, binary_prediction):
@@ -142,6 +168,7 @@ def encode_and_sort(df, target_column, output_folder, categorical_feat, training
              to evaluate the predictions.
     """
     df = df.apply(pd.to_numeric, errors='coerce')
+    df = transform_target_column(df=df, target_column=target_column, binary_prediction=binary_prediction)
 
     if target_column in df.columns:
         x = df.drop(columns=[target_column])
@@ -155,8 +182,6 @@ def encode_and_sort(df, target_column, output_folder, categorical_feat, training
     if y is not None:
         data_encoded[target_column] = y
 
-    df.loc[:, target_column] = df[target_column].astype(int)
-
     training_df = data_encoded.loc[df.index.get_level_values('surveyyear') <= int(training_year)]
     test_df = data_encoded.loc[df.index.get_level_values('surveyyear') > int(training_year)]
     test_df = test_df.drop(columns=weight_column)
@@ -166,27 +191,13 @@ def encode_and_sort(df, target_column, output_folder, categorical_feat, training
     else:
         raise ValueError('Check test dataframe for target column')
 
-    if binary_prediction == '0vs1':
-        print('0 vs 1 model selected')
-        for df in [training_df, validation_df]:
-            df = df[df[target_column].isin([0, 1])]
-            df.loc[:, target_column] = df[target_column].astype(int)
-
-    if binary_prediction == '1vs2':
-        print('1 vs 2 model selected')
-        for df in [training_df, validation_df]:
-            df = df[df[target_column].isin([1, 2])]
-            df.loc[:, target_column] = df[target_column].astype(int)
-
-    if binary_prediction is None:
-        for df in [training_df, validation_df]:
-            df[target_column] = df[target_column].apply(lambda x: x if x in [0, 1] else 2)
-            df.loc[:, target_column] = df[target_column].astype(int)
-
     training_df.to_csv(os.path.join(output_folder, 'training_data.csv'))
     test_df.to_csv(os.path.join(output_folder, 'test_data.csv'))
     validation_df.to_csv(os.path.join(output_folder, 'validation_data.csv'), index=True)
 
+    print(training_df)
+    print(test_df)
+    print(validation_df)
     return training_df, test_df, validation_df
 
 
@@ -361,16 +372,120 @@ def generate_svm(training_df,
     return
 
 
+def caf_ml_logit(training_df,
+                 test_df,
+                 validation_df,
+                 target_column,
+                 output_folder,
+                 weight_column,
+                 improve_data,
+                 model_to_use,
+                 index_columns,
+                 skip_feature_selection,
+                 index_columns_df):
+    print('Running caf.ml logit')
+    model, residuals = model_prep(training_df=training_df,
+                                  target_column=target_column,
+                                  output_folder=output_folder,
+                                  weight_column=weight_column,
+                                  model_to_use=model_to_use)
+
+    any_issues_present = refined_cafml_data_analysis(data=training_df,
+                                                     target_column=target_column,
+                                                     residuals=residuals,
+                                                     weight_column=weight_column)
+
+
+    if any_issues_present is True or improve_data is not None:
+        # if improved data exists its read in the function below, transformations too
+        improved_data, transformations = modifying_data(data=training_df,
+                                                        features_to_interact=training_df.columns,
+                                                        features_to_transform=None,
+                                                        output_folder=output_folder,
+                                                        weight_column=weight_column,
+                                                        target_column=target_column,
+                                                        applying_transformations=None)
+
+    else:
+        transformations = None
+        improved_data = training_df
+
+    test_df_transformed = apply_transformations(predict_data=test_df,
+                                                transformations=transformations,
+                                                training_data_pre_feat_selection=improved_data,
+                                                output_folder=output_folder,
+                                                weight_column=weight_column,
+                                                target_column=target_column,
+                                                index_columns=index_columns)
+
+    final_test_data = apply_feat_selection(trained_data=improved_data,
+                                           test_data=test_df_transformed,
+                                           output_folder=output_folder,
+                                           target_column=target_column,
+                                           index_columns=index_columns)
+
+    model_filename = os.path.join(output_folder, 'cafml_final_model.pkl')
+    if os.path.exists(model_filename):
+        model = joblib.load(model_filename)
+    else:
+        if not improved_data.index.names == index_columns:
+            improved_data = improved_data.set_index(index_columns)
+        x = improved_data.drop(columns=[target_column])
+        y = improved_data[target_column]
+        weight_df = training_df[weight_column]
+        weight = weight_df.values.flatten()
+        if weight_column in x.columns:
+            x = x.drop(columns=weight_column)
+        if target_column in x.columns:
+            x = x.drop(columns=target_column)
+        model = model.fit(x, y, sample_weight=weight)
+        joblib.dump(model, model_filename)
+
+    y_pred = final_prediction(model=model,
+                              data=final_test_data,
+                              target_column=target_column,
+                              output_folder=output_folder,
+                              validation=validation_df)
+
+    simple_eval_model(training_df=improved_data,
+                      validation_df=validation_df,
+                      y_pred=y_pred,
+                      model=model,
+                      target_column=target_column,
+                      output_folder=output_folder)
+
+
+    return
+
+
+
+
 def generate_cafml_model(training_df,
                          test_df,
                          validation_df,
+                         index_columns_df,
                          target_column,
                          output_folder,
                          weight_column,
                          improve_data,
                          model_to_use,
                          index_columns,
-                         binary_prediction):
+                         binary_prediction,
+                         skip_feature_selection):
+
+    if model_to_use in ['logit_l1', 'logit_l2']:
+        return caf_ml_logit(training_df,
+                            test_df,
+                            validation_df,
+                            target_column,
+                            output_folder,
+                            weight_column,
+                            improve_data,
+                            model_to_use,
+                            index_columns,
+                            skip_feature_selection,
+                            index_columns_df)
+
     print('Cafml modelling beginning')
     model_filename = os.path.join(output_folder, 'cafml_final_model.pkl')
     if os.path.exists(model_filename):
@@ -413,7 +528,6 @@ def generate_cafml_model(training_df,
             improved_data.set_index(index_columns)
 
         else:
-
             any_issues_present = refined_cafml_data_analysis(data=training_df,
                                                              target_column=target_column,
                                                              residuals=residuals,
@@ -428,16 +542,100 @@ def generate_cafml_model(training_df,
                                                                 target_column=target_column,
                                                                 applying_transformations=None)
 
-                training_df_modified = refined_feature_selection(data=improved_data,
-                                                                 target_column=target_column,
-                                                                 cv=TimeSeriesSplit(n_splits=5),
-                                                                 regression_method=model,
-                                                                 output_folder=output_folder,
-                                                                 weight_column=weight_column,
-                                                                 index_columns=index_columns,
-                                                                 binary_prediction=binary_prediction)
+
+                if skip_feature_selection is not None:
+                    best_model = modified_hyper_optimisation(model=model,
+                                                             data=improved_data,
+                                                             target_column=target_column,
+                                                             output_folder=output_folder,
+                                                             weight_column=weight_column,
+                                                             original_training_data=training_df,
+                                                             index_columns=index_columns)
+
+                    improved_data.to_csv(os.path.join(output_folder, 'final_training_data.csv'), index=index_columns)
+
+                    test_df_transformed = apply_transformations(predict_data=test_df,
+                                                                transformations=transformations,
+                                                                training_data_pre_feat_selection=improved_data,
+                                                                output_folder=output_folder,
+                                                                weight_column=weight_column,
+                                                                target_column=target_column,
+                                                                index_columns=index_columns)
+
+                    final_test_data = apply_feat_selection(trained_data=improved_data,
+                                                           test_data=test_df_transformed,
+                                                           output_folder=output_folder,
+                                                           target_column=target_column,
+                                                           index_columns=index_columns)
+
+                    y_pred = final_prediction(model=best_model,
+                                              data=final_test_data,
+                                              target_column=target_column,
+                                              output_folder=output_folder,
+                                              validation=validation_df)
+
+                    simple_eval_model(training_df=improved_data,
+                                      validation_df=validation_df,
+                                      y_pred=y_pred,
+                                      model=best_model,
+                                      target_column=target_column,
+                                      output_folder=output_folder)
+
+                    return
+
+                training_df_modified = simple_feature_selection_test(data=improved_data,
+                                                                     target_column=target_column,
+                                                                     cv=TimeSeriesSplit(n_splits=5),
+                                                                     regression_method=model,
+                                                                     output_folder=output_folder,
+                                                                     weight_column=weight_column,
+                                                                     index_columns=index_columns)
 
             else:
+
+                if skip_feature_selection is not None:
+                    transformations = None
+                    improved_data = training_df
+                    best_model = modified_hyper_optimisation(model=model,
+                                                             data=improved_data,
+                                                             target_column=target_column,
+                                                             output_folder=output_folder,
+                                                             weight_column=weight_column,
+                                                             original_training_data=training_df,
+                                                             index_columns=index_columns)
+
+                    improved_data.to_csv(os.path.join(output_folder, 'final_training_data.csv'),
+                                         index=index_columns)
+
+                    test_df_transformed = apply_transformations(predict_data=test_df,
+                                                                transformations=transformations,
+                                                                training_data_pre_feat_selection=improved_data,
+                                                                output_folder=output_folder,
+                                                                weight_column=weight_column,
+                                                                target_column=target_column,
+                                                                index_columns=index_columns)
+
+                    final_test_data = apply_feat_selection(trained_data=improved_data,
+                                                           test_data=test_df_transformed,
+                                                           output_folder=output_folder,
+                                                           target_column=target_column,
+                                                           index_columns=index_columns)
+
+                    y_pred = final_prediction(model=best_model,
+                                              data=final_test_data,
+                                              target_column=target_column,
+                                              output_folder=output_folder,
+                                              validation=validation_df)
+
+                    simple_eval_model(training_df=improved_data,
+                                      validation_df=validation_df,
+                                      y_pred=y_pred,
+                                      model=best_model,
+                                      target_column=target_column,
+                                      output_folder=output_folder)
+
+                    return
+
                 improved_data = training_df
                 improved_data.to_csv(os.path.join(output_folder, 'improved_data.csv'))
                 transformations = None
@@ -454,20 +652,23 @@ def generate_cafml_model(training_df,
                                                  target_column=target_column,
                                                  output_folder=output_folder,
                                                  weight_column=weight_column,
-                                                 original_training_data=training_df)
+                                                 original_training_data=training_df,
+                                                 index_columns=index_columns)
 
     test_df_transformed = apply_transformations(predict_data=test_df,
                                                 transformations=transformations,
                                                 training_data_pre_feat_selection=improved_data,
                                                 output_folder=output_folder,
                                                 weight_column=weight_column,
-                                                target_column=target_column)
+                                                target_column=target_column,
+                                                index_columns=index_columns)
 
 
     final_test_data = apply_feat_selection(trained_data=training_df_modified,
                                            test_data=test_df_transformed,
                                            output_folder=output_folder,
-                                           target_column=target_column)
+                                           target_column=target_column,
+                                           index_columns=index_columns)
 
     y_pred = final_prediction(model=best_model,
                               data=final_test_data,
@@ -524,13 +725,13 @@ def model_prep(training_df, target_column, output_folder, weight_column, model_t
         'logit_l1': {'model': model_storage.logit_l1, 'filename': 'logit_l1_basic_cafml_modelfit.pkl',
                      'params': param_grid_storage.logit_l1_params},
         'logit_l2': {'model': model_storage.logit_l2,
-                     'filename': 'logit_l1_basic_cafml_modelfit.pkl',
+                     'filename': 'logit_l2_basic_cafml_modelfit.pkl',
                      'params': param_grid_storage.logit_l2_params},
         'logit_elastic_net': {'model': model_storage.logit_elastic_net,
-                              'filename': 'logit_l1_basic_cafml_modelfit.pkl',
+                              'filename': 'logit_elastic_net_basic_cafml_modelfit.pkl',
                               'params': param_grid_storage.logit_elastic_net_params},
         'logit_multinomial': {'model': model_storage.logit_multinomial,
-                              'filename': 'logit_l1_basic_cafml_modelfit.pkl',
+                              'filename': 'logit_multinomial_basic_cafml_modelfit.pkl',
                               'params': param_grid_storage.logit_multinomial_params}
     }
 
@@ -551,7 +752,8 @@ def model_prep(training_df, target_column, output_folder, weight_column, model_t
     y_pred = model_fit.predict(x_test)
     residuals = y_test - y_pred
 
-    if model_to_use in ['svm', 'logistic']:
+    if model_to_use in ['svm', 'logistic', 'logit_l1', 'logit_l2',
+                        'logit_elastic_net', 'logit_multinomial']:
         if hasattr(model_fit, 'coef_'):
             coefficients = model_fit.coef_
             print(f"Model Coefficients shape: {coefficients.shape}")
@@ -638,6 +840,19 @@ def refined_feature_selection(data,
     weight_df = data[weight_column]
     weight = weight_df.values.flatten()
 
+    # scoring_metric = 'roc_auc_ovr' if len(np.unique(y)) > 2 else 'roc_auc'
+    n_classes = len(np.unique(y))
+    if n_classes > 2:
+        # scoring_metric = 'roc_auc_ovr'
+        def scoring_func(y_true, y_pred):
+            if y_pred.ndim > 1 and y_pred.shape[1] == 2:
+                y_pred = y_pred[:, 1]
+            return roc_auc_score(y_true, y_pred)
+    else:
+        # scoring_metric = 'roc_auc'
+        def scoring_func(y_true, y_pred):
+            return roc_auc_score(y_true, y_pred, multi_class='ovr', average='macro')
+
     rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
     with tqdm(total=1, desc="Fitting RandomForest") as pbar:
         rf.fit(X, y, sample_weight=weight)
@@ -651,34 +866,130 @@ def refined_feature_selection(data,
     else:
         num_folds = cv
 
-    scores = []
+    custom_scorer = make_scorer(scoring_func, needs_proba=True)
 
+    print(f"Performing {num_folds}-fold cross validation...")
     with tqdm(total=num_folds, desc="Cross-validation") as pbar:
+        fold_scores = cross_val_score(regression_method,
+                                      X[selected_features],
+                                      y,
+                                      cv=cv,
+                                      scoring=custom_scorer,
+                                      n_jobs=-1,
+                                      verbose=0)
         for _ in range(num_folds):
-            if binary_prediction is None:
-                score = cross_val_score(regression_method, X[selected_features], y, cv=cv, scoring='roc_auc_ovr',
-                                        n_jobs=-1, verbose=0)
-            else:
-                score = cross_val_score(regression_method, X[selected_features], y, cv=cv, scoring='roc_auc',
-                                        n_jobs=-1, verbose=0)
-            scores.append(score.mean())
             pbar.update(1)
 
+    print(f"Scores for each fold: {fold_scores}")
+    mean_score = fold_scores.mean()
+    std_score = fold_scores.std()
+
     print(f"Number of features selected: {len(selected_features)}")
-    print(f"Cross-validated ROC AUC score: {sum(scores) / len(scores)}")
+    print(f"Cross-validated ROC AUC score: {mean_score:.3f} (+/- {std_score:.3f})")
 
     dataframe_final = pd.concat([X[selected_features], y], axis=1)
 
     dataframe_final.to_csv(os.path.join(output_folder, 'final_training_data.csv'), index=True)
-    print(dataframe_final)
-    print(dataframe_final.columns)
+
     print('Feature selection finished')
     return dataframe_final
 
 
+def simple_feature_selection_test(data,
+                                  target_column,
+                                  cv,
+                                  regression_method,
+                                  output_folder,
+                                  weight_column,
+                                  index_columns):
+    print('Feature selection beginning')
+    final_train_filename = os.path.join(output_folder, 'final_training_data.csv')
+    if os.path.exists(final_train_filename):
+        dataframe_final = pd.read_csv(final_train_filename)
+        if index_columns:
+            dataframe_final.set_index(index_columns, inplace=True)
+        return dataframe_final
+
+    if isinstance(regression_method, LogisticRegression):
+        regression_method.set_params(max_iter=1000)
+
+    X = data.drop(columns=[target_column])
+    y = data[target_column]
+
+    if weight_column:
+        weight_df = data[weight_column]
+        weight = weight_df.values.flatten()
+    else:
+        weight = None
+
+    rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+    with tqdm(total=1, desc="Fitting RandomForest") as pbar:
+        rf.fit(X, y, sample_weight=weight)
+        pbar.update(1)
+
+    selector = SelectFromModel(rf, prefit=True)
+    selected_features = X.columns[selector.get_support()].tolist()
+
+    if hasattr(cv, 'n_splits'):
+        num_folds = cv.n_splits
+    else:
+        num_folds = cv
+
+    num_classes = len(pd.unique(y))
+    if num_classes > 2:
+        scoring_func = make_scorer(accuracy_score)
+    else:
+        scoring_func = make_scorer(roc_auc_score)
+
+    fold_scores = []
+    with tqdm(total=num_folds, desc="Cross-validation") as pbar:
+        for fold in range(num_folds):
+            score = cross_val_score(regression_method,
+                                    X[selected_features],
+                                    y,
+                                    cv=cv,
+                                    scoring=scoring_func,
+                                    n_jobs=-1,
+                                    verbose=0)[0]
+            fold_scores.append(score)
+            pbar.update(1)
+
+    mean_score = sum(fold_scores) / num_folds
+    std_score = (sum((x - mean_score) ** 2 for x in fold_scores) / num_folds) ** 0.5
+
+    print(f"Number of features selected: {len(selected_features)}")
+    print(f"Cross-validated ROC AUC score: {mean_score:.3f} (+/- {std_score:.3f})")
+
+    if mean_score < 0.6:
+        print('Initial feature selection attempt was inaccurate, trying \
+              alternative method')
+        dataframe_final = feat_selection_modified(data=data,
+                                                  target_column=target_column,
+                                                  cv=cv,
+                                                  regression_method=regression_method,
+                                                  output_folder=output_folder,
+                                                  weight_column=weight_column,
+                                                  index_columns=index_columns)
+    else:
+        dataframe_final = pd.concat([X[selected_features], y], axis=1)
+        dataframe_final.to_csv(final_train_filename, index=index_columns)
+        print('Feature selection finished')
+
+    return dataframe_final
+
+
 def modified_hyper_optimisation(model, data, target_column, output_folder, weight_column,
-                                original_training_data):
+                                original_training_data, index_columns):
     print('Hyperparameter optimisation beginning')
+    if isinstance(model, LogisticRegression):
+        model.set_params(max_iter=1000)
+
+    if not data.index.names == index_columns:
+        data = data.set_index(index_columns)
+
+    if weight_column in data.columns:
+        data = data.drop(columns=weight_column)
+
     x = data.drop(columns=[target_column])
     y = data[target_column]
     cv = TimeSeriesSplit(n_splits=3)
@@ -686,16 +997,20 @@ def modified_hyper_optimisation(model, data, target_column, output_folder, weigh
     weight_df = original_training_data[weight_column]
     weight = weight_df.values.flatten()
 
+    n_cores = cpu_count()
+    n_jobs = max(1, n_cores - 1)
+
     def rand_search(model_instance, param_grid, cv, scoring):
         rand_search = RandomizedSearchCV(model_instance,
                                          param_grid,
                                          cv=cv,
                                          scoring=scoring,
                                          verbose=2,
-                                         n_jobs=-1,
+                                         n_jobs=n_jobs,
                                          n_iter=10,
                                          return_train_score=False,
-                                         pre_dispatch='2*n_jobs')
+                                         pre_dispatch='1*n_jobs')
+        gc.collect()
         rand_search.fit(x, y, sample_weight=weight)
         best_params = rand_search.best_params_
         print('Best parameters for model are:')
@@ -715,11 +1030,18 @@ def modified_hyper_optimisation(model, data, target_column, output_folder, weigh
     elif isinstance(model, OneVsRestClassifier) and isinstance(model.estimator, LinearSVC):
         param_grid = param_grid_storage.svm_params
     elif isinstance(model, LogisticRegression):
-        param_grid = {
-            "C": [0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0],
-            "l1_ratio": [0.1, 0.3, 0.5, 0.7, 0.9],
-            "max_iter": [1000, 2000, 3000]
-        }
+        if model.get_params()['penalty'] == 'l1' and model.get_params()['solver'] == 'liblinear':
+            param_grid = param_grid_storage.logit_l1_params
+        elif model.get_params()['penalty'] == 'l2':
+            param_grid = param_grid_storage.logit_l2_params
+        elif model.get_params()['penalty'] == 'elasticnet':
+            param_grid = param_grid_storage.logit_elastic_net_params
+        elif model.get_params()['multi_class'] == 'multinomial':
+            param_grid = param_grid_storage.logit_multinomial_params
+        else:
+            param_grid = {"C": [0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0],
+                          "l1_ratio": [0.1, 0.3, 0.5, 0.7, 0.9],
+                          "max_iter": [1000, 2000, 3000]}
     elif isinstance(model, LinearSVC):
         param_grid = param_grid_storage.svm_binary_params
     else:
@@ -751,7 +1073,7 @@ def modified_hyper_optimisation(model, data, target_column, output_folder, weigh
     return best_model
 
 
-def apply_feat_selection(trained_data, test_data, output_folder, target_column):
+def apply_feat_selection(trained_data, test_data, output_folder, target_column, index_columns):
     print('final_training_data')
     print(trained_data)
 
@@ -780,18 +1102,38 @@ def apply_feat_selection(trained_data, test_data, output_folder, target_column):
     return aligned_test_data
 
 
-def final_prediction(model, data, target_column, output_folder, validation):
+def final_prediction(model, data, target_column, output_folder, validation, binary_prediction):
     print('Prediction beginning')
-    if isinstance(model, LinearSVC):
-        pred_classes = model.predict(data)
-        y_true = validation[target_column].values
-        accuracy = accuracy_score(y_true, pred_classes)
+    print(data.columns)
+    print(data)
+    if target_column in data.columns:
+        data = data.drop(columns=target_column)
 
-    else:
-        pred_probs = model.predict_proba(data)
-        pred_classes = np.argmax(pred_probs, axis=1)
-        y_true = validation[target_column].values
-        accuracy = accuracy_score(y_true, pred_classes)
+    accuracy = None
+    pred_classes = None
+    if binary_prediction == '0vs1':
+        if isinstance(model, LinearSVC):
+            pred_classes = model.predict(data)
+            y_true = validation[target_column].values
+            accuracy = accuracy_score(y_true, pred_classes)
+
+        else:
+            pred_probs = model.predict_proba(data)
+            pred_classes = np.argmax(pred_probs, axis=1)
+            y_true = validation[target_column].values
+            accuracy = accuracy_score(y_true, pred_classes)
+
+    if binary_prediction == '1vs2':
+        if isinstance(model, LinearSVC):
+            pred_classes = model.predict(data)
+            y_true = validation[target_column].values
+            accuracy = accuracy_score(y_true, pred_classes)
+
+        else:
+            pred_probs = model.predict_proba(data)
+            pred_classes = np.argmax(pred_probs, axis=1) + 1
+            y_true = validation[target_column].values
+            accuracy = accuracy_score(y_true, pred_classes)
 
 
     print(f'Accuracy: {accuracy}')
@@ -799,12 +1141,18 @@ def final_prediction(model, data, target_column, output_folder, validation):
     accuracy_df.to_csv(os.path.join(output_folder, 'accuracy.csv'))
 
     final_predictions = pd.DataFrame({'predicted_target_column': pred_classes}, index=data.index)
-    final_predictions.to_csv(os.path.join(output_folder, 'final_predictions.csv'))
+    final_predictions.to_csv(os.path.join(output_folder, 'final_predictions_probability.csv'))
     print('Prediction finished')
     return pred_classes
 
 
-def feat_selection_modified(data, target_column, cv, regression_method, output_folder, weight_column, index_columns):
+def feat_selection_modified(data,
+                            target_column,
+                            cv,
+                            regression_method,
+                            output_folder,
+                            weight_column,
+                            index_columns):
     final_train_filename = os.path.join(output_folder, 'final_training_data.csv')
     if os.path.exists(final_train_filename):
         dataframe_final = pd.read_csv(final_train_filename)
@@ -851,11 +1199,16 @@ def feat_selection_modified(data, target_column, cv, regression_method, output_f
     print(f"Number of features selected: {len(all_selected_features)}")
     print(f"Cross-validated score: {np.mean(scores)}")
 
+    cv_score = np.mean(scores)
+    if cv_score < 0.5:
+        print('CV score is still not optimal, feature selection is being ignored')
+        data.to_csv(os.path.join(output_folder, 'final_training_data.csv'), index=index_columns)
+        return data
 
     dataframe_final = pd.concat([x[all_selected_features], y], axis=1)
     dataframe_final.index = original_index
 
-    dataframe_final.to_csv(os.path.join(output_folder, 'final_training_data.csv'), index=True)
+    dataframe_final.to_csv(os.path.join(output_folder, 'final_training_data.csv'), index=index_columns)
 
     print('Feature selection finished')
     return dataframe_final
@@ -1063,9 +1416,9 @@ def modifying_data(data,
         mca_features = pd.DataFrame(mca_result,
                                     columns=[f'MCA{i + 1}' for i in range(n_components)],
                                     index=final_df.index)
-
         final_df = pd.concat([final_df, mca_features], axis=1)
 
+        final_df = final_df.set_index(data_.index)
         final_df = pd.concat([final_df, target_series], axis=1)
 
         if weight_series is not None:
@@ -1085,7 +1438,8 @@ def modifying_data(data,
 
 
 def apply_transformations(predict_data, transformations,
-                          training_data_pre_feat_selection, output_folder, weight_column, target_column):
+                          training_data_pre_feat_selection, output_folder, weight_column, target_column,
+                          index_columns):
 
     if transformations is None:
         return predict_data
@@ -1093,11 +1447,10 @@ def apply_transformations(predict_data, transformations,
     if weight_column in training_data_pre_feat_selection.columns:
         training_data_pre_feat_selection = training_data_pre_feat_selection.drop(columns=weight_column)
 
-    print('predict data')
-    print(predict_data)
+    if all(col in training_data_pre_feat_selection.columns for col in index_columns):
+        training_data_pre_feat_selection = training_data_pre_feat_selection.set_index(index_columns)
+        training_data_pre_feat_selection = training_data_pre_feat_selection.drop(index_columns)
 
-    print('training_pre_feat')
-    print(training_data_pre_feat_selection)
     transformed_data = predict_data.copy()
 
     for transform_name, transform_obj in transformations:

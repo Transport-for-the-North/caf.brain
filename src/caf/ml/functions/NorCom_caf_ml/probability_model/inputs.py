@@ -32,9 +32,11 @@ class NorCom_probability_model_inputs_cafml(BaseConfig):
     sklearn_model: Optional[str] = None
     svm_adaptation: Optional[str] = None
     cafml_version: Optional[str] = None
+    refined_cafml: Optional[str] = None
     improve_data: Optional[str] = None
     model_choice: Optional[str] = None
     binary_prediction: Optional[str] = None
+    skip_feature_selection: Optional[str] = None
 
 
 class ModelStorage:
@@ -44,10 +46,17 @@ class ModelStorage:
         self.dt = DecisionTreeClassifier()
         self.svm = OneVsRestClassifier(LinearSVC())
         self.svm_binary = LinearSVC()
-        self.logit_l1 = (LogisticRegression, {'penalty': 'l1', 'solver': 'liblinear'})
-        self.logit_l2 = (LogisticRegression, {'penalty': 'l2'})
-        self.logit_elastic_net = (LogisticRegression, {'penalty': 'elasticnet', 'solver': 'saga', 'l1_ratio': 0.5})
-        self.logit_multinomial = (LogisticRegression, {'multi_class': 'multinomial', 'solver': 'lbfgs'})
+        self.logit_l1 = LogisticRegression(penalty='l1', solver='liblinear')
+        self.logit_l2 = LogisticRegression(penalty='l2')
+        self.logit_elastic_net = LogisticRegression(
+            penalty='elasticnet',
+            solver='saga',
+            l1_ratio=0.5
+        )
+        self.logit_multinomial = LogisticRegression(
+            multi_class='multinomial',
+            solver='lbfgs'
+        )
 
 
 class ParamGridStorage:

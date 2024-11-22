@@ -5,10 +5,10 @@ Original author: Adil Zaheer
 """
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from caf.ml.functions.data_pipeline_functions import process_data_pipeline
-from caf.ml.functions.forecast_model_functions import process_forecast_data
-from caf.ml.functions.pre_forecast_data_analysis import apply_transformations
-from caf.ml.functions.process_data_class import DataProcessor
+from caf.ml.functions import process_data_pipeline
+from caf.ml.functions import process_forecast_data
+from caf.ml.functions import apply_transformations
+from caf.ml.functions import DataProcessor
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 from caf.ml.tensor_flow_model.tf_functions import train_model, calculate_coefficient_stats, train_improved_model

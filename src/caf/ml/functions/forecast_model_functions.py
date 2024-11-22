@@ -13,9 +13,7 @@ from caf.ml.functions.process_data_functions import (index_sorter,
                                                      convert_to_dataframe,
                                                      find_numeric_target_column,
                                                      process_data_numeric,
-                                                     handle_nans_and_duplicates,
                                                      remove_and_export_outliers)
-from sklearn.linear_model import LinearRegression
 
 
 def process_data_loaded_model(df,
@@ -84,10 +82,6 @@ def process_forecast_data(df,
 def align_dataframes(df1, df2, output_folder):
     common_columns = df1.columns.intersection(df2.columns)
     aligned_df2 = df2[common_columns]
-
-    print("final_predict_data:")
-    print(aligned_df2.shape)
-    print(aligned_df2)
 
     predict_data_path = os.path.join(output_folder, 'Final_prediction_data.csv')
 

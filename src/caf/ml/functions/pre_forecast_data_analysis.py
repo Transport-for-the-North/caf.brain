@@ -9,27 +9,15 @@ import os
 import numpy as np
 import pandas as pd
 
-from scipy.stats import shapiro
-from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import Ridge, Lasso, ElasticNet, LinearRegression
 
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
-from sklearn.svm import SVR
-from statsmodels.regression.linear_model import OLS
-from statsmodels.stats.diagnostic import linear_rainbow, het_breuschpagan, het_white
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-from statsmodels.stats.stattools import durbin_watson
-from statsmodels.tools import add_constant
-from sklearn.linear_model import LogisticRegression
 
-from caf.ml.functions.data_pipeline_functions import  process_data_pipeline
-from caf.ml.functions.process_data_functions import convert_to_dataframe
-from caf.ml.inputs.cafml_inputs import Models
+from caf.ml.functions import  process_data_pipeline
+from caf.ml.functions import convert_to_dataframe
 
-
-def pre_forecast_data_analysis(data,
+'''def pre_forecast_data_analysis(data,
                                regression_method,
                                target_column,
                                threshold,
@@ -255,9 +243,8 @@ def pre_forecast_data_analysis(data,
     print(dataframe.columns)
 
     return dataframe, transformations
-
-
-def assess_multicolinearity(dataframe,
+'''
+"""def assess_multicolinearity(dataframe,
                             input_data,
                             target_column,
                             threshold,
@@ -338,7 +325,7 @@ def assess_multicolinearity(dataframe,
         if target_column not in dataframe.columns:
             dataframe[target_column] = y.values
 
-    return dataframe, transformations_done
+    return dataframe, transformations_done"""
 
 
 def apply_transformations(predict_data, transformations,

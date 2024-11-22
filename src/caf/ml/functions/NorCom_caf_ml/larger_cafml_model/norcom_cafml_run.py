@@ -1,12 +1,13 @@
 import sys
 from pathlib import Path
-from caf.ml.inputs.cafml_inputs import NorCom_cafml_inputs, Models
-from caf.ml.functions.NorCom_caf_ml.norcom_cafml_main import main
+from caf.ml.functions.NorCom_caf_ml.larger_cafml_model.norcom_cafml_main import main
+from caf.ml.functions.NorCom_caf_ml.larger_cafml_model.norcom_inputs import NorCom_inputs
+
 sys.path.extend(r"C:\Users\Liberty\Documents\GitHub\caf.ml\src")
 
 
 if __name__ == "__main__":
-    params = NorCom_cafml_inputs(
+    params = NorCom_inputs(
         # store model
         saved_model=None,
         

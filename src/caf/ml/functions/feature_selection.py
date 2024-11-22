@@ -9,21 +9,20 @@ import statsmodels.api as sm
 # Local imports here
 # pylint: enable=import-error,wrong-import-position
 import pandas as pd
-from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, BaggingRegressor, \
     GradientBoostingRegressor
 from sklearn.neighbors import KNeighborsRegressor
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold, StratifiedKFold, RepeatedKFold, RepeatedStratifiedKFold, \
     cross_val_score, TimeSeriesSplit
 from sklearn.feature_selection import SelectFromModel, f_regression, mutual_info_regression, \
     mutual_info_classif, RFECV
-from sklearn.feature_selection import SelectKBest, f_classif, RFE
+from sklearn.feature_selection import SelectKBest, RFE
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 from tqdm import tqdm
 
-from caf.ml.inputs.cafml_inputs import Models, Default_regression_methods, CV_models, ModelGrids, Models_List_
+from caf.ml.inputs.cafml_inputs import Models, Default_regression_methods, CV_models, Models_List_
 from caf.ml.functions.model_algorithm_evaluation import select_model
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from sklearn.linear_model import LogisticRegression

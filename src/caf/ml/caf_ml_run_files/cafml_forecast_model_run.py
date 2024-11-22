@@ -4,19 +4,19 @@
 # pylint: enable=import-error,wrong-import-position
 import os
 import warnings
-from caf.ml.functions.data_pipeline_functions import process_data_pipeline
-from caf.ml.functions.model_algorithm_evaluation import eval_model
-from caf.ml.functions.NorCom_caf_ml.norcom_specific_functions import norcom_run_functions
+from caf.ml.functions import process_data_pipeline
+from caf.ml.functions import eval_model
+from caf.ml.functions import norcom_run_functions
 from caf.ml.inputs.cafml_inputs import CarAccessInputs
 
 warnings.filterwarnings("ignore")
 
-from caf.ml.functions.process_data_class import DataProcessor
-from caf.ml.functions.feature_selection import feature_selection_cv, filter_data
-from caf.ml.functions.hyper_optim_gridsearch import select_param
-from caf.ml.functions.forecast_model_functions import predict_refined, process_data_loaded_model, process_forecast_data, align_dataframes
-from caf.ml.functions.save_model import save_model_and_parameters, load_model_and_parameters
-from caf.ml.functions.pre_forecast_data_analysis import pre_forecast_data_analysis, apply_transformations
+from caf.ml.functions import DataProcessor
+from caf.ml.functions import feature_selection_cv, filter_data
+from caf.ml.functions import select_param
+from caf.ml.functions import predict_refined, process_data_loaded_model, process_forecast_data, align_dataframes
+from caf.ml.functions import save_model_and_parameters, load_model_and_parameters
+from caf.ml.functions import pre_forecast_data_analysis, apply_transformations
 # todo add interpolation function from lvu to dataprocessor class
 
 

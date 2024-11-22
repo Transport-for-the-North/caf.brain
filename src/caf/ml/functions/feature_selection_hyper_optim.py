@@ -11,9 +11,9 @@ from tqdm import tqdm
 from sklearn.feature_selection import SelectFromModel
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold, GridSearchCV
-from caf.ml.functions.model_algorithm_evaluation import select_model
+from caf.ml.functions import select_model
 from caf.ml.inputs.cafml_inputs import CV_models, Models, Default_regression_methods, ModelGrids
-from caf.ml.functions.feature_selection import get_cv_class
+from caf.ml.functions import get_cv_class
 warnings.filterwarnings("ignore", category=UserWarning)
 
 

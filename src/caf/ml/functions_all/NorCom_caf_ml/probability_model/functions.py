@@ -32,16 +32,16 @@ from statsmodels.stats.diagnostic import het_breuschpagan
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.stats.stattools import durbin_watson
 from tqdm import tqdm
-from caf.ml.functions.process_data_functions import (process_data_numeric,
-                                                     index_sorter,
-                                                     function_remove_spaces,
-                                                     convert_to_dataframe,
-                                                     find_numeric_target_column,
-                                                     drop_rows)
+from caf.ml.CODE_OVERHAUL.process_data_functions import (process_data_numeric,
+                                                         index_sorter,
+                                                         function_remove_spaces,
+                                                         convert_to_dataframe,
+                                                         find_numeric_target_column,
+                                                         drop_rows)
 
 from sklearn.linear_model import Lasso, Ridge
 from sklearn.feature_selection import RFE
-from caf.ml.functions.NorCom_caf_ml.probability_model.inputs import ModelStorage, ParamGridStorage
+from caf.ml.functions_all.NorCom_caf_ml.probability_model.inputs import ModelStorage, ParamGridStorage
 from multiprocessing import cpu_count
 
 
@@ -81,7 +81,7 @@ def refined_data_processor_function(df,
 
 
     The function begins by identifying which columns in the classified build to
-    keep. The following array of functions are taken directly from the
+    keep. The following array of functions_all are taken directly from the
     caf.ml repository. process_data_numeric ensures all data is numeric in the
     processed dataframe. index_sorter sets the index columns as an index or
     multiindex. function_remove_spaces removed any whitespaces.

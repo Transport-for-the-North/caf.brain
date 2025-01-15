@@ -15,10 +15,10 @@ from sklearn.metrics import r2_score, mean_absolute_error, mean_absolute_percent
 from sklearn.metrics import explained_variance_score, mean_squared_error
 from scipy.stats import pearsonr, spearmanr
 from statsmodels.stats.outliers_influence import variance_inflation_factor
-from caf.ml.inputs.general_inputs import CarInputs2
+from caf.ml.old_inputs.general_inputs import CarInputs2
 ALLOWED_MODELS = (ElasticNet, Lasso, Ridge)
 
-from caf.ml.functions import DataProcessor
+from caf.ml.functions_all import DataProcessor
 from tidy_data_function import main_tdf
 from feature_selection_function_storage import feature_selection
 from numeric_data import process_data_numeric
@@ -285,14 +285,14 @@ def evaluate_model(y_true, y_pred):
 
 
 def main(params: CarInputs2, output_folder, reg_method, custom_regression_methods):
-    """ Main function requires the following inputs:
+    """ Main function requires the following old_inputs:
     1) Path to the 2011 census data/base year census data you are using
     2) A forecast year set of data
     3) A regression method (Lasso, ElasticNet or Ridge)
     4) A target column (Y variable - what you want to predict)
     These are all specified where main is called below.
 
-    The main function will call all of the above functions. It will conduct:
+    The main function will call all of the above functions_all. It will conduct:
     - Feature selection & scaling (test_function)
     - Relevant assumption tests (calculate_correlations, evaluate_independence, test_multi.)
     - Hyper-Parameter optimisation - finding optimal alpha using ML methods

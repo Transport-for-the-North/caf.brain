@@ -8,7 +8,7 @@ Last update made by: Isaac Scott
 Other updates made by: Adil Zaheer
 
 File purpose: This file contains variable and model optimisation and selection
-functions that feed into the LVU model.
+functions_all that feed into the LVU model.
 
 """
 # IMPORTS
@@ -63,7 +63,7 @@ def filter_by_corr_importance(x: pd.DataFrame, y: pd.DataFrame, threshold: float
     Returns
     -------
 
-    inputs.CorrImpReturn: See class for info.
+    old_inputs.CorrImpReturn: See class for info.
     """
     model = ExtraTreesRegressor()
     importances = pd.DataFrame(model.fit(x, y).feature_importances_, index=x.columns)

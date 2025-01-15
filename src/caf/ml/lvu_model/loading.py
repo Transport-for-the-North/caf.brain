@@ -8,7 +8,7 @@ Last update made by: Isaac Scott
 Other updates made by: Adil Zaheer
 
 File purpose: The file feeds into the land value uplift model. It contains
-functions that load, process and transform data for future modelling purposes.
+functions_all that load, process and transform data for future modelling purposes.
 
 """
 import os
@@ -112,7 +112,7 @@ def process_ntem(params: inputs.NtemInputInfo,):
 
 def interpolate(df: pd.DataFrame, non_year_cols: list[str] = None):
     """
-    This function is used across other functions within the loading.py script.
+    This function is used across other functions_all within the loading.py script.
     It conducts linear interpolation to infill missing values in the years
     columns where applicable.
     """

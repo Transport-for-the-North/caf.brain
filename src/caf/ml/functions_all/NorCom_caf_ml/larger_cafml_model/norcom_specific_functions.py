@@ -9,13 +9,13 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
-from caf.ml.functions.process_data_functions import (convert_to_dataframe,
-                                                     process_data_numeric,
-                                                     index_sorter,
-                                                     function_remove_spaces,
-                                                     find_numeric_target_column,
-                                                     drop_rows)
-from caf.ml.functions.NorCom_caf_ml.larger_cafml_model.norcom_inputs import Models, Default_regression_methods, Models_List_
+from caf.ml.CODE_OVERHAUL.process_data_functions import (convert_to_dataframe,
+                                                         process_data_numeric,
+                                                         index_sorter,
+                                                         function_remove_spaces,
+                                                         find_numeric_target_column,
+                                                         drop_rows)
+from caf.ml.functions_all.NorCom_caf_ml.larger_cafml_model.norcom_inputs import Models, Default_regression_methods, Models_List_
 from sklearn.decomposition import FactorAnalysis
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel
@@ -711,7 +711,7 @@ def refined_data_processor_function(df,
 
 
     The function begins by identifying which columns in the classified build to
-    keep. The following array of functions are taken directly from the
+    keep. The following array of functions_all are taken directly from the
     caf.ml repository. process_data_numeric ensures all data is numeric in the
     processed dataframe. index_sorter sets the index columns as an index or
     multiindex. function_remove_spaces removed any whitespaces.

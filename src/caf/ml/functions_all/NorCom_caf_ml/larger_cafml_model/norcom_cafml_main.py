@@ -9,12 +9,12 @@ import time
 import pandas as pd
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
-from caf.ml.functions.NorCom_caf_ml.larger_cafml_model.norcom_saved_model_funcs import saved_model_func
-from caf.ml.functions.NorCom_caf_ml.larger_cafml_model.norcom_specific_functions import (norcom_run_functions,
-                                                                                         refined_data_processor_function,
-                                                                                         encode_and_sort)
-from caf.ml.functions.save_model import load_model_and_parameters
-from caf.ml.functions.NorCom_caf_ml.larger_cafml_model.norcom_inputs import NorCom_inputs
+from caf.ml.functions_all.NorCom_caf_ml.larger_cafml_model.norcom_saved_model_funcs import saved_model_func
+from caf.ml.functions_all.NorCom_caf_ml.larger_cafml_model.norcom_specific_functions import (norcom_run_functions,
+                                                                                             refined_data_processor_function,
+                                                                                             encode_and_sort)
+from caf.ml.functions_all.save_model import load_model_and_parameters
+from caf.ml.functions_all.NorCom_caf_ml.larger_cafml_model.norcom_inputs import NorCom_inputs
 
 
 def main(params: NorCom_inputs):

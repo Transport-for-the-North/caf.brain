@@ -5,14 +5,14 @@ Original author: Adil Zaheer
 """
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from caf.ml.functions import process_data_pipeline
-from caf.ml.functions import process_forecast_data
-from caf.ml.functions import apply_transformations
-from caf.ml.functions import DataProcessor
+from caf.ml.functions_all import process_data_pipeline
+from caf.ml.functions_all import process_forecast_data
+from caf.ml.functions_all import apply_transformations
+from caf.ml.functions_all import DataProcessor
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 from caf.ml.tensor_flow_model.tf_functions import train_model, calculate_coefficient_stats, train_improved_model
-from caf.ml.inputs.cafml_inputs import TensorFlowModelInputs
+from caf.ml.old_inputs.cafml_inputs import TensorFlowModelInputs
 
 
 def main(params: TensorFlowModelInputs):

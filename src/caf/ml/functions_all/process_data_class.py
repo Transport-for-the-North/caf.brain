@@ -6,15 +6,15 @@ Original author: Adil Zaheer
 import os
 
 import pandas as pd
-from caf.ml.functions import (read_folder,
-                              read_csvs,
-                              find_numeric_target_column,
-                              process_data_numeric,
-                              index_sorter,
-                              custom_melt,
-                              function_remove_spaces,
-                              remove_and_export_outliers,
-                              convert_to_dataframe, drop_rows)
+from caf.ml.functions_all import (read_folder,
+                                  read_csvs,
+                                  find_numeric_target_column,
+                                  process_data_numeric,
+                                  index_sorter,
+                                  custom_melt,
+                                  function_remove_spaces,
+                                  remove_and_export_outliers,
+                                  convert_to_dataframe, drop_rows)
 
 
 class DataProcessor:
@@ -34,9 +34,6 @@ class DataProcessor:
                  categorical_target,
                  column_name_to_drop_rows,
                  value_in_row):
-        print('----------------------------------------------')
-        print('Data Processor is running')
-        print('----------------------------------------------')
         final_data = None
         if x is not None and wide_format is None:
             x_ = pd.read_csv(x, low_memory=False)

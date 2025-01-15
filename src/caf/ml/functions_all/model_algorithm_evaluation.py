@@ -16,7 +16,7 @@ import pandas as pd
 from sklearn.model_selection import cross_val_score
 from sklearn.tree import DecisionTreeRegressor
 
-from caf.ml.inputs.cafml_inputs import Models
+from caf.ml.old_inputs.cafml_inputs import Models
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, \

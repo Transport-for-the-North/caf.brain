@@ -14,8 +14,8 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 
-from caf.ml.functions import  process_data_pipeline
-from caf.ml.functions import convert_to_dataframe
+from caf.ml.functions_all import  process_data_pipeline
+from caf.ml.functions_all import convert_to_dataframe
 
 '''def pre_forecast_data_analysis(data,
                                regression_method,
@@ -133,7 +133,7 @@ from caf.ml.functions import convert_to_dataframe
         transformed_data = x_.map(lambda x: np.log(x + 1))
         transformations.append(('log', None))
 
-        ##experimental functions##
+        ##experimental functions_all##
         df_final_to_model, transformations = experimental_functions(data=transformed_data,
                                                                     categorical_transformations=transformations,
                                                                     features_to_interact=x_.columns,

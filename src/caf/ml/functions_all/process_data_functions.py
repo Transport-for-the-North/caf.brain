@@ -210,7 +210,7 @@ def function_remove_spaces(df: pd.DataFrame):
     return df
 
 
-######### CLEANING DATA: specific functions #########
+######### CLEANING DATA: specific functions_all #########
 
 
 def remove_and_export_outliers(df: pd.DataFrame, outlier_threshold=None, target_column=None, output_folder=None):

@@ -7,14 +7,14 @@ Original author: Adil Zaheer
 """
 import os
 import pandas as pd
-from caf.ml.functions.NorCom_caf_ml.probability_model.final_model_functions import refined_cafml_model
-from caf.ml.functions.NorCom_caf_ml.probability_model.functions import (encode_and_sort,
-                                                                        generate_stats_model,
-                                                                        refined_data_processor_function,
-                                                                        generate_sklearn_model,
-                                                                        generate_svm,
-                                                                        generate_cafml_model)
-from caf.ml.functions.NorCom_caf_ml.probability_model.inputs import NorCom_probability_model_inputs_cafml
+from caf.ml.functions_all.NorCom_caf_ml.probability_model.final_model_functions import refined_cafml_model
+from caf.ml.functions_all.NorCom_caf_ml.probability_model.functions import (encode_and_sort,
+                                                                            generate_stats_model,
+                                                                            refined_data_processor_function,
+                                                                            generate_sklearn_model,
+                                                                            generate_svm,
+                                                                            generate_cafml_model)
+from caf.ml.functions_all.NorCom_caf_ml.probability_model.inputs import NorCom_probability_model_inputs_cafml
 
 def main(params: NorCom_probability_model_inputs_cafml):
 

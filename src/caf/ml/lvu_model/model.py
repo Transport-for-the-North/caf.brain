@@ -8,7 +8,7 @@ Last update made by: Isaac Scott
 Other updates made by: Adil Zaheer
 
 File purpose: Model.py feeds into the land value uplift model. It contains
-cross validation and model prediction functions.
+cross validation and model prediction functions_all.
 
 """
 from sklearn.metrics import mean_squared_error, r2_score

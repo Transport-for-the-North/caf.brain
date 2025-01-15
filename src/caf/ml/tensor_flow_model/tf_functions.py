@@ -19,7 +19,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 
 
-#### simple model functions (tensorflow logistic regression) ####
+#### simple model functions_all (tensorflow logistic regression) ####
 def create_tf_logistic_regression(input_dim):
     model = tf.keras.Sequential([tf.keras.layers.Dense(1, input_shape=(input_dim,), activation='sigmoid')])
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
@@ -62,7 +62,7 @@ def train_model(X_train,
     return model, predict_predictions
 
 
-#### complex model functions ####
+#### complex model functions_all ####
 def create_improved_model(input_dim):
     model = Sequential([
         Dense(64, activation='relu', input_shape=(input_dim,)),

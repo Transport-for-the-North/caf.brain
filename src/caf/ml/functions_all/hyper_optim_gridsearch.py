@@ -13,7 +13,7 @@ from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegression
 
-from caf.ml.inputs.cafml_inputs import Models, ModelGrids
+from caf.ml.old_inputs.cafml_inputs import Models, ModelGrids
 import statsmodels.api as sm
 
 

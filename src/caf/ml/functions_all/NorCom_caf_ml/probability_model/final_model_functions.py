@@ -8,11 +8,11 @@ Original author: Adil Zaheer
 import os.path
 import time
 import joblib
-from caf.ml.functions.NorCom_caf_ml.probability_model.functions import (refined_cafml_data_analysis,
-                                                                        model_prep,
-                                                                        modified_hyper_optimisation,
-                                                                        final_prediction,
-                                                                        simple_eval_model)
+from caf.ml.functions_all.NorCom_caf_ml.probability_model.functions import (refined_cafml_data_analysis,
+                                                                            model_prep,
+                                                                            modified_hyper_optimisation,
+                                                                            final_prediction,
+                                                                            simple_eval_model)
 
 
 def refined_cafml_model(training_df,

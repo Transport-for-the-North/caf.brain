@@ -22,8 +22,8 @@ from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 from tqdm import tqdm
 
-from caf.ml.inputs.cafml_inputs import Models, Default_regression_methods, CV_models, Models_List_
-from caf.ml.functions.model_algorithm_evaluation import select_model
+from caf.ml.old_inputs.cafml_inputs import Models, Default_regression_methods, CV_models, Models_List_
+from caf.ml.functions_all.model_algorithm_evaluation import select_model
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from sklearn.linear_model import LogisticRegression
 

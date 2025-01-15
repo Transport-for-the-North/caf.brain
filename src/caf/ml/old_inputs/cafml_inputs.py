@@ -7,9 +7,6 @@ import numpy as np
 # pylint: enable=import-error,wrong-import-position
 from sklearn.linear_model import LogisticRegression
 import statsmodels.api as sm
-
-
-
 from pathlib import Path
 from caf.toolkit import BaseConfig
 from typing import Optional, List, Any, Union
@@ -97,10 +94,9 @@ class CarAccessInputs(BaseConfig):
     column_name_to_drop_rows: Optional[List[str]] = None
     value_in_row: Optional[List[Union[str, int, float]]] = None
 
-    #experimantal functions
+    #experimantal functions_all
     features_to_transform: Optional[List[str]] = None
     norcom_run: Optional[str] = None
-
 
 
 class Models(enum.Enum):

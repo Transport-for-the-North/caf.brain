@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
-from caf.ml.functions.NorCom_caf_ml.larger_cafml_model.norcom_cafml_main import main
-from caf.ml.functions.NorCom_caf_ml.larger_cafml_model.norcom_inputs import NorCom_inputs
+from caf.ml.functions_all.NorCom_caf_ml.larger_cafml_model.norcom_cafml_main import main
+from caf.ml.functions_all.NorCom_caf_ml.larger_cafml_model.norcom_inputs import NorCom_inputs
 
 sys.path.extend(r"C:\Users\Liberty\Documents\GitHub\caf.ml\src")
 

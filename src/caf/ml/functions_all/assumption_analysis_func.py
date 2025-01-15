@@ -13,7 +13,7 @@ from scipy.stats import shapiro
 from statsmodels.stats.diagnostic import het_breuschpagan, het_white
 from sklearn.metrics import accuracy_score
 
-from caf.ml.inputs.cafml_inputs import Models
+from caf.ml.old_inputs.cafml_inputs import Models
 
 
 def assumption_analysis(model_type, model, x_train, x_test, y_train, y_test):

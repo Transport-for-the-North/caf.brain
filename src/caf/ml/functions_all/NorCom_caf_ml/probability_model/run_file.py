@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
-from caf.ml.functions.NorCom_caf_ml.probability_model.inputs import NorCom_probability_model_inputs_cafml
-from caf.ml.functions.NorCom_caf_ml.probability_model.main import main
+from caf.ml.functions_all.NorCom_caf_ml.probability_model.inputs import NorCom_probability_model_inputs_cafml
+from caf.ml.functions_all.NorCom_caf_ml.probability_model.main import main
 sys.path.extend(r"C:\Users\Liberty\Documents\GitHub\caf.ml\src")
 
 if __name__ == "__main__":

@@ -16,10 +16,12 @@ def split_data(processed_dataframes: dict,
                index_columns: list[str],
                weight_column: str,
                time_series_split: str,
+               target_column: str,
                validation_path: Path,
                output_path: Path):
     """
 
+    :param target_column:
     :param processed_dataframes:
     :param index_columns:
     :param weight_column:
@@ -38,17 +40,30 @@ def split_data(processed_dataframes: dict,
         test = df.loc[df.index.get_level_values(index_columns) > int(time_series_split)]
         if weight_column in test:
             test = test.drop(columns=weight_column)
+        if target_column in test:
+            test = test.drop(columns=target_column)
+
 
     else:
         train, test = train_test_split(df, test_size=0.2, random_state=42)
         if weight_column in test:
             test = test.drop(columns=weight_column)
+        if target_column in test:
+            test = test.drop(columns=target_column)
 
-    validate = InitialDataProcessing.read_file(file_path=validation_path)
-    if index_columns in validate.columns:
-        validate = validate.set_index(index_columns)
 
-    train.to_csv(os.path.join(output_path, 'train.csv'), index=True)
-    test.to_csv(os.path.join(output_path, 'test.csv'), index=True)
+    if validation_path is not None:
+        validate = InitialDataProcessing.read_file(file_path=validation_path)
+        if index_columns in validate.columns:
+            validate = validate.set_index(index_columns)
 
-    return train, test, validate
+        train.to_csv(os.path.join(output_path, 'train.csv'), index=True)
+        test.to_csv(os.path.join(output_path, 'test.csv'), index=True)
+
+        return train, test, validate
+
+    else:
+        train.to_csv(os.path.join(output_path, 'train.csv'), index=True)
+        test.to_csv(os.path.join(output_path, 'test.csv'), index=True)
+
+        return train, test, None

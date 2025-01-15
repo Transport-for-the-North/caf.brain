@@ -62,8 +62,16 @@ class ValidateData(BaseDataClass):
         Check if a custom index is used or if the default index is acceptable
         """
         if self.custom_index is not None:
-            if not self.dataframe.index.equals(pd.Index(self.custom_index)):
-                raise ValueError('Custom index not correctly implemented')
+
+            missing_columns = [col for col in self.custom_index if
+                               col not in self.dataframe.index.names]
+            if missing_columns:
+                raise ValueError(f'Custom index columns missing: {missing_columns}')
+
+            if isinstance(self.dataframe.index, pd.MultiIndex):
+                index_names = self.dataframe.index.names
+                if not all(name in self.custom_index for name in index_names):
+                    raise ValueError('MultiIndex does not match custom index')
             return True
 
         return True

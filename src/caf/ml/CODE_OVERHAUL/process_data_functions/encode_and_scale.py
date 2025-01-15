@@ -59,6 +59,7 @@ def process_data_pipeline(df, numerical_features, categorical_features, target_c
     # both categorical and numerical
     if numerical_features and categorical_features is not None:
         numerical_df = preprocess_numerical_data(x, numerical_features)
+        x = x.drop(columns=numerical_features)
         categorical_df = preprocess_categorical_data(x, categorical_features)
         preprocessed_df = pd.concat([numerical_df, categorical_df], axis=1)
 

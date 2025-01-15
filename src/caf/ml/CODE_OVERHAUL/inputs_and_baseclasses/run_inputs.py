@@ -16,6 +16,7 @@ class run_file_inputs(BaseConfig):
     file_path: Optional[Path] = None
     folder_path: Optional[Path] = None
     output_path: Optional[Path] = None
+    validation_path: Optional[Path] = None
 
     # # # PROCESSING INPUT DATA # # #
     target_column: Optional[str] = None

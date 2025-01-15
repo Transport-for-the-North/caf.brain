@@ -122,14 +122,16 @@ class InitialDataProcessing:
                                               binary_prediction=self.binary_prediction)
 
         df = self.convert_to_dataframe(df, columns=df.columns, index=df.index)
-        return df
+
+        filename = os.path.basename(self.file_path) if self.file_path else "processed_data"
+        self.dataframes[filename] = df
 
     def validate_data(self) -> None:
         """
         Validate processed dataframes using the ValidateData class. Ensures
         data is in the format of the base class.
         """
-
+        print("Starting data validation")
         for name, df in self.dataframes.items():
             validator = ValidateData(
                 dataframe=df,

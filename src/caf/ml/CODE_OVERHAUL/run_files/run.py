@@ -16,6 +16,7 @@ if __name__ == '__main__':
                              file_path=Path(r"E:\2025 work streams\redo_cafml\cb_tfn_v15.csv"),
                              folder_path=None,
                              output_path=Path(r'E:\2025 work streams\redo_cafml'),
+                             validation_path=None,
 
                              # # # PROCESSING INPUT DATA # # #
                              target_column='numcarvan',

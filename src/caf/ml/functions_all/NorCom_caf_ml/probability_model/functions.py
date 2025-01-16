@@ -1331,7 +1331,7 @@ def modifying_data(data,
         if target_column in final_df.columns:
             final_df = final_df.drop(columns=target_column)
 
-        print('predict data post transformations, pre feature selection')
+        print('prediction_model data post transformations, pre feature selection')
         print(final_df)
 
         return final_df, None

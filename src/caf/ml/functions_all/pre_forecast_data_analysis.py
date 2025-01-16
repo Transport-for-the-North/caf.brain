@@ -44,7 +44,7 @@ from caf.ml.functions_all import convert_to_dataframe
 
         # Fit the model
         model_fit = regression_method.fit(x_, y)
-        y_pred = model_fit.predict(x_)
+        y_pred = model_fit.prediction_model(x_)
         y = pd.to_numeric(y, errors='coerce')
         y_pred = pd.to_numeric(y_pred, errors='coerce')
         residuals = y - y_pred

@@ -148,7 +148,7 @@ def apply_feature_selection_single_year(trained_data, predict_data):
         if isinstance(trained_model, LinearRegression):
             trained_model.fit(trained_data.drop(target_column, axis=1),
                               trained_data[target_column])
-            predictions = trained_model.predict(predict_data)
+            predictions = trained_model.prediction_model(predict_data)
 
             prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
 
@@ -162,7 +162,7 @@ def apply_feature_selection_single_year(trained_data, predict_data):
         elif skip_hyperparameter_optimisation is not None:
             trained_model.fit(trained_data.drop(target_column, axis=1),
                               trained_data[target_column])
-            predictions = trained_model.predict(predict_data)
+            predictions = trained_model.prediction_model(predict_data)
 
             prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
 
@@ -179,7 +179,7 @@ def apply_feature_selection_single_year(trained_data, predict_data):
 
             trained_model.fit(trained_data.drop(target_column, axis=1),
                               trained_data[target_column])
-            predictions = trained_model.predict(predict_data)
+            predictions = trained_model.prediction_model(predict_data)
 
             prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
 
@@ -197,7 +197,7 @@ def apply_feature_selection_single_year(trained_data, predict_data):
         else:
             trained_model.set_params(**FinalModelParameters)
             trained_model.fit(trained_data.drop(target_column, axis=1), trained_data[target_column])
-            predictions = trained_model.predict(predict_data)
+            predictions = trained_model.prediction_model(predict_data)
 
             prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
 
@@ -214,7 +214,7 @@ def apply_feature_selection_single_year(trained_data, predict_data):
         elif categorical_data is not None:
             trained_model.set_params(**FinalModelParameters)
             trained_model.fit(x_train, y_train)
-            predictions = trained_model.predict(predict_data)
+            predictions = trained_model.prediction_model(predict_data)
 
 
             prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
@@ -234,7 +234,7 @@ def apply_feature_selection_single_year(trained_data, predict_data):
         else:
             trained_model.set_params(**FinalModelParameters)
             trained_model.fit(trained_data.drop(target_column, axis=1), trained_data[target_column])
-            predictions = trained_model.predict(predict_data)
+            predictions = trained_model.prediction_model(predict_data)
 
             prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
 

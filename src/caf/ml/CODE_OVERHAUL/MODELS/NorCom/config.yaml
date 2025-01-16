@@ -22,7 +22,7 @@ categorical_features:
 numerical_features:
   - "trav_dist"
 weight_column: "w2"
-binary_prediction: "multiclass"
+binary_prediction: "0vs1"
 time_series_split: null
 
-model_choice: null
+model_choice: 'gb'

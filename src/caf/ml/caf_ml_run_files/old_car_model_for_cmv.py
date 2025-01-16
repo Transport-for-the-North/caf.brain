@@ -39,7 +39,7 @@ def test_function(df11, num_folds=5, regression_method=ElasticNet):
     """convergence warnings are expected when running this mode, this is not a cause for concern.
 
     The test_function conducts feature selection in order to determine a combination of features
-    that can best explain and therefore predict the target variable.
+    that can best explain and therefore prediction_model the target variable.
     The function utilises machine learning through the train and caf_ml_run_files split being applied to
     the chosen regression algorithm.
     GridSearch (another machine learning method) is then used to score each iteration, eventually
@@ -250,7 +250,7 @@ def cross_validation(x: np.ndarray, y: np.ndarray, alpha: float, k_folds: int = 
     for i, (train_index, test_index) in enumerate(kf.split(x, y)):
         x_train, y_train = x[train_index], y[train_index]
         x_test, y_test = x[test_index], y[test_index]
-        # y predict is
+        # y prediction_model is
         y_pred = retrained_model(
             alpha=alpha,
             x_train=x_train,
@@ -289,7 +289,7 @@ def main(params: CarInputs2, output_folder, reg_method, custom_regression_method
     1) Path to the 2011 census data/base year census data you are using
     2) A forecast year set of data
     3) A regression method (Lasso, ElasticNet or Ridge)
-    4) A target column (Y variable - what you want to predict)
+    4) A target column (Y variable - what you want to prediction_model)
     These are all specified where main is called below.
 
     The main function will call all of the above functions_all. It will conduct:

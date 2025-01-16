@@ -39,7 +39,7 @@ if __name__ == "__main__":
         single_year_prediction=None,
         multiple_year_prediction='yes',
 
-        # data sorting for predict data
+        # data sorting for prediction_model data
         index_columns_predict=['householdid', 'surveyyear', 'hholdua_b01id'],
         drop_columns_predict=['hh_type', 'hh_income', 'age_b01id', 'hholdnumadults', 'hh_income_band'],
         keep_columns_predict=None,

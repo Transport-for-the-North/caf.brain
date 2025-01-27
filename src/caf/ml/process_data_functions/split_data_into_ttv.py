@@ -43,17 +43,18 @@ def split_data(processed_dataframes: dict,
         if weight_column in test:
             test = test.drop(columns=weight_column)
         if target_column in test:
+            validate = test[target_column]
             test = test.drop(columns=target_column)
-
-
+            return train, test, validate
     else:
         strat = pd.cut(df.iloc[:, 0], 4)
         train, test = train_test_split(df, test_size=split_size, random_state=42, stratify=strat)
         if weight_column in test:
             test = test.drop(columns=weight_column)
         if target_column in test:
+            validate = test[target_column]
             test = test.drop(columns=target_column)
-
+            return train, test, validate
 
     if validation_path is not None:
         validate = InitialDataProcessing.read_file(file_path=validation_path)

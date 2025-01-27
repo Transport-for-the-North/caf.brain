@@ -1,0 +1,21 @@
+name: caf_ml
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - scikit-learn==1.51
+  - scipy==1.12.0
+  - statsmodels==0.14.0
+  - tqdm==4.65.0
+  - matplotlib==3.8.4
+  - seaborn==0.12.2
+  - mlxtend==0.23.1
+  - pytables==3.9.2
+  - pymc3==3.11.2
+  - m2w64-toolchain==5.3.0
+  - h5py==3.11.0
+  - typing==3.10.0.0
+  - tensorflow==2.10.0
+  - lxml==5.2.1
+  - pandas==2.2.0
+prefix: C:\ProgramData\Anaconda3\envs\caf_ml

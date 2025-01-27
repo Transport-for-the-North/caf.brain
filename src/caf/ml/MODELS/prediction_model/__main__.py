@@ -1,0 +1,105 @@
+# -*- coding: utf-8 -*-
+"""
+Created on: 1/16/2025
+Original author: Adil Zaheer
+"""
+# pylint: disable=import-error,wrong-import-position
+# pylint: enable=import-error,wrong-import-position
+import os
+import pandas as pd
+from caf.ml.data_analysis.data_analysis_main import main_evaluate_input_data
+from caf.ml.feature_selection.feature_selection_main import main_feature_selection
+from caf.ml.hyperparameter_optimisation.hyper_optim_main import main_hyperparameter_optimisation
+from caf.ml.model_selection.model_selection_main import main_model_selection
+from caf.ml.prediction.prediction_main import main_prediction
+from caf.ml.inputs_and_baseclasses.run_inputs import run_file_inputs
+from caf.ml.process_data_functions.process_data_main import main_input_data
+import time
+
+def main(params: run_file_inputs):
+    start_time = time.time()
+
+    output_path = os.path.join(params.output_path, 'output')
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    data_dict = main_input_data(output_path=output_path,
+                                file_path=params.file_path,
+                                folder_path=params.folder_path,
+                                target_column=params.target_column,
+                                custom_index=params.custom_index,
+                                column_name_to_drop_rows=params.column_name_to_drop_rows,
+                                value_in_row=params.value_in_row,
+                                weight_column=params.weight_column,
+                                categorical_features=params.categorical_features,
+                                numerical_features=params.numerical_features,
+                                binary_prediction=params.binary_prediction,
+                                time_series_split=params.time_series_split,
+                                validation_path=params.validation_path,
+                                split_size=params.split_size)
+
+    train_scaled = pd.DataFrame.from_dict(data_dict['train_scaled'])
+    test_scaled = pd.DataFrame.from_dict(data_dict['test_scaled'])
+    train_unscaled = pd.DataFrame.from_dict(data_dict['train_unscaled'])
+    test_unscaled = pd.DataFrame.from_dict(data_dict['test_unscaled'])
+
+    validate = None
+    if data_dict['validate'] is not None and len(data_dict['validate']) > 0:
+        validate = pd.DataFrame.from_dict(data_dict['validate'])
+
+    (model_initialised,
+     x_train_model_fit,
+     residuals, x_test,
+     x_train, y_train) = main_model_selection(train=train_scaled,
+                                              target_column=params.target_column,
+                                              weight_column=params.weight_column,
+                                              output=output_path,
+                                              model=params.model_choice,
+                                              binary_prediction=params.binary_prediction)
+
+    train_transformed, test_transformed = main_evaluate_input_data(model_initialised=model_initialised,
+                                                                   residuals=residuals,
+                                                                   x_test=x_test,
+                                                                   train_scaled=train_scaled,
+                                                                   full_transformations=params.full_transformations,
+                                                                   train_unscaled=train_unscaled,
+                                                                   test_unscaled=test_unscaled,
+                                                                   categorical_features=params.categorical_features,
+                                                                   numerical_features=params.numerical_features,
+                                                                   target_column=params.target_column,
+                                                                   weight_column=params.weight_column,
+                                                                   test_scaled=test_scaled,
+                                                                   x_train=x_train,
+                                                                   y_train=y_train)
+
+    train_final, test_final = main_feature_selection(train=train_transformed,
+                                                     test=test_transformed,
+                                                     target_column=params.target_column,
+                                                     cv=params.cv,
+                                                     regression_method=model_initialised,
+                                                     weight_column=params.weight_column,
+                                                     binary_prediction=params.binary_prediction,
+                                                     output=output_path,
+                                                     skip_feature_selection=params.skip_feature_selection,
+                                                     intensive_feature_selection=params.intensive_feature_selection)
+
+    best_model = main_hyperparameter_optimisation(train_final=train_final,
+                                                  target_column=params.target_column,
+                                                  model_instance=model_initialised,
+                                                  model_name=params.model_choice,
+                                                  binary_prediction=params.binary_prediction,
+                                                  cv=params.cv,
+                                                  weight_column=params.weight_column,
+                                                  output_folder=output_path)
+
+    y_pred = main_prediction(model=best_model,
+                             test=test_final,
+                             target_column=params.target_column,
+                             output_folder=output_path,
+                             validation=validate,
+                             weight_column=params.weight_column,
+                             binary_prediction=params.binary_prediction)
+
+    end_time = time.time()
+    print(f"Total run time: {end_time - start_time:.2f} seconds")
+    return

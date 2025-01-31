@@ -11,15 +11,17 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import log_loss, mean_squared_error
 from caf.ml.MODELS.prediction_model.prediction_model_inputs import Models
 from sklearn.model_selection import train_test_split, cross_val_score
+from scipy import stats
 
 
-def find_coefs(train,
-               target_column,
-               output_folder,
-               weight_column,
-               model_initialised):
+def initialise_model(train,
+                     target_column,
+                     output_folder,
+                     weight_column,
+                     model_initialised):
     x = train.drop(columns=[target_column])
     y = train[target_column]
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.35, random_state=42)
@@ -36,34 +38,43 @@ def find_coefs(train,
     if os.path.exists(model_filename):
         model_fit = joblib.load(model_filename)
     else:
-        model_fit = model_initialised.fit(x_train, y_train, sample_weight=weight)
+        if weight is not None:
+            model_fit = model_initialised.fit(x_train, y_train, sample_weight=weight)
+        else:
+            model_fit = model_initialised.fit(x_train, y_train)
+
         joblib.dump(model_fit, model_filename)
 
     y_pred = model_fit.predict(x_test)
     residuals = y_test - y_pred
 
+    # old method
+    # coeff_df = None
+    # if hasattr(model_fit, 'coef_'):
+    #     coefficients = model_fit.coef_
+    #     coefficients = np.squeeze(coefficients)
+    #
+    #     if coefficients.ndim == 1:
+    #         coeff_df = pd.DataFrame({
+    #             'Feature': x_train.columns,
+    #             'Coefficient': coefficients
+    #         })
+    #     else:
+    #         coeff_df = pd.DataFrame(coefficients.T, columns=x_train.columns)
+    #         coeff_df.insert(0, 'Feature', x_train.columns)
+    #         # coeff_df = pd.DataFrame(coefficients.T, columns=x_train.columns[:coefficients.shape[1]])
+    #         # coeff_df.insert(0, 'Feature', x_train.columns[:coefficients.shape[1]])
 
-    if hasattr(model_fit, 'coef_'):
-        coefficients = model_fit.coef_
-        print(f"Model Coefficients shape: {coefficients.shape}")
+    coeff_df, mse = calculate_model_coeff(model=model_fit,
+                                          x_train=x_train,
+                                          x_test=x_test,
+                                          y_test=y_test,
+                                          residuals=residuals)
 
-        coefficients = np.squeeze(coefficients)
-
-        if coefficients.ndim == 1:
-            coeff_df = pd.DataFrame({
-                'Feature': x_train.columns,
-                'Coefficient': coefficients
-            })
-        else:
-            coeff_df = pd.DataFrame(coefficients.T, columns=x_train.columns)
-            coeff_df.insert(0, 'Feature', x_train.columns)
-            # coeff_df = pd.DataFrame(coefficients.T, columns=x_train.columns[:coefficients.shape[1]])
-            # coeff_df.insert(0, 'Feature', x_train.columns[:coefficients.shape[1]])
-
+    if coeff_df is not None:
         coeff_df.to_csv(os.path.join(output_folder, 'initial_model_coefficients.csv'), index=False)
 
-
-    return model_fit, residuals, x_train, x_test, y_train, y_test
+    return model_fit, residuals, x_train, x_test, y_train, y_test, mse
 
 
 def select_model(train: pd.DataFrame,
@@ -71,7 +82,7 @@ def select_model(train: pd.DataFrame,
                  weight_column: str,
                  models_to_test: list[Models],
                  output_folder: Path,
-                 binary_prediction: str):
+                 classification_prediction: str):
 
     weight = None
     y = train[target_column]
@@ -85,13 +96,14 @@ def select_model(train: pd.DataFrame,
     best_model = None
 
     for model_enum in models_to_test:
+        # scikit
         model_instance = model_enum.get_model()
-        print(model_instance)
+        print(f"Testing model: {model_instance}")
 
         if isinstance(model_instance, LogisticRegression):
             model_instance.set_params(max_iter=1000)
 
-        if binary_prediction is not None:
+        if classification_prediction is not None:
             scores_r2, scores_mse = score_regression(weight=weight,
                                                      model_instance=model_instance,
                                                      x=x,
@@ -159,3 +171,127 @@ def score_classification(weight,
                                       scoring="roc_auc", n_jobs=-1, verbose=1)
 
     return scores_f1, scores_auc
+
+
+def calculate_model_coeff(model,
+                          x_train,
+                          x_test,
+                          y_test,
+                          residuals):
+
+    if not hasattr(model, 'coef_'):
+        return None
+
+    n = x_train.shape[0]
+    p = x_train.shape[1]
+    dof = n - p - 1
+
+    is_classifier = hasattr(model, 'predict_proba')
+    if is_classifier:
+        # classification
+        proba = model.predict_proba(x_test)
+        if proba.shape[1] == 2:
+            mse = log_loss(y_test, proba[:, 1])
+        else:
+            mse = log_loss(y_test, proba)
+    else:
+        # regression
+        mse = np.mean(residuals ** 2)
+
+    # variance-covariance matrix
+    X_with_intercept = np.column_stack([np.ones(n), x_train]) if hasattr(model,
+                                                                         'intercept_') else x_train
+    covariance_matrix = np.linalg.pinv(X_with_intercept.T.dot(X_with_intercept)) * mse
+
+    std_errors = np.sqrt(np.diag(covariance_matrix))
+
+    if hasattr(model, 'intercept_'):
+        intercept = np.array(model.intercept_).flatten()
+        coefficients = np.array(model.coef_).flatten()
+        coefficients = np.concatenate([intercept, coefficients])
+    else:
+        coefficients = model.coef_.flatten()
+
+    # t-values and p-values
+    t_values = coefficients / std_errors
+    p_values = 2 * (1 - stats.t.cdf(abs(t_values), dof))
+
+    feature_names = ['intercept'] + list(x_train.columns) if hasattr(model, 'intercept_') else list(x_train.columns)
+
+    coeff_df = pd.DataFrame({
+        'Feature': feature_names,
+        'Coefficient': coefficients,
+        'Std_Error': std_errors,
+        'T_Value': t_values,
+        'P_Value': p_values
+    })
+
+    return coeff_df, mse
+
+
+def calculate_final_coefficients(model,
+                                 test_data,
+                                 training_mse,
+                                 predictions,
+                                 validation_data,
+                                 target_column,
+                                 is_classification):
+    if not hasattr(model, 'coef_'):
+        return None
+
+    if validation_data is not None and target_column is not None:
+        if is_classification:
+            # classification
+            if hasattr(model, 'predict_proba'):
+                proba = model.predict_proba(test_data)
+                if proba.shape[1] == 2:
+                    # Binary
+                    mse = log_loss(validation_data[target_column], proba[:, 1])
+                else:
+                    # Multiclass
+                    mse = log_loss(validation_data[target_column], proba)
+            else:
+                # LinearSVC
+                mse = log_loss(validation_data[target_column],
+                               predictions,
+                               labels=np.unique(validation_data[target_column]))
+            print(f"Using validation log loss: {mse}")
+        else:
+            # regression
+            mse = mean_squared_error(validation_data[target_column], predictions)
+            print(f"Using validation MSE: {mse}")
+    else:
+        mse = training_mse
+        print(f"Using training {'log loss' if is_classification else 'MSE'}: {mse}")
+
+
+    feature_names = list(test_data.columns)
+    if hasattr(model, 'intercept_'):
+        coefficients = np.array(model.coef_).flatten()
+        intercept = np.array(model.intercept_).flatten()
+        coefficients = np.concatenate([intercept, coefficients])
+        feature_names = ['intercept'] + feature_names
+    else:
+        coefficients = model.coef_.flatten()
+
+    n = test_data.shape[0]
+    p = test_data.shape[1]
+    dof = n - p - 1
+
+    X_with_intercept = np.column_stack([np.ones(n), test_data]) if hasattr(model,
+                                                                           'intercept_') else test_data
+    covariance_matrix = np.linalg.pinv(X_with_intercept.T.dot(X_with_intercept)) * mse
+    std_errors = np.sqrt(np.diag(covariance_matrix))
+    t_values = coefficients / std_errors
+    p_values = 2 * (1 - stats.t.cdf(abs(t_values), dof))
+
+    coeff_df = pd.DataFrame({
+        'Feature': feature_names,
+        'Coefficient': coefficients,
+        'Std_Error': std_errors,
+        'T_Value': t_values,
+        'P_Value': p_values,
+        'MSE_Source': 'validation' if validation_data is not None else 'training'
+    })
+
+    return coeff_df

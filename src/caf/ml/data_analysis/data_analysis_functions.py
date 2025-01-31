@@ -3,6 +3,8 @@
 Created on: 1/17/2025
 Original author: Adil Zaheer
 """
+import os.path
+
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 import numpy as np
@@ -19,10 +21,18 @@ from caf.ml.process_data_functions.encode_and_scale import preprocess_numerical_
 from sklearn.linear_model import (Ridge,
                                   Lasso,
                                   ElasticNet,
-                                  LinearRegression)
+                                  LinearRegression,
+                                  LogisticRegression)
+from sklearn.ensemble import (GradientBoostingClassifier,
+                              RandomForestClassifier,
+                              ExtraTreesClassifier)
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.multiclass import OneVsRestClassifier
+
 
 def pre_forecast_data_analysis(residuals,
                                model,
+                               model_initialised,
                                x_test,
                                train_scaled,
                                test_scaled,
@@ -34,76 +44,106 @@ def pre_forecast_data_analysis(residuals,
                                target_column,
                                weight_column,
                                x_train,
-                               y_train):
+                               output_folder,
+                               is_time_series):
 
     alpha = 0.05
-    train_final = None
-    test_final = None
-    linearity_present = False
-    normality_present = False
-    multicolinearity_present = False
-    autocorrelation_present = False
-    heteroscedasticity_present = False
+    issues = {
+        'linearity': False,
+        'normality': False,
+        'multicolinearity': False,
+        'autocorrelation': False,
+        'heteroscedasticity': False
+    }
 
-    if isinstance(model, (LinearRegression, Lasso, Ridge, ElasticNet)):
-        # Statsmodels conversion and tests
-        X_with_const_train = add_constant(x_train)
-        ols_model = OLS(y_train, X_with_const_train).fit()
-        residuals = ols_model.resid
+    is_statsmodel = any(base.__module__.startswith('statsmodels')
+                        for base in model_initialised.__class__.__mro__)
+    is_classification = isinstance(model, (LogisticRegression,
+                                           GradientBoostingClassifier,
+                                           RandomForestClassifier,
+                                           ExtraTreesClassifier,
+                                           DecisionTreeClassifier,
+                                           OneVsRestClassifier)) or (is_statsmodel and
+                                           ('Logit' in str(model.__class__) or 'MNLogit' in str(model.__class__)))
 
-        # Rainbow Test for Linearity
-        rainbow_statistic, rainbow_p_value = linear_rainbow(ols_model)
-        print(f"Rainbow test p-value: {rainbow_p_value}")
-        if rainbow_p_value < alpha:
-            print("Warning: Rainbow test suggests non-linearity.")
-            linearity_present = True
+    is_linear_model = (isinstance(model, (LinearRegression,
+                                          Ridge,
+                                          Lasso,
+                                          ElasticNet,
+                                          LogisticRegression)) or
+                       (is_statsmodel and any(
+                           name in str(model.__class__) for name in ['OLS', 'GLM', 'Logit', 'MNLogit'])))
 
-        # Shapiro-Wilk Test for Normality
+    # if is_statsmodel:
+    #     X_with_const = add_constant(x_test)
+    #     model_for_tests = model
+    # else:
+    #     # scikit models, convert to stats
+    #     X_with_const_train = add_constant(x_train)
+    #     if is_classification:
+    #         # classification
+    #         model_for_tests = sm.Logit(y_train, X_with_const_train).fit(disp=0)
+    #     else:
+    #         # regression
+    #         model_for_tests = sm.OLS(y_train, X_with_const_train).fit()
+    #     residuals = model_for_tests.resid
+    #     X_with_const = add_constant(x_test)
+
+    # multicolinearity
+    print('Checking for multicollinearity')
+    vif_data = pd.DataFrame()
+    vif_data["Feature"] = train_scaled.columns
+    vif_data["VIF"] = [variance_inflation_factor(train_scaled.values, i) for i in
+                       range(train_scaled.shape[1])]
+    high_vif = vif_data[vif_data["VIF"] > 10]
+    if not high_vif.empty:
+        print("High VIF variables:")
+        print(high_vif)
+        issues['multicolinearity'] = True
+
+    X_with_const = add_constant(x_test)
+    # Breusch-Pagan Heteroscedasticity
+    print('Checking for heteroscedasticity')
+    bp_test_statistic, bp_test_p_value, _, _ = het_breuschpagan(residuals, X_with_const)
+    print(f"Breusch-Pagan test p-value: {bp_test_p_value}")
+
+    # White Test Heteroscedasticity
+    white_test_statistic, white_test_p_value, _, _ = het_white(residuals, X_with_const)
+    print(f"White's test p-value: {white_test_p_value}")
+
+    if bp_test_p_value < alpha or white_test_p_value < alpha:
+        print("Warning: Heteroscedasticity detected.")
+        issues['heteroscedasticity'] = True
+
+
+    if is_linear_model and not is_classification:
+        print("Running tests for linear model assumptions")
+
+        # Linearity
+        print('Checking linearity')
+        for col in x_train.columns:
+            correlation = np.corrcoef(x_train[col], residuals)[0, 1]
+            if abs(correlation) > 0.1:
+                print(f"Warning: {col} may not be linearly related to the target.")
+                issues['linearity'] = True
+
+        # Normality
         shapiro_statistic, shapiro_p_value = shapiro(residuals)
         print(f"Shapiro-Wilk test p-value: {shapiro_p_value}")
         if shapiro_p_value < alpha:
             print("Warning: Shapiro-Wilk test suggests non-normality of residuals.")
-            normality_present = True
+            issues['normality'] = True
 
-        # multicolinearity
-        print('Checking for multicollinearity')
-        vif_data = pd.DataFrame()
-        vif_data["Feature"] = train_scaled.columns
-        vif_data["VIF"] = [variance_inflation_factor(train_scaled.values, i) for i in range(train_scaled.shape[1])]
-        high_vif = vif_data[vif_data["VIF"] > 10]
-        if not high_vif.empty:
-            print("High VIF variables:")
-            print(high_vif)
-            multicolinearity_present = True
-    else:
+    if is_time_series is not False:
         # Autocorrelation
         dw_statistic = durbin_watson(residuals)
         print(f"Durbin-Watson statistic: {dw_statistic}")
         if dw_statistic < 1.5 or dw_statistic > 2.5:
             print("Warning: Potential autocorrelation in residuals.")
-            autocorrelation_present = True
+            issues['autocorrelation'] = True
 
-        # Breusch-Pagan Test for Heteroscedasticity
-        X_with_const = add_constant(x_test)
-        print('Checking for heteroscedasticity')
-        bp_test_statistic, bp_test_p_value, _, _ = het_breuschpagan(residuals, X_with_const)
-        print(f"Breusch-Pagan test p-value: {bp_test_p_value}")
-        if bp_test_p_value < alpha:
-            print("Warning: Breusch-Pagan test suggests heteroscedasticity.")
-            heteroscedasticity_present = True
-
-        # White's Test for Heteroscedasticity
-        white_test_statistic, white_test_p_value, _, _ = het_white(residuals, X_with_const)
-        print(f"White's test p-value: {white_test_p_value}")
-        if white_test_p_value < alpha:
-            print("Warning: White's test suggests heteroscedasticity.")
-            heteroscedasticity_present = True
-
-    if (linearity_present or
-        normality_present or
-        multicolinearity_present or
-        autocorrelation_present or
-        heteroscedasticity_present) and full_transformations:
+    issues_df = pd.DataFrame(list(issues.items()), columns=['test', 'result'])
+    if any(issues.values()) and full_transformations:
         print('Data issue present, corrective transformations applied to numerical features')
         if numerical_features is not None:
             train_final = transform_data(df=train_unscaled,
@@ -117,16 +157,16 @@ def pre_forecast_data_analysis(residuals,
                                         categorical_features=categorical_features,
                                         target_column=target_column,
                                         weight_column=weight_column)
+            issues_df.to_csv(os.path.join(output_folder, 'data_issues_present.csv'))
             return train_final, test_final
         else:
+            issues_df.to_csv(os.path.join(output_folder, 'data_issues_present.csv'))
             return train_scaled, test_scaled
 
-    elif (linearity_present or normality_present or
-          multicolinearity_present or autocorrelation_present or
-          heteroscedasticity_present) and full_transformations is False:
-
-            print('Data issue present but transformations are not permitted by the user.')
-            return train_scaled, test_scaled
+    elif any(issues.values()):
+        print('Data issue present but transformations are not permitted by the user.')
+        issues_df.to_csv(os.path.join(output_folder, 'data_issues_present.csv'))
+        return train_scaled, test_scaled
     else:
         print('No data issues present.')
         return train_scaled, test_scaled

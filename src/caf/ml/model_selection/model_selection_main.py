@@ -5,14 +5,15 @@ Original author: Adil Zaheer
 """
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
-from caf.ml.model_selection.model_selection_functions import select_model, find_coefs
+from caf.ml.model_selection.model_selection_functions import select_model, initialise_model
+import statsmodels.api as sm
 
 def main_model_selection(train,
                          target_column,
                          weight_column,
                          output,
                          model,
-                         binary_prediction):
+                         classification_prediction):
 
     if not isinstance(model, list):
         model = [model]
@@ -26,17 +27,18 @@ def main_model_selection(train,
                                          weight_column=weight_column,
                                          models_to_test=model,
                                          output_folder=output,
-                                         binary_prediction=binary_prediction)
+                                         classification_prediction=classification_prediction)
     else:
         raise ValueError("Model incorrectly provided or not provided at all \
                           Provide a valid model(s) from the Models Enum class.")
 
     (model_fit, residuals,
      x_train, x_test,
-     y_train, y_test) = find_coefs(train=train,
-                                   target_column=target_column,
-                                   output_folder=output,
-                                   weight_column=weight_column,
-                                   model_initialised=model_initialised)
+     y_train, y_test,
+     mse) = initialise_model(train=train,
+                             target_column=target_column,
+                             output_folder=output,
+                             weight_column=weight_column,
+                             model_initialised=model_initialised)
 
-    return model_initialised, model_fit, residuals, x_test, x_train, y_train
+    return model_initialised, model_fit, residuals, x_test, x_train, y_train, mse

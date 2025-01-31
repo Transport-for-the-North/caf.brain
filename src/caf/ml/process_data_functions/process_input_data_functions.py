@@ -25,7 +25,7 @@ class InitialDataProcessing:
                  weight_column,
                  categorical_features,
                  numerical_features,
-                 binary_prediction,
+                 classification_prediction,
                  is_test_data=False):
 
         self.file_path = file_path
@@ -38,7 +38,7 @@ class InitialDataProcessing:
         self.weight_column = weight_column
         self.categorical_features = categorical_features
         self.numerical_features = numerical_features
-        self.binary_prediction = binary_prediction
+        self.classification_prediction = classification_prediction
         self.is_test_data = is_test_data
 
         self.df: pd.DataFrame = None
@@ -156,10 +156,10 @@ class InitialDataProcessing:
             if self.custom_index:
                 df = self.index_sorter(df, self.custom_index)
 
-            if self.binary_prediction:
+            if self.classification_prediction:
                 df = self.transform_target_column(df,
                                                   target_column=self.target_column,
-                                                  binary_prediction=self.binary_prediction)
+                                                  classification_prediction=self.classification_prediction)
 
         df = self.convert_to_dataframe(df, columns=df.columns, index=df.index)
 
@@ -399,14 +399,14 @@ class InitialDataProcessing:
             return None
 
     @staticmethod
-    def transform_target_column(df, target_column, binary_prediction):
-        if isinstance(binary_prediction, tuple) and len(binary_prediction) == 2:
-            print(f'Binary model selected for values {binary_prediction}')
-            df = df[df[target_column].isin(binary_prediction)]
+    def transform_target_column(df, target_column, classification_prediction):
+        if isinstance(classification_prediction, tuple) and len(classification_prediction) == 2:
+            print(f'Binary model selected for values {classification_prediction}')
+            df = df[df[target_column].isin(classification_prediction)]
 
-        elif isinstance(binary_prediction, tuple) and len(binary_prediction) == 3:
-            print(f'Multiclass model selected for values {binary_prediction}')
-            df = df[df[target_column].isin(binary_prediction)]
+        elif isinstance(classification_prediction, tuple) and len(classification_prediction) == 3:
+            print(f'Multiclass model selected for values {classification_prediction}')
+            df = df[df[target_column].isin(classification_prediction)]
 
         df[target_column] = df[target_column].astype(int)
         unique_values = df[target_column].unique()

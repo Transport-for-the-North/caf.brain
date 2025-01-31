@@ -30,7 +30,7 @@ def rf_feature_selection(data,
                          cv,
                          regression_method,
                          weight_column,
-                         binary_prediction):
+                         classification_prediction):
 
     if isinstance(regression_method, LogisticRegression):
         regression_method.set_params(max_iter=1000)
@@ -41,7 +41,7 @@ def rf_feature_selection(data,
     weight = data[weight_column].values.flatten() if weight_column else None
     weight_df = data[weight_column] if weight_column else None
 
-    if binary_prediction:
+    if classification_prediction:
         model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
     else:
         model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
@@ -85,7 +85,7 @@ def rf_feature_selection(data,
                                                       regression_method=regression_method,
                                                       weight=weight,
                                                       weight_df=weight_df,
-                                                      binary_prediction=binary_prediction)
+                                                      classification_prediction=classification_prediction)
     else:
         dataframe_final = pd.concat([X[selected_features], y], axis=1)
         dataframe_final = pd.concat([dataframe_final, weight_df], axis=1)
@@ -98,11 +98,11 @@ def feature_selection_intensive(x,
                                 regression_method,
                                 weight,
                                 weight_df,
-                                binary_prediction):
+                                classification_prediction):
 
     original_index = x.index
 
-    if binary_prediction:
+    if classification_prediction:
         selected_features = _classification_feature_selection(x, y, weight)
     else:
         selected_features = _regression_feature_selection(x, y, weight)

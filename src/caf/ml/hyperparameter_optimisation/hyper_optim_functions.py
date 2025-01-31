@@ -25,7 +25,7 @@ def select_param(train_final,
                  target_column,
                  model_instance,
                  model_name,
-                 binary_prediction,
+                 classification_prediction,
                  cv,
                  weight_column,
                  output_folder):
@@ -44,7 +44,7 @@ def select_param(train_final,
         print('No hyperparameters in Linear Regression. Skipping hyperparameter optimisation.')
         return model_instance
 
-    if binary_prediction is not None:
+    if classification_prediction is not None:
         if isinstance(model_instance,
                       (RandomForestClassifier, ExtraTreesClassifier, DecisionTreeClassifier)):
             if isinstance(model_instance, DecisionTreeClassifier):

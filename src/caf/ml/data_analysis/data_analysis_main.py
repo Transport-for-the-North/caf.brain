@@ -9,7 +9,8 @@ from caf.ml.data_analysis.data_analysis_functions import pre_forecast_data_analy
 
 
 
-def main_evaluate_input_data(model_initialised,
+def main_evaluate_input_data(model_fit,
+                             model_initialised,
                              residuals,
                              x_test,
                              train_scaled,
@@ -22,10 +23,11 @@ def main_evaluate_input_data(model_initialised,
                              target_column,
                              weight_column,
                              x_train,
-                             y_train):
+                             output_folder,
+                             is_time_series):
 
     train_transformed, test_transformed = pre_forecast_data_analysis(residuals=residuals,
-                                                                     model=model_initialised,
+                                                                     model=model_fit,
                                                                      x_test=x_test,
                                                                      train_scaled=train_scaled,
                                                                      test_scaled=test_scaled,
@@ -37,7 +39,9 @@ def main_evaluate_input_data(model_initialised,
                                                                      target_column=target_column,
                                                                      weight_column=weight_column,
                                                                      x_train=x_train,
-                                                                     y_train=y_train)
+                                                                     model_initialised=model_initialised,
+                                                                     output_folder=output_folder,
+                                                                     is_time_series=is_time_series)
 
     if train_transformed is not None:
         return train_transformed, test_transformed

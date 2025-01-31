@@ -15,6 +15,12 @@ from caf.ml.prediction.prediction_main import main_prediction
 from caf.ml.inputs_and_baseclasses.run_inputs import run_file_inputs
 from caf.ml.process_data_functions.process_data_main import main_input_data
 import time
+from caf.ml.statsmodel_pipeline.statsmodel_main import main_stats_model
+
+# todo add is_time_series which overwrites the cv input so makes sure the model uses timeseriessplit
+# todo need to see if it drops multiple rows or not with my existing func
+# todo ordinary encoding for to mitigate lots of rows issue
+# todo track model scores with initial versus improved model so test with training data twice (at start and at the end)
 
 def main(params: run_file_inputs):
     start_time = time.time()
@@ -33,31 +39,47 @@ def main(params: run_file_inputs):
                                 weight_column=params.weight_column,
                                 categorical_features=params.categorical_features,
                                 numerical_features=params.numerical_features,
-                                binary_prediction=params.binary_prediction,
-                                time_series_split=params.time_series_split,
+                                classification_prediction=params.classification_prediction,
+                                split_by_value=params.split_by_value,
                                 validation_path=params.validation_path,
-                                split_size=params.split_size)
+                                split_size=params.split_size,
+                                sample_size_encode=params.sample_size_encode,
+                                select_encode_values=params.select_encode_values,
+                                encode_values_to_drop=params.encode_values_to_drop)
 
     train_scaled = pd.DataFrame.from_dict(data_dict['train_scaled'])
     test_scaled = pd.DataFrame.from_dict(data_dict['test_scaled'])
     train_unscaled = pd.DataFrame.from_dict(data_dict['train_unscaled'])
     test_unscaled = pd.DataFrame.from_dict(data_dict['test_unscaled'])
 
+    train_scaled.to_csv(os.path.join(output_path, 'train_scaled.csv'), index=True)
+    test_scaled.to_csv(os.path.join(output_path, 'test_scaled.csv'), index=True)
+
     validate = None
     if data_dict['validate'] is not None and len(data_dict['validate']) > 0:
         validate = pd.DataFrame.from_dict(data_dict['validate'])
 
+    is_statsmodel = any(base.__module__.startswith('statsmodels')
+                        for base in params.model_choice.__class__.__mro__)
+    if is_statsmodel:
+        return main_stats_model(model_choice=params.model_choice,
+                                train=train_scaled,
+                                target_column=params.target_column,
+                                weight_column=params.weight_column)
+
     (model_initialised,
      x_train_model_fit,
      residuals, x_test,
-     x_train, y_train) = main_model_selection(train=train_scaled,
-                                              target_column=params.target_column,
-                                              weight_column=params.weight_column,
-                                              output=output_path,
-                                              model=params.model_choice,
-                                              binary_prediction=params.binary_prediction)
+     x_train, y_train,
+     mse) = main_model_selection(train=train_scaled,
+                                 target_column=params.target_column,
+                                 weight_column=params.weight_column,
+                                 output=output_path,
+                                 model=params.model_choice,
+                                 classification_prediction=params.classification_prediction)
 
-    train_transformed, test_transformed = main_evaluate_input_data(model_initialised=model_initialised,
+    train_transformed, test_transformed = main_evaluate_input_data(model_fit=x_train_model_fit,
+                                                                   model_initialised=model_initialised,
                                                                    residuals=residuals,
                                                                    x_test=x_test,
                                                                    train_scaled=train_scaled,
@@ -70,7 +92,8 @@ def main(params: run_file_inputs):
                                                                    weight_column=params.weight_column,
                                                                    test_scaled=test_scaled,
                                                                    x_train=x_train,
-                                                                   y_train=y_train)
+                                                                   output_folder=params.output_path,
+                                                                   is_time_series=params.is_time_series)
 
     train_final, test_final = main_feature_selection(train=train_transformed,
                                                      test=test_transformed,
@@ -78,7 +101,7 @@ def main(params: run_file_inputs):
                                                      cv=params.cv,
                                                      regression_method=model_initialised,
                                                      weight_column=params.weight_column,
-                                                     binary_prediction=params.binary_prediction,
+                                                     classification_prediction=params.classification_prediction,
                                                      output=output_path,
                                                      skip_feature_selection=params.skip_feature_selection,
                                                      intensive_feature_selection=params.intensive_feature_selection)
@@ -87,7 +110,7 @@ def main(params: run_file_inputs):
                                                   target_column=params.target_column,
                                                   model_instance=model_initialised,
                                                   model_name=params.model_choice,
-                                                  binary_prediction=params.binary_prediction,
+                                                  classification_prediction=params.classification_prediction,
                                                   cv=params.cv,
                                                   weight_column=params.weight_column,
                                                   output_folder=output_path)
@@ -98,7 +121,8 @@ def main(params: run_file_inputs):
                              output_folder=output_path,
                              validation=validate,
                              weight_column=params.weight_column,
-                             binary_prediction=params.binary_prediction)
+                             classification_prediction=params.classification_prediction,
+                             mse=mse)
 
     end_time = time.time()
     print(f"Total run time: {end_time - start_time:.2f} seconds")

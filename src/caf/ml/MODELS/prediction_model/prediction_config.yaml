@@ -20,12 +20,16 @@ categorical_features:
   - "hholdnumadults"
 numerical_features: null
 weight_column: "w2"
-binary_prediction: [0, 1]
-time_series_split: null
+classification_prediction: [0, 1]
+split_by_value: null
 split_size: 0.2
+sample_size_encode: False
+select_encode_values: False
+encode_values_to_drop: null
 
 model_choice: LOGIT_REGRESSION_ELASTICNET
-full_transformations: False
+is_time_series: False
+full_transformations: True
 cv: "kfold"
 skip_feature_selection: False
 intensive_feature_selection: False

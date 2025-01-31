@@ -5,17 +5,149 @@ Original author: Adil Zaheer
 """
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
-import os
-import numpy as np
-import pandas as pd
 
-from sklearn.impute import SimpleImputer
+# did have this in final functions for prediction model but statsmodels causing lots of issues
+# def pre_forecast_data_analysis(residuals,
+#                                model,
+#                                model_initialised,
+#                                x_test,
+#                                train_scaled,
+#                                test_scaled,
+#                                full_transformations,
+#                                train_unscaled,
+#                                test_unscaled,
+#                                numerical_features,
+#                                categorical_features,
+#                                target_column,
+#                                weight_column,
+#                                x_train,
+#                                y_train):
+#
+#     alpha = 0.05
+#     issues = {
+#         'linearity': False,
+#         'normality': False,
+#         'multicolinearity': False,
+#         'autocorrelation': False,
+#         'heteroscedasticity': False
+#     }
+#
+#     # is_statsmodel = hasattr(model_initialised, 'model') and model_initialised.__class__.__module__.startswith('statsmodels')
+#     is_statsmodel = any(base.__module__.startswith('statsmodels')
+#                         for base in model_initialised.__class__.__mro__)
+#     is_classification = isinstance(model, (LogisticRegression,
+#                                            GradientBoostingClassifier,
+#                                            RandomForestClassifier,
+#                                            ExtraTreesClassifier,
+#                                            DecisionTreeClassifier,
+#                                            OneVsRestClassifier)) or (is_statsmodel and
+#                                            ('Logit' in str(model.__class__) or 'MNLogit' in str(model.__class__)))
+#
+#     is_linear_model = (isinstance(model, (LinearRegression,
+#                                           Ridge,
+#                                           Lasso,
+#                                           ElasticNet,
+#                                           LogisticRegression)) or
+#                        (is_statsmodel and any(
+#                            name in str(model.__class__) for name in ['OLS', 'GLM', 'Logit', 'MNLogit'])))
+#
+#
+#     if is_statsmodel:
+#         X_with_const = add_constant(x_test)
+#         model_for_tests = model
+#     else:
+#         # scikit models, convert to stats
+#         X_with_const_train = add_constant(x_train)
+#         if is_classification:
+#             # classification
+#             model_for_tests = sm.Logit(y_train, X_with_const_train).fit(disp=0)
+#         else:
+#             # regression
+#             model_for_tests = sm.OLS(y_train, X_with_const_train).fit()
+#         residuals = model_for_tests.resid
+#         X_with_const = add_constant(x_test)
+#
+#     if is_linear_model:
+#         print("Running tests for linear model assumptions")
+#
+#         # multicolinearity
+#         print('Checking for multicollinearity')
+#         vif_data = pd.DataFrame()
+#         vif_data["Feature"] = train_scaled.columns
+#         vif_data["VIF"] = [variance_inflation_factor(train_scaled.values, i) for i in
+#                            range(train_scaled.shape[1])]
+#         high_vif = vif_data[vif_data["VIF"] > 10]
+#         if not high_vif.empty:
+#             print("High VIF variables:")
+#             print(high_vif)
+#             issues['multicolinearity'] = True
+#
+#         if not is_classification:
+#             # Rainbow Linearity
+#             rainbow_statistic, rainbow_p_value = linear_rainbow(model_for_tests)
+#             print(f"Rainbow test p-value: {rainbow_p_value}")
+#             if rainbow_p_value < alpha:
+#                 print("Warning: Rainbow test suggests non-linearity.")
+#                 issues['linearity'] = True
+#
+#             # Shapiro-Wilk Normality
+#             shapiro_statistic, shapiro_p_value = shapiro(residuals)
+#             print(f"Shapiro-Wilk test p-value: {shapiro_p_value}")
+#             if shapiro_p_value < alpha:
+#                 print("Warning: Shapiro-Wilk test suggests non-normality of residuals.")
+#                 issues['normality'] = True
+#
+#     print("Running general model diagnostics...")
+#     # Autocorrelation
+#     dw_statistic = durbin_watson(residuals)
+#     print(f"Durbin-Watson statistic: {dw_statistic}")
+#     if dw_statistic < 1.5 or dw_statistic > 2.5:
+#         print("Warning: Potential autocorrelation in residuals.")
+#         autocorrelation_present = True
+#
+#     # Breusch-Pagan Heteroscedasticity
+#     print('Checking for heteroscedasticity')
+#     bp_test_statistic, bp_test_p_value, _, _ = het_breuschpagan(residuals, X_with_const)
+#     print(f"Breusch-Pagan test p-value: {bp_test_p_value}")
+#
+#     # White Test Heteroscedasticity
+#     white_test_statistic, white_test_p_value, _, _ = het_white(residuals, X_with_const)
+#     print(f"White's test p-value: {white_test_p_value}")
+#
+#     if bp_test_p_value < alpha or white_test_p_value < alpha:
+#         print("Warning: Heteroscedasticity detected.")
+#         issues['heteroscedasticity'] = True
+#
+#     if any(issues.values()) and full_transformations:
+#         print('Data issue present, corrective transformations applied to numerical features')
+#         if numerical_features is not None:
+#             train_final = transform_data(df=train_unscaled,
+#                                          numerical_features=numerical_features,
+#                                          categorical_features=categorical_features,
+#                                          target_column=target_column,
+#                                          weight_column=weight_column)
+#
+#             test_final = transform_data(df=test_unscaled,
+#                                         numerical_features=numerical_features,
+#                                         categorical_features=categorical_features,
+#                                         target_column=target_column,
+#                                         weight_column=weight_column)
+#             return train_final, test_final
+#         else:
+#             return train_scaled, test_scaled
+#
+#     elif any(issues.values()):
+#         print('Data issue present but transformations are not permitted by the user.')
+#         return train_scaled, test_scaled
+#     else:
+#         print('No data issues present.')
+#         return train_scaled, test_scaled
 
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 
-from caf.ml.backlog.functions_to_be_processed import  process_data_pipeline
-from caf.ml.backlog.functions_to_be_processed import convert_to_dataframe
+
+
+
+
 
 '''def pre_forecast_data_analysis(data,
                                regression_method,

@@ -21,23 +21,38 @@ def main_input_data(output_path,
                     weight_column,
                     categorical_features,
                     numerical_features,
-                    binary_prediction,
-                    time_series_split,
+                    classification_prediction,
+                    split_by_value,
                     validation_path,
-                    split_size):
+                    split_size,
+                    sample_size_encode,
+                    select_encode_values,
+                    encode_values_to_drop):
 
+    folder_path = "" if folder_path is None else folder_path
 
-    if os.path.exists(os.path.join(output_path, 'train.csv')):
-        train_raw = pd.read_csv(os.path.join(output_path, 'train.csv'))
-        test_raw = pd.read_csv(os.path.join(output_path, 'test.csv'))
+    if (os.path.exists(os.path.join(output_path, 'train.csv')) or
+            os.path.exists(os.path.join(folder_path, 'train.csv'))):
+        # try output_path
         try:
-            validate = pd.read_csv(os.path.join(output_path, 'validate.csv'))
-            validate[target_column] = validate[target_column].astype(float)
-
+            train_raw = pd.read_csv(os.path.join(output_path, 'train.csv'))
+            test_raw = pd.read_csv(os.path.join(output_path, 'test.csv'))
+            try:
+                validate = pd.read_csv(os.path.join(output_path, 'validate.csv'))
+                validate[target_column] = validate[target_column].astype(float)
+            except FileNotFoundError:
+                print("Validate not provided. Validation will not be performed")
+                validate = None
+        # try folder_path
         except FileNotFoundError:
-            print("Validate not provided. Validation will not be \
-                   preformed")
-            validate = None
+            train_raw = pd.read_csv(os.path.join(folder_path, 'train.csv'))
+            test_raw = pd.read_csv(os.path.join(folder_path, 'test.csv'))
+            try:
+                validate = pd.read_csv(os.path.join(folder_path, 'validate.csv'))
+                validate[target_column] = validate[target_column].astype(float)
+            except FileNotFoundError:
+                print("Validate not provided. Validation will not be performed")
+                validate = None
 
         processor = InitialDataProcessing(file_path=file_path,
                                           folder_path=folder_path,
@@ -49,7 +64,7 @@ def main_input_data(output_path,
                                           weight_column=weight_column,
                                           categorical_features=categorical_features,
                                           numerical_features=numerical_features,
-                                          binary_prediction=binary_prediction)
+                                          classification_prediction=classification_prediction)
 
 
         processed_dfs = {}
@@ -75,15 +90,27 @@ def main_input_data(output_path,
         test_unscaled = processed_dfs['test']
         train_unscaled[target_column] = train_unscaled[target_column].astype(int)
 
-        train_scaled = process_data_pipeline(df=train_unscaled.copy(),
-                                             numerical_features=numerical_features,
-                                             categorical_features=categorical_features,
-                                             target_column=target_column)
+        train_scaled, drop_vals = process_data_pipeline(df=train_unscaled.copy(),
+                                                        numerical_features=numerical_features,
+                                                        categorical_features=categorical_features,
+                                                        target_column=target_column,
+                                                        weight_column=weight_column,
+                                                        sample_size_encode=sample_size_encode,
+                                                        select_encode_values=select_encode_values,
+                                                        encode_values_to_drop=encode_values_to_drop,
+                                                        train_encoded=None,
+                                                        test_data=False)
 
-        test_scaled = process_data_pipeline(df=test_unscaled.copy(),
-                                            numerical_features=numerical_features,
-                                            categorical_features=categorical_features,
-                                            target_column=target_column)
+        test_scaled, drop_vals = process_data_pipeline(df=test_unscaled.copy(),
+                                                       numerical_features=numerical_features,
+                                                       categorical_features=categorical_features,
+                                                       target_column=target_column,
+                                                       weight_column=weight_column,
+                                                       sample_size_encode=sample_size_encode,
+                                                       select_encode_values=select_encode_values,
+                                                       encode_values_to_drop=encode_values_to_drop,
+                                                       train_encoded=train_scaled,
+                                                       test_data=True)
 
         data_dict = {
             'train_scaled': train_scaled,
@@ -95,7 +122,6 @@ def main_input_data(output_path,
         return data_dict
 
     else:
-
         processor = InitialDataProcessing(file_path=file_path,
                                           folder_path=folder_path,
                                           output_path=output_path,
@@ -106,7 +132,7 @@ def main_input_data(output_path,
                                           weight_column=weight_column,
                                           categorical_features=categorical_features,
                                           numerical_features=numerical_features,
-                                          binary_prediction=binary_prediction)
+                                          classification_prediction=classification_prediction)
 
         is_test_data = False
         processed_dataframes = processor.execute_pipeline(is_test_data)
@@ -119,26 +145,40 @@ def main_input_data(output_path,
                                                              index_columns=custom_index,
                                                              weight_column=weight_column,
                                                              target_column=target_column,
-                                                             time_series_split=time_series_split,
+                                                             split_by_value=split_by_value,
                                                              validation_path=validation_path,
                                                              output_path=output_path,
-                                                             split_size=split_size)
+                                                             split_size=split_size,
+                                                             categorical_features=categorical_features)
 
-        train_scaled = process_data_pipeline(df=train_unscaled.copy(),
-                                             numerical_features=numerical_features,
-                                             categorical_features=categorical_features,
-                                             target_column=target_column)
+        if validate is not None:
+            validate[target_column] = validate[target_column].astype(int)
 
-        test_scaled = process_data_pipeline(df=test_unscaled.copy(),
-                                            numerical_features=numerical_features,
-                                            categorical_features=categorical_features,
-                                            target_column=target_column)
+        train_scaled, drop_vals = process_data_pipeline(df=train_unscaled.copy(),
+                                                        numerical_features=numerical_features,
+                                                        categorical_features=categorical_features,
+                                                        target_column=target_column,
+                                                        weight_column=weight_column,
+                                                        sample_size_encode=sample_size_encode,
+                                                        select_encode_values=select_encode_values,
+                                                        encode_values_to_drop=encode_values_to_drop,
+                                                        train_encoded=None,
+                                                        test_data=False)
+
+        test_scaled, drop_vals = process_data_pipeline(df=test_unscaled.copy(),
+                                                       numerical_features=numerical_features,
+                                                       categorical_features=categorical_features,
+                                                       target_column=target_column,
+                                                       weight_column=weight_column,
+                                                       sample_size_encode=sample_size_encode,
+                                                       select_encode_values=select_encode_values,
+                                                       encode_values_to_drop=encode_values_to_drop,
+                                                       train_encoded=train_scaled,
+                                                       test_data=True)
 
         train_unscaled[target_column] = train_unscaled[target_column].astype(int)
         train_scaled[target_column] = train_scaled[target_column].astype(int)
 
-        if validate:
-            validate[target_column] = validate[target_column].astype(int)
 
         data_dict = {
             'train_scaled': train_scaled,

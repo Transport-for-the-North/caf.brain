@@ -16,7 +16,7 @@ def main_feature_selection(train,
                            cv,
                            regression_method,
                            weight_column,
-                           binary_prediction,
+                           classification_prediction,
                            output,
                            skip_feature_selection,
                            intensive_feature_selection):
@@ -30,7 +30,7 @@ def main_feature_selection(train,
                                            cv=cv,
                                            regression_method=regression_method,
                                            weight_column=weight_column,
-                                           binary_prediction=binary_prediction)
+                                           classification_prediction=classification_prediction)
 
         test_final = combine_results(train_final=train_final,
                                      target_column=target_column,

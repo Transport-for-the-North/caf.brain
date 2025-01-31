@@ -14,7 +14,8 @@ def main_prediction(model,
                     output_folder,
                     validation,
                     weight_column,
-                    binary_prediction):
+                    classification_prediction,
+                    mse):
 
     y_pred = prediction(model=model,
                         test=test,
@@ -22,5 +23,6 @@ def main_prediction(model,
                         output_folder=output_folder,
                         validation=validation,
                         weight_column=weight_column,
-                        binary_prediction=binary_prediction)
+                        classification_prediction=classification_prediction,
+                        mse=mse)
     return y_pred

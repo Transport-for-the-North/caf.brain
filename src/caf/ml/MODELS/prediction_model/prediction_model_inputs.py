@@ -28,7 +28,8 @@ from sklearn.linear_model import (LogisticRegression,
 from sklearn.svm import SVR
 from sklearn.svm import LinearSVC
 from sklearn.multiclass import OneVsRestClassifier
-
+import statsmodels.api as sm
+from statsmodels.miscmodels.ordinal_model import OrderedModel
 
 class run_file_inputs(BaseConfig):
     # # # INPUT/OUTPUT PATHS # # #
@@ -47,12 +48,16 @@ class run_file_inputs(BaseConfig):
     categorical_features: Optional[List[str]] = None
     numerical_features: Optional[List[str]] = None
     weight_column: Optional[str] = None
-    binary_prediction: Optional[tuple[int, ...]] = None
-    time_series_split: Optional[str] = None
+    classification_prediction: Optional[tuple[int, ...]] = None
+    split_by_value: Optional[str] = None
     split_size: Optional[float] = None
+    sample_size_encode: Optional[bool] = False
+    select_encode_values: Optional[bool] = False
+    encode_values_to_drop: Optional[List[str]] = None
 
     # # # MODELLING # # #
     model_choice: List[Any]  # TODO should be abc method but not compatible with baseconfig?
+    is_time_series: Optional[bool] = False
     full_transformations: Optional[bool] = False
     cv: Optional[str] = None
     skip_feature_selection: Optional[bool] = False
@@ -80,6 +85,19 @@ class Models(enum.Enum):
     EXTRA_TREES_CLASSIFIER = (ExtraTreesClassifier, {})
     DECISION_TREE_CLASSIFIER = (DecisionTreeClassifier, {})
     SVM_CLASSIFIER = (OneVsRestClassifier, {'estimator': LinearSVC()})
+    STATS_OLS_REGRESSOR = (sm.OLS, {})
+    STATS_MLR_REGRESSOR = (sm.RLM, {})
+    STATS_LOGISTIC_CLASSIFIER = (sm.Logit, {})
+    STATS_PROBIT_CLASSIFIER = (sm.Probit, {})
+    STATS_POISSON_REGRESSOR = (sm.GLM, {'family': sm.families.Poisson()})
+    STATS_NEGATIVE_BINOMIAL_REGRESSOR = (sm.GLM, {'family': sm.families.NegativeBinomial()})
+    STATS_LINEAR_EFFECTS_REGRESSOR = (sm.MixedLM, {})
+    STATS_ARIMA_REGRESSOR = (sm.tsa.ARIMA, {})
+    STATS_SARIMA_REGRESSOR = (sm.tsa.SARIMAX, {})
+    STATS_MULTINOMIAL_LOGISTIC_CLASSIFIER = (sm.MNLogit, {})
+    STATS_ORDINAL_LOGISTIC_CLASSIFIER = (OrderedModel, {'distr': 'logit'})
+    # STATS_TOBIT_REGRESSOR = (sm.Tobit, {})?
+
 
     def get_model(self):
         model_class, params = self.value if isinstance(self.value, tuple) else (self.value, {})
@@ -174,6 +192,83 @@ class ModelGrids(enum.Enum):
             'estimator__C': [0.1, 1, 10],
             'estimator__loss': ['hinge', 'squared_hinge'],
         }
+
+    # # Statsmodels below:
+    # STATS_OLS_REGRESSOR = {
+    #     'missing': ['none', 'drop', 'raise'],
+    #     'hasconst': [True, False]
+    # }
+    #
+    # STATS_MLR_REGRESSOR = {
+    #     'M': ['huber', 'bisquare', 'andrew'],
+    #     'tune': [1.345, 2.0, 4.0],
+    #     'maxiter': [50, 100, 200]
+    # }
+    #
+    # STATS_LOGISTIC_CLASSIFIER = {
+    #     'method': ['newton', 'bfgs', 'lbfgs', 'powell'],
+    #     'maxiter': [100, 200, 500],
+    #     'tol': [1e-4, 1e-5, 1e-6]
+    # }
+    #
+    # STATS_PROBIT_CLASSIFIER = {
+    #     'method': ['newton', 'bfgs', 'powell'],
+    #     'maxiter': [100, 200, 500],
+    #     'tol': [1e-4, 1e-5, 1e-6]
+    # }
+    #
+    # STATS_POISSON_REGRESSOR = {
+    #     'alpha': [0, 0.1, 1.0],
+    #     'L1_wt': [0, 0.5, 1.0],
+    #     'maxiter': [100, 200, 500]
+    # }
+    #
+    # STATS_NEGATIVE_BINOMIAL_REGRESSOR = {
+    #     'alpha': [0, 0.1, 1.0],
+    #     'L1_wt': [0, 0.5, 1.0],
+    #     'maxiter': [100, 200, 500]
+    # }
+    #
+    # STATS_LINEAR_EFFECTS_REGRESSOR = {
+    #     'method': ['lbfgs', 'cg'],
+    #     'maxiter': [100, 200, 500],
+    #     'reml': [True, False]
+    # }
+    #
+    # STATS_ARIMA_REGRESSOR = {
+    #     'order_p': [0, 1, 2],
+    #     'order_d': [0, 1],
+    #     'order_q': [0, 1, 2],
+    #     'method': ['css-mle', 'mle', 'css']
+    # }
+    #
+    # STATS_SARIMA_REGRESSOR = {
+    #     'order_p': [0, 1, 2],
+    #     'order_d': [0, 1],
+    #     'order_q': [0, 1, 2],
+    #     'seasonal_order_P': [0, 1],
+    #     'seasonal_order_D': [0, 1],
+    #     'seasonal_order_Q': [0, 1],
+    #     'seasonal_periods': [4, 12]
+    # }
+    #
+    # STATS_MULTINOMIAL_LOGISTIC_CLASSIFIER = {
+    #     'method': ['newton', 'bfgs', 'lbfgs'],
+    #     'maxiter': [100, 200, 500],
+    #     'tol': [1e-4, 1e-5, 1e-6]
+    # }
+    #
+    # STATS_ORDINAL_LOGISTIC_CLASSIFIER = {
+    #     'method': ['bfgs', 'newton'],
+    #     'maxiter': [100, 200, 500],
+    #     'distr': ['logit', 'probit']
+    # }
+    #
+    # STATS_TOBIT_REGRESSOR = {
+    #     'method': ['powell', 'bfgs', 'newton'],
+    #     'maxiter': [100, 200, 500],
+    #     'tol': [1e-4, 1e-5, 1e-6]
+    # }
 
     @classmethod
     def get_grid(cls, model_enum):

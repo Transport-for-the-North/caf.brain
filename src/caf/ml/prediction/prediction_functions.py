@@ -6,22 +6,49 @@ Original author: Adil Zaheer
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 import os
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score
 from sklearn.svm import LinearSVC
 from sklearn.metrics import r2_score, mean_squared_error
 from caf.ml.model_selection.model_selection_functions import calculate_final_coefficients
-
+import logging
+LOG = logging.getLogger(__name__)
 
 def prediction(model,
-               test,
-               target_column,
-               output_folder,
-               validation,
-               weight_column,
-               classification_prediction,
-               mse):
+               test: pd.DataFrame,
+               target_column: str,
+               output_folder: Path,
+               validation: pd.DataFrame,
+               weight_column: str,
+               classification_prediction: tuple[int, ...],
+               mse: pd.Series,
+               drop_vals: pd.DataFrame,
+               cols_dropped_by_feat_select: pd.DataFrame):
+    """
+    Final prediction function which calls final coefficient generation if
+    applicable.
+
+    :param model: Fitted final model for prediction on unseen (test) data.
+    :param test: Dataframe of final test data post feature selection.
+    :param target_column: String column name of value to predict.
+    :param output_folder: Path to output location.
+    :param validation: Validation data if available.
+    :param weight_column: Optional string column value to be used as weight.
+    :param classification_prediction: List of integers that correspond to the
+                                      target column. The value(s) to predict
+                                      in a classification problem.
+    :param mse: Mean squared error or None. Dependency on if the algorithm selected
+                has coefficient values.
+    :param drop_vals: Values dropped during encoding of categorical variables.
+    :param cols_dropped_by_feat_select: These are the columns removed due to
+                                        feature selection.
+
+    :return:
+        predictions: Predicted values based on the test data and set to the same
+                     index.
+    """
     if target_column in test.columns:
         test = test.drop(columns=target_column)
 
@@ -38,13 +65,11 @@ def prediction(model,
                 accuracy = accuracy_score(y_true, pred_classes, sample_weight=weight)
             else:
                 pred_probs = model.predict_proba(test)
-                # unique_classes = sorted(validation[target_column].unique())
-                # pred_classes = unique_classes[np.argmax(pred_probs, axis=1)]
                 pred_classes = model.classes_[np.argmax(pred_probs, axis=1)]
                 y_true = validation[target_column].values
                 accuracy = accuracy_score(y_true, pred_classes, sample_weight=weight)
 
-            print(f'Accuracy: {accuracy}')
+            LOG.info(f'Accuracy: {accuracy}')
             accuracy_df = pd.DataFrame({'accuracy': [accuracy]})
             accuracy_df.to_csv(os.path.join(output_folder, 'model_performance.csv'))
             predictions = pred_classes
@@ -63,27 +88,15 @@ def prediction(model,
             metrics_df = pd.DataFrame({'r2': [r2], 'mse': [mse]})
             metrics_df.to_csv(os.path.join(output_folder, 'model_performance.csv'))
 
-    # if hasattr(model, 'coef_'):
-    #     coefficients = model.coef_
-    #
-    #     coefficients = np.squeeze(coefficients)
-    #
-    #     if coefficients.ndim == 1:
-    #         coeff_df = pd.DataFrame({
-    #             'Feature': test.columns,
-    #             'Coefficient': coefficients
-    #         })
-    #     else:
-    #         coeff_df = pd.DataFrame(coefficients.T, columns=test.columns)
-    #         coeff_df.insert(0, 'Feature', test.columns)
-
     coeff_df = calculate_final_coefficients(model=model,
                                             test_data=test,
                                             training_mse=mse,
                                             predictions=predictions,
                                             validation_data=validation,
                                             target_column=target_column,
-                                            is_classification=classification_prediction)
+                                            is_classification=classification_prediction,
+                                            drop_vals=drop_vals,
+                                            cols_dropped_by_feat_select=cols_dropped_by_feat_select)
     if coeff_df is not None:
         coeff_df.to_csv(os.path.join(output_folder, 'final_model_coefficients.csv'), index=False)
 

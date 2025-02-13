@@ -3,18 +3,17 @@
 Created on: 1/17/2025
 Original author: Adil Zaheer
 """
-import os.path
-
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
+import os.path
+from pathlib import Path
+from typing import List
 import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
-from statsmodels.regression.linear_model import OLS
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tools import add_constant
-from statsmodels.stats.diagnostic import linear_rainbow
 from scipy.stats import shapiro
 from statsmodels.stats.diagnostic import het_breuschpagan, het_white
 from caf.ml.process_data_functions.encode_and_scale import preprocess_numerical_data
@@ -28,24 +27,61 @@ from sklearn.ensemble import (GradientBoostingClassifier,
                               ExtraTreesClassifier)
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.multiclass import OneVsRestClassifier
+import logging
+LOG = logging.getLogger(__name__)
 
-
-def pre_forecast_data_analysis(residuals,
+def pre_forecast_data_analysis(residuals: pd.Series,
                                model,
                                model_initialised,
-                               x_test,
-                               train_scaled,
-                               test_scaled,
-                               full_transformations,
-                               train_unscaled,
-                               test_unscaled,
-                               numerical_features,
-                               categorical_features,
-                               target_column,
-                               weight_column,
-                               x_train,
-                               output_folder,
-                               is_time_series):
+                               x_test: pd.Series,
+                               train_scaled: pd.DataFrame,
+                               test_scaled: pd.DataFrame,
+                               full_transformations: bool,
+                               train_unscaled: pd.DataFrame,
+                               test_unscaled: pd.DataFrame,
+                               numerical_features: List[str],
+                               categorical_features: List[str],
+                               target_column: str,
+                               weight_column: str,
+                               x_train: pd.Series,
+                               output_folder: Path,
+                               is_time_series: bool):
+    """
+    Function to conduct basic data analysis and fix where and if
+    applicable.
+
+    :param residuals: Truth values form the train_test_split against the predictions.
+    :param model: Fitted model on train_test_split test data.
+    :param model_initialised: Initialised SciKitLearn model.
+    :param x_test: Series of test data to be used as unseen test data.
+    :param train_scaled: Processed input data split into train set.
+    :param test_scaled: Processed input data split into train set.
+    :param full_transformations: If true then transformations will be applied
+                                 to the continuous data inside of train and
+                                 test scaled. This fixes any potential data
+                                 issues present.
+    :param train_unscaled: Input data unprocessed split into train.
+    :param test_unscaled: Input data unprocessed split into test.
+    :param numerical_features: List of string column names that are
+                               continuous variables.
+    :param categorical_features: List of string column names that are
+                                 categorical variables.
+    :param target_column: String column name of value to predict.
+    :param weight_column: Optional string column value to be used as weight.
+    :param x_train: Series of train data to be used as train.
+    :param output_folder: Path to output location.
+    :param is_time_series: If true then data must be time series. Time series
+                           based characteristics are taken into consideration
+                           during function execution.
+
+    :return:
+        train_final: Final train data post data transformations.
+        test_final: Final test data post data transformations.
+        train_scaled: If transformations are not permitted, train scaled is
+                      returned.
+        test_scaled: If transformations are not permitted, test scaled is
+                      returned.
+    """
 
     alpha = 0.05
     issues = {
@@ -90,61 +126,60 @@ def pre_forecast_data_analysis(residuals,
     #     X_with_const = add_constant(x_test)
 
     # multicolinearity
-    print('Checking for multicollinearity')
+    LOG.info('Checking for multicollinearity')
     vif_data = pd.DataFrame()
     vif_data["Feature"] = train_scaled.columns
     vif_data["VIF"] = [variance_inflation_factor(train_scaled.values, i) for i in
                        range(train_scaled.shape[1])]
     high_vif = vif_data[vif_data["VIF"] > 10]
     if not high_vif.empty:
-        print("High VIF variables:")
-        print(high_vif)
+        LOG.warning(f"High VIF variables: {high_vif}")
         issues['multicolinearity'] = True
 
     X_with_const = add_constant(x_test)
     # Breusch-Pagan Heteroscedasticity
-    print('Checking for heteroscedasticity')
+    LOG.info('Checking for heteroscedasticity')
     bp_test_statistic, bp_test_p_value, _, _ = het_breuschpagan(residuals, X_with_const)
-    print(f"Breusch-Pagan test p-value: {bp_test_p_value}")
+    LOG.info(f"Breusch-Pagan test p-value: {bp_test_p_value}")
 
     # White Test Heteroscedasticity
     white_test_statistic, white_test_p_value, _, _ = het_white(residuals, X_with_const)
-    print(f"White's test p-value: {white_test_p_value}")
+    LOG.info(f"White's test p-value: {white_test_p_value}")
 
     if bp_test_p_value < alpha or white_test_p_value < alpha:
-        print("Warning: Heteroscedasticity detected.")
+        LOG.warning("Warning: Heteroscedasticity detected.")
         issues['heteroscedasticity'] = True
 
 
     if is_linear_model and not is_classification:
-        print("Running tests for linear model assumptions")
+        LOG.info("Running tests for linear model assumptions")
 
         # Linearity
-        print('Checking linearity')
+        LOG.info('Checking linearity')
         for col in x_train.columns:
             correlation = np.corrcoef(x_train[col], residuals)[0, 1]
             if abs(correlation) > 0.1:
-                print(f"Warning: {col} may not be linearly related to the target.")
+                LOG.warning(f"Warning: {col} may not be linearly related to the target.")
                 issues['linearity'] = True
 
         # Normality
         shapiro_statistic, shapiro_p_value = shapiro(residuals)
-        print(f"Shapiro-Wilk test p-value: {shapiro_p_value}")
+        LOG.info(f"Shapiro-Wilk test p-value: {shapiro_p_value}")
         if shapiro_p_value < alpha:
-            print("Warning: Shapiro-Wilk test suggests non-normality of residuals.")
+            LOG.warning("Warning: Shapiro-Wilk test suggests non-normality of residuals.")
             issues['normality'] = True
 
     if is_time_series is not False:
         # Autocorrelation
         dw_statistic = durbin_watson(residuals)
-        print(f"Durbin-Watson statistic: {dw_statistic}")
+        LOG.info(f"Durbin-Watson statistic: {dw_statistic}")
         if dw_statistic < 1.5 or dw_statistic > 2.5:
-            print("Warning: Potential autocorrelation in residuals.")
+            LOG.warning("Warning: Potential autocorrelation in residuals.")
             issues['autocorrelation'] = True
 
     issues_df = pd.DataFrame(list(issues.items()), columns=['test', 'result'])
     if any(issues.values()) and full_transformations:
-        print('Data issue present, corrective transformations applied to numerical features')
+        LOG.warning('Data issue present, corrective transformations applied to numerical features')
         if numerical_features is not None:
             train_final = transform_data(df=train_unscaled,
                                          numerical_features=numerical_features,
@@ -164,19 +199,33 @@ def pre_forecast_data_analysis(residuals,
             return train_scaled, test_scaled
 
     elif any(issues.values()):
-        print('Data issue present but transformations are not permitted by the user.')
+        LOG.warning('Data issue present but transformations are not permitted by the user.')
         issues_df.to_csv(os.path.join(output_folder, 'data_issues_present.csv'))
         return train_scaled, test_scaled
     else:
-        print('No data issues present.')
+        LOG.info('No data issues present.')
         return train_scaled, test_scaled
 
 
-def transform_data(df,
-                   numerical_features,
-                   categorical_features,
-                   target_column,
-                   weight_column):
+def transform_data(df: pd.DataFrame,
+                   numerical_features: List[str],
+                   categorical_features: List[str],
+                   target_column: str,
+                   weight_column: str):
+    """
+    Function to apply data transformations.
+
+    :param df: Processed input data split into train or test set.
+    :param numerical_features: List of string column names that are
+                               continuous variables.
+    :param categorical_features: List of string column names that are
+                                 categorical variables.
+    :param target_column: String column name of value to predict.
+    :param weight_column: Optional string column value to be used as weight.
+
+    :return:
+        transformed_df: Transformed data.
+    """
     transformed_data = []
 
     original_index = df.index

@@ -23,18 +23,41 @@ from sklearn.model_selection import (cross_val_score,
                                      RepeatedStratifiedKFold, TimeSeriesSplit)
 from tqdm import tqdm
 import seaborn as sb
+import logging
+LOG = logging.getLogger(__name__)
 
-
-def rf_feature_selection(data,
-                         target_column,
-                         cv,
+def rf_feature_selection(data: pd.DataFrame,
+                         target_column: str,
+                         cv: str,
                          regression_method,
-                         weight_column,
-                         classification_prediction):
+                         weight_column: str,
+                         classification_prediction: bool,
+                         is_time_series: bool) -> pd.DataFrame:
+    """
+    Two stage feature selection through Random Forest importance and if
+    required, a combination of algorithms.
+
+    :param data: Transformed input data split into training set.
+    :param target_column: String column name of value to predict.
+    :param cv: Cross validation method passed as a string. Any popular
+               SciKitlearn methods are suitable with KFold being default if
+               left as None.
+    :param regression_method: Initialised model algorithm from Models enum class.
+    :param weight_column: Optional string column value to be used as weight.
+    :param classification_prediction: List of integers that correspond to the
+                                      target column. The value(s) to predict
+                                      in a classification problem.
+    :param is_time_series: If true then data must be time series. Time series
+                           based characteristics are taken into consideration
+                           during function execution.
+
+    :return:
+        dataframe_final: Training data post feature selection.
+    """
 
     if isinstance(regression_method, LogisticRegression):
         regression_method.set_params(max_iter=1000)
-    cv = get_cv_class(cv_method=cv, splits=None, repeats=None)
+    cv = get_cv_class(cv_method=cv, splits=None, repeats=None, is_time_series=is_time_series)
 
     X = data.drop(columns=[target_column] + ([weight_column] if weight_column else []))
     y = data[target_column]
@@ -73,11 +96,11 @@ def rf_feature_selection(data,
     mean_score = np.mean(fold_scores)
     std_score = np.std(fold_scores)
 
-    print(f"Number of features selected: {len(selected_features)}")
-    print(f"Cross-validated ROC AUC score: {mean_score:.3f} (+/- {std_score:.3f})")
+    LOG.info(f"Number of features selected: {len(selected_features)}")
+    LOG.info(f"Cross-validated ROC AUC score: {mean_score:.3f} (+/- {std_score:.3f})")
 
     if mean_score < 0.6:
-        print('Initial feature selection attempt was inaccurate, trying \
+        LOG.warning('Initial feature selection attempt was inaccurate, trying \
               alternative method')
         dataframe_final = feature_selection_intensive(x=X,
                                                       y=y,
@@ -92,14 +115,31 @@ def rf_feature_selection(data,
     return dataframe_final
 
 
-def feature_selection_intensive(x,
-                                y,
-                                cv,
+def feature_selection_intensive(x: pd.DataFrame,
+                                y: pd.DataFrame,
+                                cv: str,
                                 regression_method,
-                                weight,
-                                weight_df,
-                                classification_prediction):
+                                weight: pd.Series,
+                                weight_df: pd.DataFrame,
+                                classification_prediction: tuple[int, ...]
+                                ) -> pd.DataFrame:
+    """
+    Thorough feature selection with multiple algorithms.
 
+    :param x: Training data split into explanatory variables only.
+    :param y: Training data split only into the target variable.
+    :param cv: Cross validation method passed as a string. Any popular
+               SciKitlearn methods are suitable with KFold being default if
+               left as None.
+    :param regression_method: Initialised model algorithm from Models enum class.
+    :param weight: Weight values in series form.
+    :param weight_df: Weight values in a dataframe.
+    :param classification_prediction: List of integers that correspond to the
+                                      target column. The value(s) to predict
+                                      in a classification problem.
+    :return:
+        result: Training data post feature selection.
+    """
     original_index = x.index
 
     if classification_prediction:
@@ -118,12 +158,12 @@ def feature_selection_intensive(x,
             scores.append(score)
             pbar.update(1)
 
-    print(f"Number of features selected: {len(selected_features)}")
-    print(f"Cross-validated score: {np.mean(scores)}")
+    LOG.info(f"Number of features selected: {len(selected_features)}")
+    LOG.info(f"Cross-validated score: {np.mean(scores)}")
 
     cv_score = np.mean(scores)
     if cv_score < 0.5:
-        print('CV score is still not optimal, feature selection is being ignored')
+        LOG.warning('CV score is still not optimal, feature selection is being ignored')
         result = pd.concat([x, y], axis=1)
         if weight_df is not None:
             result = pd.concat([result, weight_df], axis=1)
@@ -135,7 +175,19 @@ def feature_selection_intensive(x,
     return result.set_index(original_index)
 
 
-def _classification_feature_selection(x, y, weight):
+def _classification_feature_selection(x: pd.DataFrame,
+                                      y: pd.DataFrame,
+                                      weight: pd.Series):
+    """
+    Feature selection algorithms for classification problems.
+
+    :param x: Training data split into explanatory variables only.
+    :param y: Training data split only into the target variable.
+    :param weight: Weight values in series form.
+
+    :return:
+        List of selected features based on both algorithms used.
+    """
     rfe = RFE(
         estimator=LogisticRegression(random_state=42, max_iter=2000),
         n_features_to_select=10
@@ -150,7 +202,19 @@ def _classification_feature_selection(x, y, weight):
     return list(set(rfe_selected + l1_selected))
 
 
-def _regression_feature_selection(x, y, weight):
+def _regression_feature_selection(x: pd.DataFrame,
+                                  y: pd.DataFrame,
+                                  weight: pd.Series):
+    """
+    Feature selection algorithms for regression problems.
+
+    :param x: Training data split into explanatory variables only.
+    :param y: Training data split only into the target variable.
+    :param weight: Weight values in series form.
+
+    :return:
+        List of selected features based on both algorithms used.
+    """
     lasso = Lasso(alpha=0.01, random_state=42)
     lasso.fit(x, y, sample_weight=weight)
     lasso_selected = x.columns[abs(lasso.coef_) > 0].tolist()
@@ -162,7 +226,27 @@ def _regression_feature_selection(x, y, weight):
     return list(set(lasso_selected + ridge_selected))
 
 
-def get_cv_class(cv_method, splits, repeats):
+def get_cv_class(cv_method: str,
+                 splits: int,
+                 repeats: int,
+                 is_time_series: bool):
+    """
+    Select which SciKitLearn cross validation method to use.
+
+    :param cv_method: Cross validation method passed as a string. Any popular
+                      SciKitlearn methods are suitable with KFold being default if
+                      left as None.
+    :param splits: Number of splits to be used for cross validation.
+    :param repeats: Number of repeats to be used for cross validation.
+    :param is_time_series: If true then data must be time series. Time series
+                           based characteristics are taken into consideration
+                           during function execution.
+
+    :return:
+        Initialised cross validation method.
+    """
+    if is_time_series is True:
+        return TimeSeriesSplit(n_splits=splits if splits else 5)
     if cv_method:
         if cv_method.lower() == 'kfold':
             return KFold(n_splits=splits if splits else 5, shuffle=True)
@@ -175,6 +259,7 @@ def get_cv_class(cv_method, splits, repeats):
         elif cv_method.lower() == 'timeseriessplit':
             return TimeSeriesSplit(n_splits=splits if splits else 5)
         else:
+            LOG.error(f"Invalid cross-validation method: {cv_method}")
             raise ValueError(f"Invalid cross-validation method: {cv_method}")
     else:
         return KFold(n_splits=5, shuffle=True)
@@ -184,6 +269,18 @@ def analyse_feature_importance(train_transformed: pd.DataFrame,
                                target_column: str,
                                weight_column: str,
                                output_path: str) -> pd.DataFrame:
+    """
+    Simple feature selection through importance and correlation metrics with
+    results plotted.
+
+    :param train_transformed: Transformed input data split into training set.
+    :param target_column: String column name of value to predict.
+    :param weight_column: Optional string column value to be used as weight.
+    :param output_path: Path to output location.
+
+    :return:
+        filtered_data: Training data post feature selection.
+    """
     pd.set_option('display.float_format', lambda x: '%.10f' % x)
 
     X = train_transformed.drop(columns=[target_column] + ([weight_column] if weight_column else []))
@@ -254,10 +351,23 @@ def analyse_feature_importance(train_transformed: pd.DataFrame,
     return filtered_data
 
 
-def filtering_results(results_df,
-                      target_column,
-                      weight_column,
-                      original_data):
+def filtering_results(results_df: pd.DataFrame,
+                      target_column: str,
+                      weight_column: pd.DataFrame,
+                      original_data: pd.DataFrame):
+    """
+    Helper function for analyse_feature_importance. Results are analysed and
+    applied to input data.
+
+    :param results_df: Dataframe of feature selection scores.
+    :param target_column: String column name of value to predict.
+    :param weight_column: Optional string column value to be used as weight.
+    :param original_data: Transformed input data split into training set.
+
+    :return:
+        important_features: Feature selection score results.
+        original_data: Training data post feature selection.
+    """
 
     important_features = results_df[
         (results_df['importance_rf'] > 0.05) |
@@ -275,10 +385,23 @@ def filtering_results(results_df,
     return important_features, original_data[selected_features + additional_columns]
 
 
-def combine_results(train_final,
-                    target_column,
-                    weight_column,
-                    test):
+def combine_results(train_final: pd.DataFrame,
+                    target_column: str,
+                    weight_column: str,
+                    test: pd.DataFrame):
+    """
+    Function to apply feature selection results to training data.
+
+    :param train_final: Final training data post feature selection.
+    :param target_column: String column name of value to predict.
+    :param weight_column: Optional string column value to be used as weight.
+    :param test: Transformed input data split into training set.
+
+    :return:
+        test_final: Final test data post feature selection.
+        cols_dropped_by_feat_select: Dataframe of explanatory variables
+                                     removed during feature selection.
+    """
     if target_column in train_final.columns and weight_column in train_final.columns:
         df = train_final.drop(columns=[target_column, weight_column])
     elif target_column in train_final.columns:
@@ -290,11 +413,22 @@ def combine_results(train_final,
 
     test_final = test[df.columns]
 
-    return test_final
+    extra_columns = test.columns.difference(df.columns)
+    cols_dropped_by_feat_select = test[extra_columns]
+
+    return test_final, cols_dropped_by_feat_select
 
 
 def create_importance_plots(results_df: pd.DataFrame,
                             output_path: str) -> None:
+    """
+    Plotting feature selection scores where applicable.
+
+    :param results_df: Feature selection score results.
+    :param output_path: Path to output location.
+
+    :return: None
+    """
     # rf importance
     plt.figure(figsize=(12, 6))
     sb.barplot(

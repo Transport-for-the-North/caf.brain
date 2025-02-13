@@ -11,22 +11,52 @@ from typing import Union, List, Any, Optional, Dict
 import numpy as np
 import pandas as pd
 from caf.ml.inputs_and_baseclasses.baseclasses import ValidateData
-
+import logging
+LOG = logging.getLogger(__name__)
 
 class InitialDataProcessing:
     def __init__(self,
-                 file_path,
-                 folder_path,
-                 output_path,
-                 target_column,
-                 custom_index,
-                 column_name_to_drop_rows,
-                 value_in_row,
-                 weight_column,
-                 categorical_features,
-                 numerical_features,
-                 classification_prediction,
-                 is_test_data=False):
+                 file_path: Path,
+                 folder_path: Path,
+                 output_path: Path,
+                 target_column: str,
+                 custom_index: List[str],
+                 column_name_to_drop_rows: List[str],
+                 value_in_row: List[str],
+                 weight_column: str,
+                 categorical_features: List[str],
+                 numerical_features: List[str],
+                 classification_prediction: tuple[int, ...],
+                 is_test_data: bool = False):
+        """
+        Class for processing initial input data to the caf.brAIn prediction
+        model.
+
+        :param file_path: Optional path to data to be used for modelling.
+        :param folder_path: Optional path to folder of data to be used for
+                            modelling.
+        :param output_path: Path to output location.
+        :param target_column: sting column name of value to predict.
+        :param custom_index: list of string column names to be used as an index.
+                             Must be one value e.g. year if splitting data
+                             into train and test via this column. Corresponds to
+                             split_by_value in this case.
+        :param column_name_to_drop_rows: list of string column names that
+                                          contain values to drop.
+        :param value_in_row: corresponding values for column_name_to_drop_rows.
+        :param weight_column: Optional string column value to be used as weight.
+        :param categorical_features: List of string column names that are
+                                     categorical variables.
+        :param numerical_features: List of string column names that are
+                                   continuous variables.
+        :param classification_prediction: List of integers that correspond to the
+                                          target column. The value(s) to predict
+                                          in a classification problem.
+        :param is_test_data: Set to False by default unless test data is
+                             being processed. This is set to true when using
+                             the main prediction function. If using separately
+                             then set to True or False when calling the class.
+        """
 
         self.file_path = file_path
         self.folder_path = folder_path
@@ -75,18 +105,19 @@ class InitialDataProcessing:
         """
         if self.file_path:
             self.df = self.read_file(self.file_path)
-            print(self.df)
+            LOG.info(self.df)
         elif self.folder_path:
             self.dataframes = self.read_folder(self.folder_path)
-            print(self.dataframes)
+            LOG.info(self.dataframes)
         else:
+            LOG.error("Either file_path or folder_path must be provided")
             raise ValueError("Either file_path or folder_path must be provided")
 
     def process_dataframes(self, is_test_data: bool) -> None:
         """
         Process dataframe(s).
         """
-        print(f"Processing {'test' if is_test_data is True else 'training'} data")
+        LOG.info(f"Processing {'test' if is_test_data is True else 'training'} data")
 
         if len(self.dataframes) > 1:
             if self.custom_index is None:
@@ -97,7 +128,8 @@ class InitialDataProcessing:
                 self.df = pd.concat(self.dataframes, axis=0)
 
         if self.df.empty:
-            raise ValueError("Dataframe '{df}' is empty")
+            LOG.error(f"Dataframe {self.df} is empty")
+            raise ValueError(f"Dataframe {self.df} is empty")
 
         df = self.convert_to_dataframe(self.df)
 
@@ -119,7 +151,7 @@ class InitialDataProcessing:
         df = df[columns_to_keep]
 
         if is_test_data:
-            print("Processing test data - skipping target column operations")
+            LOG.info("Processing test data - skipping target column operations")
             df = self.function_remove_spaces(df)
 
             if self.column_name_to_drop_rows and self.value_in_row:
@@ -144,6 +176,7 @@ class InitialDataProcessing:
                                     self.value_in_row)
 
             if self.target_column not in df.columns:
+                LOG.error(f"Target column '{self.target_column}' not found in training data")
                 raise ValueError(
                     f"Target column '{self.target_column}' not found in training data")
 
@@ -171,7 +204,7 @@ class InitialDataProcessing:
         Validate processed dataframes using the ValidateData class. Ensures
         data is in the format of the base class.
         """
-        print("Starting data validation")
+        LOG.info("Starting data validation")
         for name, df in self.dataframes.items():
             validator = ValidateData(
                 dataframe=df,
@@ -186,7 +219,7 @@ class InitialDataProcessing:
                 validator.is_data_numeric()
                 validator.data_correct_shape()
             else:
-                print("Test data detected - skipping target column validation")
+                LOG.info("Test data detected - skipping target column validation")
                 validator.index_present()
                 validator.explanatory_data()
                 validator.is_data_numeric()
@@ -222,11 +255,12 @@ class InitialDataProcessing:
                 return df
 
             else:
+                LOG.error(f"Unsupported file type: {file_extension}. Supported types: CSV, XLSX and JSON")
                 raise ValueError(
                     f"Unsupported file type: {file_extension}. Supported types: CSV, XLSX and JSON")
 
         except Exception as e:
-            print(f"Error reading file {file_path}: {e}")
+            LOG.error(f"Error reading file {file_path}: {e}")
             raise
 
 
@@ -271,6 +305,7 @@ class InitialDataProcessing:
         """
         for col in custom_index:
             if col not in df.columns:
+                LOG.error(f"Column '{col}' not found in DataFrame.")
                 raise ValueError(f"Column '{col}' not found in DataFrame.")
         df.set_index(custom_index, inplace=True, verify_integrity=False)
 
@@ -287,15 +322,15 @@ class InitialDataProcessing:
         :param column_name_to_drop_rows: Column names where the problematic
                                          rows exist.
         :param value_in_row: The value inside the row that should be removed.
-        :return:
+        :return: dataframe with rows dropped.
         """
         df = df.astype(str)
         for col, val in zip(column_name_to_drop_rows, value_in_row):
             if col in df.columns:
                 df = df[df[col] != val]
-                print(f"Rows where {col} is {val} have been dropped.")
+                LOG.info(f"Rows where {col} is {val} have been dropped.")
             else:
-                print(f"Column {col} does not exist in the DataFrame.")
+                LOG.warning(f"Column {col} does not exist in the DataFrame.")
         return df
 
     @staticmethod
@@ -311,6 +346,8 @@ class InitialDataProcessing:
         :return: dataframe without nans and duplicates.
         """
         if target_column and dataframe[target_column].isna().any():
+            LOG.error(f"Target column '{target_column}' has NaN values. \
+                               Please review the data.")
             raise ValueError(f"Target column '{target_column}' has NaN values. \
                                Please review the data.")
 
@@ -320,18 +357,17 @@ class InitialDataProcessing:
         if not rows_with_nans.empty and output_folder:
             nan_output_path = os.path.join(output_folder, "nans.csv")
             rows_with_nans.to_csv(nan_output_path, index=True)
-            print(f"NaN rows exported to: {nan_output_path}")
+            LOG.info(f"NaN rows exported to: {nan_output_path}")
 
         exact_duplicates = cleaned_dataframe[cleaned_dataframe.duplicated(keep=False)]
 
         if not exact_duplicates.empty:
-            print('Exact duplicate rows found:')
-            print(exact_duplicates)
+            LOG.info(f"Exact duplicate rows found: {exact_duplicates}")
 
             if output_folder:
                 duplicates_output_path = os.path.join(output_folder, "exact_duplicates.csv")
                 exact_duplicates.to_csv(duplicates_output_path, index=True)
-                print(f"Exact duplicate rows exported to: {duplicates_output_path}")
+                LOG.info(f"Exact duplicate rows exported to: {duplicates_output_path}")
 
             cleaned_dataframe = cleaned_dataframe.drop_duplicates()
 
@@ -345,9 +381,10 @@ class InitialDataProcessing:
 
         :param data: input data.
         :param target_column: column in the dataframe specified by user.
-        :return:
+        :return: Pandas dataframe.
         """
         if target_column not in data.columns:
+            LOG.error("The target column is not in the dataframe. Please evaluate data.")
             raise ValueError(
                 "The target column is not in the dataframe. Please evaluate data.")
 
@@ -356,6 +393,7 @@ class InitialDataProcessing:
         if not pd.to_numeric(data[target_column], errors='coerce').notna().all():
             data[target_column] = pd.to_numeric(data[target_column], errors='coerce')
             if not data[target_column].notna().all():
+                LOG.error("The target column could not be converted to numeric.")
                 raise ValueError(
                     "The target column could not be converted to numeric.")
 
@@ -386,6 +424,7 @@ class InitialDataProcessing:
             elif isinstance(data, dict):
                 df = pd.DataFrame(data)
             else:
+                LOG.error("Unsupported data type. Please provide a supported data type.")
                 raise ValueError("Unsupported data type. Please provide a supported data type.")
 
             if columns is not None:
@@ -395,22 +434,22 @@ class InitialDataProcessing:
 
             return df
         except Exception as n:
-            print(f"An error occurred during data conversion: {n}")
+            LOG.error(f"An error occurred during data conversion: {n}")
             return None
 
     @staticmethod
     def transform_target_column(df, target_column, classification_prediction):
         if isinstance(classification_prediction, tuple) and len(classification_prediction) == 2:
-            print(f'Binary model selected for values {classification_prediction}')
+            LOG.info(f'Binary model selected for values {classification_prediction}')
             df = df[df[target_column].isin(classification_prediction)]
 
         elif isinstance(classification_prediction, tuple) and len(classification_prediction) == 3:
-            print(f'Multiclass model selected for values {classification_prediction}')
+            LOG.info(f'Multiclass model selected for values {classification_prediction}')
             df = df[df[target_column].isin(classification_prediction)]
 
         df[target_column] = df[target_column].astype(int)
         unique_values = df[target_column].unique()
-        print(f"Unique values in {target_column} after transformation: {unique_values}")
+        LOG.info(f"Unique values in {target_column} after transformation: {unique_values}")
 
         return df
 

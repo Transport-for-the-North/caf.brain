@@ -7,27 +7,78 @@ Original author: Adil Zaheer
 # pylint: enable=import-error,wrong-import-position
 import pandas as pd
 import os as os
+from pathlib import Path
+from typing import List
 from caf.ml.process_data_functions.encode_and_scale import process_data_pipeline
 from caf.ml.process_data_functions.split_data_into_ttv import split_data
 from caf.ml.process_data_functions.process_input_data_functions import InitialDataProcessing
+import logging
+LOG = logging.getLogger(__name__)
 
-def main_input_data(output_path,
-                    file_path,
-                    folder_path,
-                    target_column,
-                    custom_index,
-                    column_name_to_drop_rows,
-                    value_in_row,
-                    weight_column,
-                    categorical_features,
-                    numerical_features,
-                    classification_prediction,
-                    split_by_value,
-                    validation_path,
-                    split_size,
-                    sample_size_encode,
-                    select_encode_values,
-                    encode_values_to_drop):
+def main_input_data(output_path: Path,
+                    file_path: Path,
+                    folder_path: Path,
+                    target_column: str,
+                    custom_index: List[str],
+                    column_name_to_drop_rows: List[str],
+                    value_in_row: List[str],
+                    weight_column: str,
+                    categorical_features: List[str],
+                    numerical_features: List[str],
+                    classification_prediction: tuple[int, ...],
+                    split_by_value: str,
+                    validation_path: Path,
+                    split_size: float,
+                    sample_size_encode: bool,
+                    select_encode_values: bool,
+                    encode_values_to_drop: List[str]) -> dict:
+    """
+    Main function for processing input data.
+
+    :param output_path: Path to output location.
+    :param file_path: Optional path to data to be used for modelling.
+    :param folder_path: Optional path to folder of data to be used for modelling.
+    :param target_column: String column name of value to predict.
+    :param custom_index: list of string column names to be used as an index.
+                         Must be one value e.g. year if splitting data
+                         into train and test via this column. Corresponds to
+                         split_by_value in this case.
+    :param column_name_to_drop_rows: list of string column names that
+                                     contain values to drop.
+    :param value_in_row: corresponding values for column_name_to_drop_rows.
+    :param weight_column: Optional string column value to be used as weight.
+    :param categorical_features: List of string column names that are
+                                 categorical variables.
+    :param numerical_features: List of string column names that are
+                               continuous variables.
+    :param classification_prediction: List of integers that correspond to the
+                                      target column. The value(s) to predict
+                                      in a classification problem.
+    :param split_by_value: Optional string that links to custom_index. The
+                           value in the index column to split the data into
+                           training and test.
+    :param validation_path: Optional path to validation data if it exists.
+                            This would need to correspond to the test data
+                            created.
+    :param split_size: Optional float e.g. 0.2. This would be the ratio to
+                       randomly split data into train and test. 0.2 is used
+                       if left as None.
+    :param sample_size_encode: Optional bool. If true, the data will be split
+                               based on sample size. Variables with the largest
+                               sample size will be used as reference class.
+    :param select_encode_values: Optional bool. If True, data is split based
+                                 on custom values set by the user. Corresponds
+                                 to encode_values_to_drop.
+    :param encode_values_to_drop: If select_encode_values is True, then this
+                                  must be a list of strings the length of
+                                  categorical_features. Position one in the list
+                                  will link to the first variable provided in
+                                  categorical_features and so on.
+
+    :return:
+        Dictionary of processed dataframes.
+        drop_vals: Values dropped during encoding of categorical variables.
+    """
 
     folder_path = "" if folder_path is None else folder_path
 
@@ -41,7 +92,7 @@ def main_input_data(output_path,
                 validate = pd.read_csv(os.path.join(output_path, 'validate.csv'))
                 validate[target_column] = validate[target_column].astype(float)
             except FileNotFoundError:
-                print("Validate not provided. Validation will not be performed")
+                LOG.warning("Validate not provided. Validation will not be performed")
                 validate = None
         # try folder_path
         except FileNotFoundError:
@@ -51,7 +102,7 @@ def main_input_data(output_path,
                 validate = pd.read_csv(os.path.join(folder_path, 'validate.csv'))
                 validate[target_column] = validate[target_column].astype(float)
             except FileNotFoundError:
-                print("Validate not provided. Validation will not be performed")
+                LOG.warning("Validate not provided. Validation will not be performed")
                 validate = None
 
         processor = InitialDataProcessing(file_path=file_path,
@@ -80,11 +131,10 @@ def main_input_data(output_path,
             processed_df = list(processed.values())[0]
             processed_dfs[name] = processed_df
 
-            print(f"Processed {name} dataframe:")
-            print(f"Index names: {processed_df.index.names}")
-            print(f"Columns: {processed_df.columns.tolist()}")
-            print(f"Shape: {processed_df.shape}")
-            print("---")
+            LOG.info(f"Processed {name} dataframe:")
+            LOG.info(f"Index names: {processed_df.index.names}")
+            LOG.info(f"Columns: {processed_df.columns.tolist()}")
+            LOG.info(f"Shape: {processed_df.shape}")
 
         train_unscaled = processed_dfs['train']
         test_unscaled = processed_dfs['test']
@@ -101,16 +151,16 @@ def main_input_data(output_path,
                                                         train_encoded=None,
                                                         test_data=False)
 
-        test_scaled, drop_vals = process_data_pipeline(df=test_unscaled.copy(),
-                                                       numerical_features=numerical_features,
-                                                       categorical_features=categorical_features,
-                                                       target_column=target_column,
-                                                       weight_column=weight_column,
-                                                       sample_size_encode=sample_size_encode,
-                                                       select_encode_values=select_encode_values,
-                                                       encode_values_to_drop=encode_values_to_drop,
-                                                       train_encoded=train_scaled,
-                                                       test_data=True)
+        test_scaled, _ = process_data_pipeline(df=test_unscaled.copy(),
+                                               numerical_features=numerical_features,
+                                               categorical_features=categorical_features,
+                                               target_column=target_column,
+                                               weight_column=weight_column,
+                                               sample_size_encode=sample_size_encode,
+                                               select_encode_values=select_encode_values,
+                                               encode_values_to_drop=encode_values_to_drop,
+                                               train_encoded=train_scaled,
+                                               test_data=True)
 
         data_dict = {
             'train_scaled': train_scaled,
@@ -119,7 +169,7 @@ def main_input_data(output_path,
             'test_unscaled': test_unscaled,
             'validate': validate
         }
-        return data_dict
+        return data_dict, drop_vals
 
     else:
         processor = InitialDataProcessing(file_path=file_path,
@@ -165,16 +215,16 @@ def main_input_data(output_path,
                                                         train_encoded=None,
                                                         test_data=False)
 
-        test_scaled, drop_vals = process_data_pipeline(df=test_unscaled.copy(),
-                                                       numerical_features=numerical_features,
-                                                       categorical_features=categorical_features,
-                                                       target_column=target_column,
-                                                       weight_column=weight_column,
-                                                       sample_size_encode=sample_size_encode,
-                                                       select_encode_values=select_encode_values,
-                                                       encode_values_to_drop=encode_values_to_drop,
-                                                       train_encoded=train_scaled,
-                                                       test_data=True)
+        test_scaled, _ = process_data_pipeline(df=test_unscaled.copy(),
+                                               numerical_features=numerical_features,
+                                               categorical_features=categorical_features,
+                                               target_column=target_column,
+                                               weight_column=weight_column,
+                                               sample_size_encode=sample_size_encode,
+                                               select_encode_values=select_encode_values,
+                                               encode_values_to_drop=encode_values_to_drop,
+                                               train_encoded=train_scaled,
+                                               test_data=True)
 
         train_unscaled[target_column] = train_unscaled[target_column].astype(int)
         train_scaled[target_column] = train_scaled[target_column].astype(int)
@@ -188,4 +238,4 @@ def main_input_data(output_path,
             'validate': validate
         }
 
-        return data_dict
+        return data_dict, drop_vals

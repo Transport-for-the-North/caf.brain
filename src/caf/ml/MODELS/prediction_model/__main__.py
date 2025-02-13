@@ -16,36 +16,40 @@ from caf.ml.inputs_and_baseclasses.run_inputs import run_file_inputs
 from caf.ml.process_data_functions.process_data_main import main_input_data
 import time
 from caf.ml.statsmodel_pipeline.statsmodel_main import main_stats_model
+import logging
+LOG = logging.getLogger(__name__)
 
-# todo add is_time_series which overwrites the cv input so makes sure the model uses timeseriessplit
 # todo need to see if it drops multiple rows or not with my existing func
 # todo ordinary encoding for to mitigate lots of rows issue
 # todo track model scores with initial versus improved model so test with training data twice (at start and at the end)
 
 def main(params: run_file_inputs):
+    """
+    Main function for caf.brAIn prediction model.
+    """
     start_time = time.time()
 
     output_path = os.path.join(params.output_path, 'output')
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    data_dict = main_input_data(output_path=output_path,
-                                file_path=params.file_path,
-                                folder_path=params.folder_path,
-                                target_column=params.target_column,
-                                custom_index=params.custom_index,
-                                column_name_to_drop_rows=params.column_name_to_drop_rows,
-                                value_in_row=params.value_in_row,
-                                weight_column=params.weight_column,
-                                categorical_features=params.categorical_features,
-                                numerical_features=params.numerical_features,
-                                classification_prediction=params.classification_prediction,
-                                split_by_value=params.split_by_value,
-                                validation_path=params.validation_path,
-                                split_size=params.split_size,
-                                sample_size_encode=params.sample_size_encode,
-                                select_encode_values=params.select_encode_values,
-                                encode_values_to_drop=params.encode_values_to_drop)
+    data_dict, drop_vals = main_input_data(output_path=output_path,
+                                           file_path=params.file_path,
+                                           folder_path=params.folder_path,
+                                           target_column=params.target_column,
+                                           custom_index=params.custom_index,
+                                           column_name_to_drop_rows=params.column_name_to_drop_rows,
+                                           value_in_row=params.value_in_row,
+                                           weight_column=params.weight_column,
+                                           categorical_features=params.categorical_features,
+                                           numerical_features=params.numerical_features,
+                                           classification_prediction=params.classification_prediction,
+                                           split_by_value=params.split_by_value,
+                                           validation_path=params.validation_path,
+                                           split_size=params.split_size,
+                                           sample_size_encode=params.sample_size_encode,
+                                           select_encode_values=params.select_encode_values,
+                                           encode_values_to_drop=params.encode_values_to_drop)
 
     train_scaled = pd.DataFrame.from_dict(data_dict['train_scaled'])
     test_scaled = pd.DataFrame.from_dict(data_dict['test_scaled'])
@@ -95,16 +99,17 @@ def main(params: run_file_inputs):
                                                                    output_folder=params.output_path,
                                                                    is_time_series=params.is_time_series)
 
-    train_final, test_final = main_feature_selection(train=train_transformed,
-                                                     test=test_transformed,
-                                                     target_column=params.target_column,
-                                                     cv=params.cv,
-                                                     regression_method=model_initialised,
-                                                     weight_column=params.weight_column,
-                                                     classification_prediction=params.classification_prediction,
-                                                     output=output_path,
-                                                     skip_feature_selection=params.skip_feature_selection,
-                                                     intensive_feature_selection=params.intensive_feature_selection)
+    train_final, test_final, cols_dropped_by_feat_select = main_feature_selection(train=train_transformed,
+                                                                                  test=test_transformed,
+                                                                                  target_column=params.target_column,
+                                                                                  cv=params.cv,
+                                                                                  regression_method=model_initialised,
+                                                                                  weight_column=params.weight_column,
+                                                                                  classification_prediction=params.classification_prediction,
+                                                                                  output=output_path,
+                                                                                  skip_feature_selection=params.skip_feature_selection,
+                                                                                  intensive_feature_selection=params.intensive_feature_selection,
+                                                                                  is_time_series=params.is_time_series)
 
     best_model = main_hyperparameter_optimisation(train_final=train_final,
                                                   target_column=params.target_column,
@@ -113,7 +118,8 @@ def main(params: run_file_inputs):
                                                   classification_prediction=params.classification_prediction,
                                                   cv=params.cv,
                                                   weight_column=params.weight_column,
-                                                  output_folder=output_path)
+                                                  output_folder=output_path,
+                                                  is_time_series=params.is_time_series)
 
     y_pred = main_prediction(model=best_model,
                              test=test_final,
@@ -122,8 +128,10 @@ def main(params: run_file_inputs):
                              validation=validate,
                              weight_column=params.weight_column,
                              classification_prediction=params.classification_prediction,
-                             mse=mse)
+                             mse=mse,
+                             drop_vals=drop_vals,
+                             cols_dropped_by_feat_select=cols_dropped_by_feat_select)
 
     end_time = time.time()
-    print(f"Total run time: {end_time - start_time:.2f} seconds")
+    LOG.info(f"Total run time: {end_time - start_time:.2f} seconds")
     return

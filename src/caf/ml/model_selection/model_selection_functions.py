@@ -7,6 +7,7 @@ Original author: Adil Zaheer
 # pylint: enable=import-error,wrong-import-position
 import os
 from pathlib import Path
+from typing import List
 import joblib
 import numpy as np
 import pandas as pd
@@ -15,13 +16,36 @@ from sklearn.metrics import log_loss, mean_squared_error
 from caf.ml.MODELS.prediction_model.prediction_model_inputs import Models
 from sklearn.model_selection import train_test_split, cross_val_score
 from scipy import stats
+import logging
+LOG = logging.getLogger(__name__)
 
 
-def initialise_model(train,
-                     target_column,
-                     output_folder,
-                     weight_column,
+def initialise_model(train: pd.DataFrame,
+                     target_column: str,
+                     output_folder: Path,
+                     weight_column: str,
                      model_initialised):
+    """
+    Fits the initialised model with machine learning prediction convention.
+    This gives a first look into how well the model will preform prior to
+    entering the machine learning pipeline.
+
+    :param train: processed input data split into train subset.
+    :param target_column: String column name of value to predict.
+    :param output_folder: Path to output location.
+    :param weight_column: Optional string column value to be used as weight.
+    :param model_initialised: Initialised SciKitLearn model.
+
+    :return:
+        model_fit: Fitted model on train_test_split test data.
+        residuals: Truth values form the train_test_split against the predictions.
+        x_train: Series of train data to be used as train.
+        x_test: Series of test data to be used as unseen test data.
+        y_train: Series of target column inside train to be used as train.
+        y_test: Series of target column inside train to be used as validation for
+                predictions.
+        mse: Mean squared error of predictions.
+    """
     x = train.drop(columns=[target_column])
     y = train[target_column]
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.35, random_state=42)
@@ -48,23 +72,6 @@ def initialise_model(train,
     y_pred = model_fit.predict(x_test)
     residuals = y_test - y_pred
 
-    # old method
-    # coeff_df = None
-    # if hasattr(model_fit, 'coef_'):
-    #     coefficients = model_fit.coef_
-    #     coefficients = np.squeeze(coefficients)
-    #
-    #     if coefficients.ndim == 1:
-    #         coeff_df = pd.DataFrame({
-    #             'Feature': x_train.columns,
-    #             'Coefficient': coefficients
-    #         })
-    #     else:
-    #         coeff_df = pd.DataFrame(coefficients.T, columns=x_train.columns)
-    #         coeff_df.insert(0, 'Feature', x_train.columns)
-    #         # coeff_df = pd.DataFrame(coefficients.T, columns=x_train.columns[:coefficients.shape[1]])
-    #         # coeff_df.insert(0, 'Feature', x_train.columns[:coefficients.shape[1]])
-
     coeff_df, mse = calculate_model_coeff(model=model_fit,
                                           x_train=x_train,
                                           x_test=x_test,
@@ -80,10 +87,26 @@ def initialise_model(train,
 def select_model(train: pd.DataFrame,
                  target_column: str,
                  weight_column: str,
-                 models_to_test: list[Models],
+                 models_to_test: List[Models],
                  output_folder: Path,
                  classification_prediction: str):
+    """
+    Function to quickly assess the best model for the data based on the list of
+    provided models.
 
+    :param train: processed input data split into train subset.
+    :param target_column: sting column name of value to predict.
+    :param weight_column: Optional string column value to be used as weight.
+    :param models_to_test: List or one algorithm to use as the base of the model.
+                           Available algorithms can be seen in
+                           prediction_model_inputs.py or __info__.py.
+    :param output_folder: Path to output location.
+    :param classification_prediction: List of integers that correspond to the
+                                      target column. The value(s) to predict
+                                      in a classification problem.
+
+    :return: Best performing model initialised.
+    """
     weight = None
     y = train[target_column]
     x = train.drop(columns=target_column)
@@ -98,7 +121,7 @@ def select_model(train: pd.DataFrame,
     for model_enum in models_to_test:
         # scikit
         model_instance = model_enum.get_model()
-        print(f"Testing model: {model_instance}")
+        LOG.info(f"Testing model: {model_instance}")
 
         if isinstance(model_instance, LogisticRegression):
             model_instance.set_params(max_iter=1000)
@@ -123,8 +146,8 @@ def select_model(train: pd.DataFrame,
             best_score = mean_score
             best_model = model_enum.get_model()
 
-    print(f"Best model: {best_model}")
-    print(f"Best model score: {best_score}")
+    LOG.info(f"Best model: {best_model}")
+    LOG.info(f"Best model score: {best_score}")
     evaluation_df = pd.DataFrame.from_dict(acc, orient='index')
 
     output_filename = 'model_algorithm_evaluation.csv'
@@ -134,10 +157,26 @@ def select_model(train: pd.DataFrame,
     return best_model
 
 
-def score_regression(weight,
-                     model_instance,
-                     x,
-                     y):
+def score_regression(weight: pd.DataFrame,
+                     model_instance: Models,
+                     x: pd.DataFrame,
+                     y: pd.DataFrame):
+    """
+    Function to score regression based problems.
+
+    :param weight: Pandas dataframe of weight values from the original
+                   train input data.
+    :param model_instance: Initialised model.
+    :param x: Train data split into only the explanatory variables. Target
+              and weight should be removed. Any index columns should be
+              set.
+    :param y: Train data split into only the target. Any index columns should
+              be set.
+
+    :return:
+        scores_r2: Series of R2 scores.
+        scores_mse: Series of mean squared error scores.
+    """
     if weight is not None:
         scores_r2 = cross_val_score(model_instance, x, y, cv=3,
                                     scoring="r2", n_jobs=-1,
@@ -153,10 +192,26 @@ def score_regression(weight,
 
     return scores_r2, scores_mse
 
-def score_classification(weight,
-                         model_instance,
-                         x,
-                         y):
+def score_classification(weight: pd.DataFrame,
+                         model_instance: Models,
+                         x: pd.DataFrame,
+                         y: pd.DataFrame):
+    """
+    Function to score classification based problems.
+
+    :param weight: Pandas dataframe of weight values from the original
+                   train input data.
+    :param model_instance: Initialised model.
+    :param x: Train data split into only the explanatory variables. Target
+              and weight should be removed. Any index columns should be
+              set.
+    :param y: Train data split into only the target. Any index columns should
+              be set.
+
+    :return:
+        scores_f1: Series of F1 scores.
+        scores_auc: Series of AUC scores.
+    """
     if weight is not None:
         scores_f1 = cross_val_score(model_instance, x, y, cv=3,
                                     scoring="f1", n_jobs=-1,
@@ -174,10 +229,24 @@ def score_classification(weight,
 
 
 def calculate_model_coeff(model,
-                          x_train,
-                          x_test,
-                          y_test,
-                          residuals):
+                          x_train: pd.Series,
+                          x_test: pd.Series,
+                          y_test: pd.Series,
+                          residuals: pd.Series):
+    """
+    Calculates models linear coefficents if applicable to model selected.
+
+    :param model: Fitted model on train_test_split of training data.
+    :param x_train: Series of train data to be used as train.
+    :param x_test: Series of test data to be used as unseen test data.
+    :param y_test: Series of target column inside train to be used as validation
+                   for predictions.
+    :param residuals: Series of residual values based on x_test predictions.
+
+    :return:
+        coeff_df: Dataframe of coefficient values and other relevant statistics.
+        mse: Mean squared error of predictions.
+    """
 
     if not hasattr(model, 'coef_'):
         return None
@@ -230,12 +299,36 @@ def calculate_model_coeff(model,
 
 
 def calculate_final_coefficients(model,
-                                 test_data,
-                                 training_mse,
-                                 predictions,
-                                 validation_data,
-                                 target_column,
-                                 is_classification):
+                                 test_data: pd.DataFrame,
+                                 training_mse: pd.Series,
+                                 predictions: pd.Series,
+                                 validation_data: pd.DataFrame,
+                                 target_column: str,
+                                 is_classification: tuple[int, ...],
+                                 drop_vals: pd.DataFrame,
+                                 cols_dropped_by_feat_select: pd.DataFrame):
+    """
+    Calculates models linear coefficents if applicable to model used for
+    prediction.
+
+    :param model: Fitted final model for prediction on unseen (test) data.
+    :param test_data: Dataframe of final test data post feature selection.
+    :param training_mse: Mean squared error of predictions based on
+                         training data.
+    :param predictions: Predicted values based on the test data and set to the
+                        same index.
+    :param validation_data: Validation data if available.
+    :param target_column: String column name of value to predict.
+    :param is_classification: List of integers that correspond to the
+                              target column. The value(s) to predict
+                              in a classification problem.
+    :param drop_vals: Values dropped during encoding of categorical variables.
+    :param cols_dropped_by_feat_select: These are the columns removed due to
+                                        feature selection.
+
+    :return:
+        coeff_df: Dataframe of coefficient values and other relevant statistics.
+    """
     if not hasattr(model, 'coef_'):
         return None
 
@@ -255,15 +348,15 @@ def calculate_final_coefficients(model,
                 mse = log_loss(validation_data[target_column],
                                predictions,
                                labels=np.unique(validation_data[target_column]))
-            print(f"Using validation log loss: {mse}")
+            LOG.info(f"Using validation log loss: {mse}")
         else:
             # regression
             mse = mean_squared_error(validation_data[target_column], predictions)
-            print(f"Using validation MSE: {mse}")
+            LOG.info(f"Using validation MSE: {mse}")
+
     else:
         mse = training_mse
-        print(f"Using training {'log loss' if is_classification else 'MSE'}: {mse}")
-
+        LOG.info(f"Using training {'log loss' if is_classification else 'MSE'}: {mse}")
 
     feature_names = list(test_data.columns)
     if hasattr(model, 'intercept_'):
@@ -293,5 +386,40 @@ def calculate_final_coefficients(model,
         'P_Value': p_values,
         'MSE_Source': 'validation' if validation_data is not None else 'training'
     })
+
+    if drop_vals is not None:
+        # df with extra columns
+        drop_vals_features = pd.DataFrame({
+            'Feature': drop_vals.columns,
+            'Coefficient': 'N/A',
+            'Std_Error': 'N/A',
+            'T_Value': 'N/A',
+            'P_Value': 'N/A',
+            'MSE_Source': ['dropped during encoding'] * drop_vals.shape[1]
+        })
+    else:
+        drop_vals_features = None
+
+    if cols_dropped_by_feat_select is not None:
+        feat_select_features = pd.DataFrame({
+            'Feature': cols_dropped_by_feat_select.columns,
+            'Coefficient': 'N/A',
+            'Std_Error': 'N/A',
+            'T_Value': 'N/A',
+            'P_Value': 'N/A',
+            'MSE_Source': ['dropped during feature selection'] * cols_dropped_by_feat_select.shape[1]
+        })
+    else:
+        feat_select_features = None
+
+
+    if drop_vals_features is not None and len(
+            drop_vals_features) > 0 and feat_select_features is not None and len(
+            feat_select_features) > 0:
+        coeff_df = pd.concat([coeff_df, drop_vals_features, feat_select_features], ignore_index=True)
+    elif drop_vals_features is not None and len(drop_vals_features) > 0:
+        coeff_df = pd.concat([coeff_df, drop_vals_features], ignore_index=True)
+    elif feat_select_features is not None and len(feat_select_features) > 0:
+        coeff_df = pd.concat([coeff_df, feat_select_features], ignore_index=True)
 
     return coeff_df

@@ -249,7 +249,7 @@ def calculate_model_coeff(model,
     """
 
     if not hasattr(model, 'coef_'):
-        return None
+        return None, None
 
     n = x_train.shape[0]
     p = x_train.shape[1]

@@ -15,7 +15,6 @@ from sklearn.inspection import permutation_importance
 from sklearn.linear_model import (LogisticRegression,
                                   Ridge,
                                   Lasso)
-from sklearn.metrics import make_scorer, roc_auc_score, accuracy_score
 from sklearn.model_selection import (cross_val_score,
                                      KFold,
                                      StratifiedKFold,
@@ -66,8 +65,18 @@ def rf_feature_selection(data: pd.DataFrame,
 
     if classification_prediction:
         model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+        n_unique_classes = len(pd.unique(y))
+        score_threshold = 0.6
+        if n_unique_classes <= 2:
+            # binary
+            scoring = 'accuracy'
+        else:
+            # multi
+            scoring = 'f1_weighted'
     else:
+        score_threshold = -0.4
         model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
+        scoring = 'neg_mean_squared_error'
 
     with tqdm(total=1, desc="Fitting Random Forest") as pbar:
         model.fit(X, y, sample_weight=weight)
@@ -76,10 +85,16 @@ def rf_feature_selection(data: pd.DataFrame,
     selector = SelectFromModel(model, prefit=True)
     selected_features = X.columns[selector.get_support()].tolist()
 
-    n_splits = cv.n_splits if hasattr(cv, 'n_splits') else cv
-    scoring = (make_scorer(accuracy_score) if len(pd.unique(y)) > 3
-               else make_scorer(roc_auc_score))
+    feature_importance = pd.DataFrame({
+        'feature': X.columns,
+        'importance': model.feature_importances_
+    }).sort_values('importance', ascending=False)
 
+    LOG.info("Feature Importances:")
+    for _, row in feature_importance.iterrows():
+        LOG.info(f"{row['feature']}: {row['importance']:.4f}")
+
+    n_splits = cv.n_splits if hasattr(cv, 'n_splits') else cv
     fold_scores = []
     with tqdm(total=n_splits, desc="Cross-validation") as pbar:
         for fold in range(n_splits):
@@ -99,9 +114,10 @@ def rf_feature_selection(data: pd.DataFrame,
     LOG.info(f"Number of features selected: {len(selected_features)}")
     LOG.info(f"Cross-validated ROC AUC score: {mean_score:.3f} (+/- {std_score:.3f})")
 
-    if mean_score < 0.6:
-        LOG.warning('Initial feature selection attempt was inaccurate, trying \
-              alternative method')
+    needs_intensive = (mean_score < score_threshold) if classification_prediction else (mean_score > score_threshold)
+
+    if needs_intensive:
+        LOG.warning('Initial feature selection attempt was inaccurate, trying alternative method')
         dataframe_final = feature_selection_intensive(x=X,
                                                       y=y,
                                                       cv=cv,
@@ -199,7 +215,8 @@ def _classification_feature_selection(x: pd.DataFrame,
     logit_lasso.fit(x, y, sample_weight=weight)
     l1_selected = x.columns[abs(logit_lasso.coef_[0]) > 0].tolist()
 
-    return list(set(rfe_selected + l1_selected))
+    final_features = list(set(rfe_selected + l1_selected))
+    return final_features
 
 
 def _regression_feature_selection(x: pd.DataFrame,
@@ -223,7 +240,8 @@ def _regression_feature_selection(x: pd.DataFrame,
     ridge.fit(x, y, sample_weight=weight)
     ridge_selected = x.columns[abs(ridge.coef_) > np.mean(abs(ridge.coef_))].tolist()
 
-    return list(set(lasso_selected + ridge_selected))
+    final_features = list(set(lasso_selected + ridge_selected))
+    return final_features
 
 
 def get_cv_class(cv_method: str,
@@ -338,15 +356,20 @@ def analyse_feature_importance(train_transformed: pd.DataFrame,
         correlations.set_index('feature')
     ], axis=1)
 
-    results_df.to_csv(os.path.join(output_path, 'feature_importances.csv'), float_format='%.10f')
-
     importance_metrics, filtered_data = filtering_results(results_df=results_df,
                                                           target_column=target_column,
                                                           weight_column=weight_column,
                                                           original_data=train_transformed)
 
+    if importance_metrics.empty:
+        LOG.warning("All feature importance metrics are zero or near-zero. "
+                    "This likely indicates insufficient data or data quality issues. "
+                    "Returning original dataset without feature selection.")
+        return train_transformed
+
     create_importance_plots(results_df=importance_metrics,
                             output_path=output_path)
+    results_df.to_csv(os.path.join(output_path, 'feature_importances.csv'), float_format='%.10f')
 
     return filtered_data
 

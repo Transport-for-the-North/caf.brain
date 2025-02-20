@@ -181,8 +181,16 @@ def split_by_column_value(df: pd.DataFrame,
     :param output_path: Path to output location.
     :return: train, test and validate dataframes.
     """
-    train = df.loc[df.index.get_level_values(index_columns) <= int(split_by_value)]
-    test = df.loc[df.index.get_level_values(index_columns) > int(split_by_value)]
+    if not index_columns or len(index_columns) != 1:
+        raise ValueError("index_columns must contain exactly one column name for splitting")
+
+    index_column = index_columns[0]
+
+    if index_column not in df.index.names and index_column != df.index.name:
+        raise KeyError(f"Index column '{index_column}' not found in DataFrame index")
+
+    train = df.loc[df.index.get_level_values(index_column) <= int(split_by_value)]
+    test = df.loc[df.index.get_level_values(index_column) > int(split_by_value)]
 
     validate = None
     if weight_column in test:
@@ -197,7 +205,7 @@ def split_by_column_value(df: pd.DataFrame,
 
     if validation_path is not None:
         validate = InitialDataProcessing.read_file(file_path=validation_path)
-        if index_columns in validate.columns:
-            validate = validate.set_index(index_columns)
+        if index_column in validate.columns:
+            validate = validate.set_index(index_column)
 
     return train, test, validate

@@ -240,7 +240,6 @@ def transform_data(df: pd.DataFrame,
         weight = None
 
     numerical_data = df[numerical_features].copy()
-    categorical_data = df[categorical_features].copy()
 
     # log
     numerical_transformed = numerical_data.apply(lambda x: np.log(x + 1))
@@ -250,15 +249,18 @@ def transform_data(df: pd.DataFrame,
                                                  numerical_features=numerical_features)
 
     # pca
-    pca = PCA()
-    numerical_pca = pd.DataFrame(
-        pca.fit_transform(numerical_scaled),
-        columns=numerical_features,
-        index=original_index)
+    # pca = PCA()
+    # numerical_pca = pd.DataFrame(
+    #     pca.fit_transform(numerical_scaled),
+    #     columns=numerical_features,
+    #     index=original_index)
+    #
+    # transformed_data.append(numerical_pca)
 
-    transformed_data.append(numerical_pca)
+    transformed_data.append(numerical_scaled)
 
-    if categorical_data is not None:
+    if categorical_features is not None:
+        categorical_data = df[categorical_features].copy()
         transformed_data.append(categorical_data)
 
     if weight is not None:

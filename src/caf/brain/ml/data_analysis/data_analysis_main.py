@@ -8,7 +8,7 @@ Original author: Adil Zaheer
 from pathlib import Path
 from typing import List
 import pandas as pd
-from caf.ml.data_analysis.data_analysis_functions import pre_forecast_data_analysis
+from caf.brain.ml.data_analysis.data_analysis_functions import pre_forecast_data_analysis
 
 
 def main_evaluate_input_data(model_fit,

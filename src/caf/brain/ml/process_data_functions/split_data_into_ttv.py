@@ -9,7 +9,7 @@ import os.path
 from pathlib import Path
 from typing import List
 import pandas as pd
-from caf.ml.process_data_functions.process_input_data_functions import InitialDataProcessing
+from caf.brain.ml.process_data_functions.process_input_data_functions import InitialDataProcessing
 from sklearn.model_selection import train_test_split
 
 

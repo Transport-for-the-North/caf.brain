@@ -9,9 +9,9 @@ import pandas as pd
 import os as os
 from pathlib import Path
 from typing import List
-from caf.ml.process_data_functions.encode_and_scale import process_data_pipeline
-from caf.ml.process_data_functions.split_data_into_ttv import split_data
-from caf.ml.process_data_functions.process_input_data_functions import InitialDataProcessing
+from caf.brain.ml.process_data_functions.encode_and_scale import process_data_pipeline
+from caf.brain.ml.process_data_functions.split_data_into_ttv import split_data
+from caf.brain.ml.process_data_functions.process_input_data_functions import InitialDataProcessing
 import logging
 LOG = logging.getLogger(__name__)
 

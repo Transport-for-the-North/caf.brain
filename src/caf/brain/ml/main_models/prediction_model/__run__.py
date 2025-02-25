@@ -5,8 +5,8 @@ Original author: Adil Zaheer
 """
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
-from caf.ml.MODELS.prediction_model.__main__ import main
-from caf.ml.MODELS.prediction_model.prediction_model_inputs import run_file_inputs, Models
+from caf.brain.ml.main_models.prediction_model.__main__ import main
+from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import run_file_inputs, Models
 import yaml
 from caf.toolkit import LogHelper, ToolDetails
 import os

@@ -5,7 +5,7 @@ Original author: Adil Zaheer
 """
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
-from caf.ml.hyperparameter_optimisation.hyper_optim_functions import select_param
+from caf.brain.ml.hyperparameter_optimisation.hyper_optim_functions import select_param
 from pathlib import Path
 import pandas as pd
 

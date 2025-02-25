@@ -7,7 +7,7 @@ Original author: Adil Zaheer
 # pylint: enable=import-error,wrong-import-position
 from pathlib import Path
 import pandas as pd
-from caf.ml.model_selection.model_selection_functions import select_model, initialise_model
+from caf.brain.ml.model_selection.model_selection_functions import select_model, initialise_model
 import logging
 LOG = logging.getLogger(__name__)
 

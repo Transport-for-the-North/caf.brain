@@ -7,9 +7,9 @@ Original author: Adil Zaheer
 # pylint: enable=import-error,wrong-import-position
 from pathlib import Path
 import pandas as pd
-from caf.ml.feature_selection.feature_selection_functions import (rf_feature_selection,
-                                                                  combine_results,
-                                                                  analyse_feature_importance)
+from caf.brain.ml.feature_selection.feature_selection_functions import (rf_feature_selection,
+                                                                        combine_results,
+                                                                        analyse_feature_importance)
 import logging
 LOG = logging.getLogger(__name__)
 

@@ -18,9 +18,9 @@ from sklearn.ensemble import (RandomForestClassifier,
                               ExtraTreesClassifier)
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
-from caf.ml.MODELS.prediction_model.prediction_model_inputs import (ModelGrids,
-                                                                    get_model_grid)
-from caf.ml.feature_selection.feature_selection_functions import get_cv_class
+from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import (ModelGrids,
+                                                                               get_model_grid)
+from caf.brain.ml.feature_selection.feature_selection_functions import get_cv_class
 import logging
 LOG = logging.getLogger(__name__)
 

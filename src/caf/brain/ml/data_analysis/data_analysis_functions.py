@@ -10,13 +10,13 @@ from pathlib import Path
 from typing import List
 import numpy as np
 import pandas as pd
-from sklearn.decomposition import PCA
+# from sklearn.decomposition import PCA
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tools import add_constant
 from scipy.stats import shapiro
 from statsmodels.stats.diagnostic import het_breuschpagan, het_white
-from caf.ml.process_data_functions.encode_and_scale import preprocess_numerical_data
+from caf.brain.ml.process_data_functions.encode_and_scale import preprocess_numerical_data
 from sklearn.linear_model import (Ridge,
                                   Lasso,
                                   ElasticNet,

@@ -7,15 +7,15 @@ Original author: Adil Zaheer
 # pylint: enable=import-error,wrong-import-position
 import os
 import pandas as pd
-from caf.ml.data_analysis.data_analysis_main import main_evaluate_input_data
-from caf.ml.feature_selection.feature_selection_main import main_feature_selection
-from caf.ml.hyperparameter_optimisation.hyper_optim_main import main_hyperparameter_optimisation
-from caf.ml.model_selection.model_selection_main import main_model_selection
-from caf.ml.prediction.prediction_main import main_prediction
-from caf.ml.inputs_and_baseclasses.run_inputs import run_file_inputs
-from caf.ml.process_data_functions.process_data_main import main_input_data
+from caf.brain.ml.data_analysis.data_analysis_main import main_evaluate_input_data
+from caf.brain.ml.feature_selection.feature_selection_main import main_feature_selection
+from caf.brain.ml.hyperparameter_optimisation.hyper_optim_main import main_hyperparameter_optimisation
+from caf.brain.ml.model_selection.model_selection_main import main_model_selection
+from caf.brain.ml.prediction.prediction_main import main_prediction
+from caf.brain.ml.inputs_and_baseclasses.run_inputs import run_file_inputs
+from caf.brain.ml.process_data_functions.process_data_main import main_input_data
 import time
-from caf.ml.statsmodel_pipeline.statsmodel_main import main_stats_model
+from caf.brain.ml.statsmodel_pipeline.statsmodel_main import main_stats_model
 import logging
 LOG = logging.getLogger(__name__)
 

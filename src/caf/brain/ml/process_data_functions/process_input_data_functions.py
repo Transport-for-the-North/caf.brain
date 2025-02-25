@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Union, List, Any, Optional, Dict
 import numpy as np
 import pandas as pd
-from caf.ml.inputs_and_baseclasses.baseclasses import ValidateData
+from caf.brain.ml.inputs_and_baseclasses.baseclasses import ValidateData
 import logging
 LOG = logging.getLogger(__name__)
 

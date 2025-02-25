@@ -471,7 +471,7 @@ def create_importance_plots(results_df: pd.DataFrame,
         data=results_plot,
         x='importance_mean_perm',
         y='feature',
-        xerr=results_plot['importance_std_perm']
+        # xerr=results_plot['importance_std_perm']
     )
     plt.title('Top 10 Features by Permutation Importance')
     plt.tight_layout()

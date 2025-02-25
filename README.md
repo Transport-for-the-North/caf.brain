@@ -1,112 +1,103 @@
-![Transport for the North Logo](https://github.com/Transport-for-the-North/caf.ml/blob/main/docs/TFN_Landscape_Colour_CMYK.png)
+![Transport for the North Logo](https://github.com/transport-for-the-north/caf.brain/blob/main/docs/TFN_Landscape_Colour_CMYK.png)
 
-<h1 align="center">CAF template</h1>
-
-[//]: # (Use the below and update URLs to add more badges when deploying)
-
-[//]: # (<a href="https://pypi.org/project/caf.ml/"><img alt="Supported Python versions" src="https://img.shields.io/pypi/pyversions/caf.package.svg?style=flat-square"></a>)
-
-[//]: # (<a href="https://pypi.org/project/caf.ml/"><img alt="Latest release" src="https://img.shields.io/github/release/transport-for-the-north/caf.package.svg?style=flat-square&maxAge=86400"></a>)
-
-[//]: # (<a href="https://app.codecov.io/gh/Transport-for-the-North/caf.ml"><img alt="Coverage" src="https://img.shields.io/codecov/c/github/transport-for-the-north/caf.package.svg?branch=master&style=flat-square&logo=CodeCov"></a>)
-
-[//]: # (<a href="https://github.com/Transport-for-the-North/caf.ml/actions?query=event%3Apush"><img alt="Testing Badge" src="https://img.shields.io/github/actions/workflow/status/transport-for-the-north/caf.ml/tests.yml?style=flat-square&logo=GitHub&label=Tests"></a>)
-
+<h1 align="center">CAF.brAIn</h1>
 
 <p align="center">
-<a href="https://www.gnu.org/licenses/gpl-3.0.en.html"><img alt="License: GNU GPL v3.0" src="https://img.shields.io/badge/license-GPLv3-blueviolet.svg?style=flat-square"></a>
-<a href="https://github.com/psf/black"><img alt="code style: black" src="https://img.shields.io/badge/code%20format-black-000000.svg"></a>
+<a href="https://pypi.org/project/caf.brain/">
+  <img alt="Supported Python versions" src="https://img.shields.io/pypi/pyversions/caf.brain.svg?style=flat-square">
+</a>
+<a href="https://pypi.org/project/caf.brain/">
+  <img alt="Latest release" src="https://img.shields.io/github/release/transport-for-the-north/caf.brain.svg?style=flat-square&maxAge=86400">
+</a>
+<a href="https://anaconda.org/conda-forge/caf.brain">
+  <img alt="Conda" src="https://img.shields.io/conda/v/conda-forge/caf.brain?style=flat-square&logo=condaforge">
+</a>
+<a href="https://app.codecov.io/gh/transport-for-the-north/caf.brain">
+  <img alt="Coverage" src="https://img.shields.io/codecov/c/github/transport-for-the-north/caf.brain.svg?branch=main&style=flat-square&logo=CodeCov">
+</a>
+<a href="https://github.com/transport-for-the-north/caf.brain/actions?query=event%3Apush">
+  <img alt="Testing Badge" src="https://img.shields.io/github/actions/workflow/status/transport-for-the-north/caf.brain/tests.yml?style=flat-square&logo=GitHub&label=Tests">
+</a>
+<a href='https://cafbrain.readthedocs.io/en/stable/?badge=stable'>
+  <img alt='Documentation Status' src="https://img.shields.io/readthedocs/cafbrain?style=flat-square&logo=readthedocs">
+</a>
+<a href="https://github.com/psf/black">
+  <img alt="code style: black" src="https://img.shields.io/badge/code%20format-black-000000.svg">
+</a>
 </p>
 
-
-A template repo for caf modules.
-
-For an example implementation of this template please see [caf.ml](https://github.com/Transport-for-the-North/caf.ml)
-
-## Usage
-Follow the instruction below to use this template to make a new caf package based on the
-standard caf structure. Briefly:
-
-- Update the package names in all places that {package_name} is used - Done.
-- Run and install versioneer
+Common Analytical Framework package of Machine and Deep Learning tools.
 
 
-### VersioningIt
-[VersioningIt](https://github.com/jwodder/versioningit)
-is an automatic versioning tool for GitHub based projects. It provides 
-consistent and predictable naming based on the number of commits since the last 
-user defined version. This way it can be used to find old versions of code, even 
-if it's just a random commit in your repo!
-The version strings are user configurable, but currently configured to generate
-a unique version string for every commit. See the `versioningit` section at the 
-bottom of `pyproject.toml` for full details.
 
-Thanks to all the files in this repo, VersioningIt is fully set up and ready 
-to use! It will work with deployed packages, and those using editable installs.
-Editable installs are useful for local testing during development, and can be 
-done by running the following in the root of a package:
+## Common Analytical Framework
 
-`pip install -e .`
+This package is sits within the [Common Analytical Framework (CAF)](https://transport-for-the-north.github.io/caf_homepage/intro.html),
+which is a collaboration between transport bodies in the UK to develop and maintain commonly used
+transport analytics and appraisal tools.
 
-VersioningIt is based off of git Tags, which you can set on GitHub. Version 
-tags should start with a 'v' and contain three numbers (following the 
-[Semantic Versioning](https://semver.org/) convention) e.g., `v0.1.0` for an 
-initial version that isn't ready for a full `v1.0.0` release.
+## Maintainers
 
+- Adil Zaheer (AdilZ16)
 
-## What does this template provide?
-This template sets up a lot of CI/CD (Continuous Integration / Continuous 
-Deployment) tools to help manage, update, release, and test a new python 
-package. Here is a list of what this sets up for you:
+## Contributing
 
-- Automatic and easy to use code linting / analysis which works on your machine via tox, which provides:
-  - MyPy type checking
-  - Pylint syntax checking
-  - PyDocStyle documentation checking
-  - Test running via pytest
-  - Can can be run with `tox` from the root of this repo
-- Setup for [Black](https://github.com/psf/black) code formatter
-  - This can be run with `black src` or `black tests` from the root of this repo
-- GitHub actions which run on all pull requests and pushes to master
-  - These run the above tox and black checks and will warn you where code deviates from the standards
-- Automatic code versioning via Git Tags
-- Lays out the package in a consistent format to fit the `CAF` structure.
+CAF.brAIn happily accepts contributions.
 
-## Structure
+The best way to contribute to this project is to go to the [issues tab](https://github.com/transport-for-the-north/caf.brain/issues)
+and report bugs or submit a feature request. This helps CAF.brAIn become more
+stable and full-featured. Please check the closed bugs before submitting a bug report to see if your
+question has already been answered.
 
-### docs
-All docs go in here. There is only one special folder here named `sphinx` - and this is where the sphinx documentation would go once implemented.
-Remove the txt file in the `docs/sphinx` folder. 
+Please see our [contribution guidelines](https://github.com/Transport-for-the-North/.github/blob/main/CONTRIBUTING.rst)
+for details on contributing to the codebase or documentation.
 
-Any folders can be added alongside sphinx for package needs.
+## Documentation
 
-### src/caf
-All code goes in here. Some files already exist:
-- `/{package_name}/py.typed` - this tells python and PyPI that your package is typed, and it should look for type hints in the code.
+Documentation is created using [Sphinx](https://www.sphinx-doc.org/en/master/index.html) and is hosted online at
+[cafbrain.readthedocs](https://cafbrain.readthedocs.io/en/stable/).
 
+The documentation can be built locally once all the docs requirements
+([`docs/requirements.txt`](docs/requirements.txt)) are installed into your Python environment.
 
-### tests
-All tests go here.
-Tests should be written in pytest and should follow the same structure as the src package (minus the src/caf/{package_name}).
-See the [pytest](https://docs.pytest.org/en/7.2.x/) documentation for full detail, or [caf.toolkit](https://github.com/Transport-for-the-North/caf.toolkit) for an example.
+The provided make batch file, (inside the docs folder), allow for building the documentation in
+various target formats. The command for building the documentation is `make {target}`
+(called from within docs/), where `{target}` is the type of documentation format to build. A full
+list of all available target formats can be seen by running the `make` command without any
+arguments but the two most common are detailed below.
 
+### HTML
 
-### files
-There's a few files stored in the root of the pacakge which are standard setup files. They are listed and detail below:
+The HTML documentation (seen on Read the Docs) can be built using the `make html` command, this
+will build the web-based documentation and provide an index.html file as the homepage,
+[`docs/build/html/index.html`](docs/build/html/index.html).
 
-- `Contributing.rst` - Standard CAF contribution guidelines. Details on coding standards etc.
-- `pyproject.toml` - A file of settings and metadata for the package. This file details how to build the package and defines common linter tool setup.
-- `RELEASE.md` - A standard file which should be used to track change notes between package versions.
-- `requirements.txt` - Details the packages and their versions that this package depends on. It's a 
-  list of the python packages which must be installed for this package to work. Update this file as your package gains dependencies. 
-- `requirements_dev.txt` - Details the packages and their versions that this package depends on during 
-  testing and linting. These are extra dependencies on top of the `requirements.txt` ones. This is used 
-  by package tools to ensure your tests pass when you say they should! This file likely doesn't need changing very often.
-- `setup.cfg` - Mostly deprecated in favour of `pyproject.toml`. Used here to be compatible with [versioningit](https://github.com/jwodder/versioningit)
-- `tox.ini` - A configuration file for running all tests, linters, and code analysers. Can be run 
-  by running `tox` in a terminal. This file is also used by GitHub actions to automatically run
-  the same checks when a pull request is made.
+### PDF
+
+The PDF documentation has some other requirements before it can be built as Sphinx will first
+build a [LaTeX](https://www.latex-project.org/) version of the documentation and then use an
+installed TeX distribution to build the PDF from those. If you already have a TeX distribution
+setup then you can build the PDF with `make latexpdf`, otherwise follow the instructions below.
+
+Installing LaTeX on Windows is best done using [MiKTeX](https://miktex.org/), as this provides a
+simple way of handling any additional TeX packages. Details of other operating systems and TeX
+distributions can be found on the [Getting LaTeX](https://www.latex-project.org/get/) page on
+LaTeX's website.
+
+MiKTeX provides an installer on its website [miktex.org/download](https://miktex.org/download),
+which will run through the process of getting it installed and setup. In addition to MiKTeX
+the specific process Sphinx uses for building PDFs is [Latexmk](https://mg.readthedocs.io/latexmk.html),
+which is a Perl script and so requires Perl to be installed on your machine, this can be done with an
+installer provided by [Strawberry Perl](https://strawberryperl.com/).
+
+Once MiKTex and Perl are installed you are able to build the PDF from the LaTeX files, Sphinx
+provides a target (latexpdf) which builds the LaTeX files then immediately builds the PDF. When
+running `make latexpdf` MiKTeX may ask for permission to installed some required TeX packages.
+Once the command has finished the PDF will be located at
+[`docs/build/latex/cafbrain.pdf`](docs/build/latex/cafbrain.pdf).
 
 
-## Future work
-- Implement Sphinx documentation building setup
+## Credit
+
+This project was created using the Common Analytical Framework cookiecutter template found here:
+<https://github.com/Transport-for-the-North/cookiecutter-caf>

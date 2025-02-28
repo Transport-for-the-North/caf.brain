@@ -96,7 +96,7 @@ def main(params: run_file_inputs):
                                                                    weight_column=params.weight_column,
                                                                    test_scaled=test_scaled,
                                                                    x_train=x_train,
-                                                                   output_folder=params.output_path,
+                                                                   output_folder=output_path,
                                                                    is_time_series=params.is_time_series)
 
     train_final, test_final, cols_dropped_by_feat_select = main_feature_selection(train=train_transformed,

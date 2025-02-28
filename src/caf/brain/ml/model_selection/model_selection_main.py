@@ -69,6 +69,7 @@ def main_model_selection(train: pd.DataFrame,
                              target_column=target_column,
                              output_folder=output,
                              weight_column=weight_column,
-                             model_initialised=model_initialised)
+                             model_initialised=model_initialised,
+                             classification_prediction=classification_prediction)
 
     return model_initialised, model_fit, residuals, x_test, x_train, y_train, mse

@@ -85,6 +85,8 @@ def prediction(model,
         if validation is not None:
             r2 = r2_score(validation[target_column], predictions, sample_weight=weight)
             mse = mean_squared_error(validation[target_column], predictions, sample_weight=weight)
+            LOG.info(f'r2: {r2}')
+            LOG.info(f'mse: {mse}')
             metrics_df = pd.DataFrame({'r2': [r2], 'mse': [mse]})
             metrics_df.to_csv(os.path.join(output_folder, 'model_performance.csv'))
 

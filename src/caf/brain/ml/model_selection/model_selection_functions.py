@@ -24,7 +24,8 @@ def initialise_model(train: pd.DataFrame,
                      target_column: str,
                      output_folder: Path,
                      weight_column: str,
-                     model_initialised):
+                     model_initialised,
+                     classification_prediction: tuple[int, ...]):
     """
     Fits the initialised model with machine learning prediction convention.
     This gives a first look into how well the model will preform prior to
@@ -35,7 +36,9 @@ def initialise_model(train: pd.DataFrame,
     :param output_folder: Path to output location.
     :param weight_column: Optional string column value to be used as weight.
     :param model_initialised: Initialised SciKitLearn model.
-
+    :param classification_prediction: List of integers that correspond to the
+                                      target column. The value(s) to predict
+                                      in a classification problem.
     :return:
         model_fit: Fitted model on train_test_split test data.
         residuals: Truth values form the train_test_split against the predictions.
@@ -76,7 +79,9 @@ def initialise_model(train: pd.DataFrame,
                                           x_train=x_train,
                                           x_test=x_test,
                                           y_test=y_test,
-                                          residuals=residuals)
+                                          residuals=residuals,
+                                          classification_prediction=classification_prediction,
+                                          y_pred=y_pred)
 
     if coeff_df is not None:
         coeff_df.to_csv(os.path.join(output_folder, 'initial_model_coefficients.csv'), index=False)
@@ -89,7 +94,7 @@ def select_model(train: pd.DataFrame,
                  weight_column: str,
                  models_to_test: List[Models],
                  output_folder: Path,
-                 classification_prediction: str):
+                 classification_prediction: tuple[int, ...]):
     """
     Function to quickly assess the best model for the data based on the list of
     provided models.
@@ -126,21 +131,20 @@ def select_model(train: pd.DataFrame,
         if isinstance(model_instance, LogisticRegression):
             model_instance.set_params(max_iter=1000)
 
-        if classification_prediction is not None:
-            scores_r2, scores_mse = score_regression(weight=weight,
-                                                     model_instance=model_instance,
-                                                     x=x,
-                                                     y=y)
-            mean_score = scores_r2.mean()
-            acc[model_enum] = {'R-squared': scores_r2.mean(), 'MSE': scores_mse.mean()}
-
-        else:
+        if classification_prediction:
             scores_f1, scores_auc = score_classification(weight=weight,
                                                          model_instance=model_instance,
                                                          x=x,
                                                          y=y)
             mean_score = scores_f1.mean()
             acc[model_enum] = {'F1': scores_f1.mean(), 'AUC': -scores_auc.mean()}
+        else:
+            scores_r2, scores_mse = score_regression(weight=weight,
+                                                     model_instance=model_instance,
+                                                     x=x,
+                                                     y=y)
+            mean_score = scores_r2.mean()
+            acc[model_enum] = {'R-squared': scores_r2.mean(), 'MSE': scores_mse.mean()}
 
         if mean_score > best_score:
             best_score = mean_score
@@ -232,7 +236,9 @@ def calculate_model_coeff(model,
                           x_train: pd.Series,
                           x_test: pd.Series,
                           y_test: pd.Series,
-                          residuals: pd.Series):
+                          residuals: pd.Series,
+                          classification_prediction: tuple[int, ...],
+                          y_pred: pd.Series):
     """
     Calculates models linear coefficents if applicable to model selected.
 
@@ -242,6 +248,10 @@ def calculate_model_coeff(model,
     :param y_test: Series of target column inside train to be used as validation
                    for predictions.
     :param residuals: Series of residual values based on x_test predictions.
+    :param classification_prediction: List of integers that correspond to the
+                                      target column. The value(s) to predict
+                                      in a classification problem.
+    :param y_pred: Series of predicted values based on training data.
 
     :return:
         coeff_df: Dataframe of coefficient values and other relevant statistics.
@@ -255,14 +265,20 @@ def calculate_model_coeff(model,
     p = x_train.shape[1]
     dof = n - p - 1
 
-    is_classifier = hasattr(model, 'predict_proba')
-    if is_classifier:
-        # classification
-        proba = model.predict_proba(x_test)
-        if proba.shape[1] == 2:
-            mse = log_loss(y_test, proba[:, 1])
+    if classification_prediction:
+        if hasattr(model, 'predict_proba'):
+            proba = model.predict_proba(x_test)
+            if proba.shape[1] == 2:
+                # binary
+                mse = log_loss(y_test, proba[:, 1])
+            else:
+                # multiclass
+                mse = log_loss(y_test, proba)
         else:
-            mse = log_loss(y_test, proba)
+            # linear svc
+            mse = log_loss(y_test,
+                           y_pred,
+                           labels=np.unique(y_test))
     else:
         # regression
         mse = np.mean(residuals ** 2)

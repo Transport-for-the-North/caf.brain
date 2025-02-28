@@ -13,7 +13,7 @@ import os
 
 
 def model_setup():
-    with open('prediction_config.yaml', 'r') as file:
+    with open('empty_config.yaml', 'r') as file:
         config_data = yaml.safe_load(file)
 
     if isinstance(config_data['model_choice'], str):
@@ -30,7 +30,7 @@ def model_setup():
     path = os.path.join(output_path, 'log_file.log')
     details = ToolDetails("caf.brAIn Prediction Model", "1.0.0")
 
-    with LogHelper("caf.ml", details, console=True, log_file=path):
+    with LogHelper("caf.brain", details, console=True, log_file=path):
         main(params)
 
 

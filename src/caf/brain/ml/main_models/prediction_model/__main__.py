@@ -33,23 +33,23 @@ def main(params: run_file_inputs):
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    data_dict, drop_vals = main_input_data(output_path=output_path,
-                                           file_path=params.file_path,
-                                           folder_path=params.folder_path,
-                                           target_column=params.target_column,
-                                           custom_index=params.custom_index,
-                                           column_name_to_drop_rows=params.column_name_to_drop_rows,
-                                           value_in_row=params.value_in_row,
-                                           weight_column=params.weight_column,
-                                           categorical_features=params.categorical_features,
-                                           numerical_features=params.numerical_features,
-                                           classification_prediction=params.classification_prediction,
-                                           split_by_value=params.split_by_value,
-                                           validation_path=params.validation_path,
-                                           split_size=params.split_size,
-                                           sample_size_encode=params.sample_size_encode,
-                                           select_encode_values=params.select_encode_values,
-                                           encode_values_to_drop=params.encode_values_to_drop)
+    data_dict, drop_vals, numerical_pipeline = main_input_data(output_path=output_path,
+                                                               file_path=params.file_path,
+                                                               folder_path=params.folder_path,
+                                                               target_column=params.target_column,
+                                                               custom_index=params.custom_index,
+                                                               column_name_to_drop_rows=params.column_name_to_drop_rows,
+                                                               value_in_row=params.value_in_row,
+                                                               weight_column=params.weight_column,
+                                                               categorical_features=params.categorical_features,
+                                                               numerical_features=params.numerical_features,
+                                                               classification_prediction=params.classification_prediction,
+                                                               split_by_value=params.split_by_value,
+                                                               validation_path=params.validation_path,
+                                                               split_size=params.split_size,
+                                                               sample_size_encode=params.sample_size_encode,
+                                                               select_encode_values=params.select_encode_values,
+                                                               encode_values_to_drop=params.encode_values_to_drop)
 
     train_scaled = pd.DataFrame.from_dict(data_dict['train_scaled'])
     test_scaled = pd.DataFrame.from_dict(data_dict['test_scaled'])
@@ -97,7 +97,8 @@ def main(params: run_file_inputs):
                                                                    test_scaled=test_scaled,
                                                                    x_train=x_train,
                                                                    output_folder=output_path,
-                                                                   is_time_series=params.is_time_series)
+                                                                   is_time_series=params.is_time_series,
+                                                                   numerical_pipeline=numerical_pipeline)
 
     train_final, test_final, cols_dropped_by_feat_select = main_feature_selection(train=train_transformed,
                                                                                   test=test_transformed,

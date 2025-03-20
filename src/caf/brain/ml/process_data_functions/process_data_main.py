@@ -140,27 +140,31 @@ def main_input_data(output_path: Path,
         test_unscaled = processed_dfs['test']
         train_unscaled[target_column] = train_unscaled[target_column].astype(int)
 
-        train_scaled, drop_vals = process_data_pipeline(df=train_unscaled.copy(),
-                                                        numerical_features=numerical_features,
-                                                        categorical_features=categorical_features,
-                                                        target_column=target_column,
-                                                        weight_column=weight_column,
-                                                        sample_size_encode=sample_size_encode,
-                                                        select_encode_values=select_encode_values,
-                                                        encode_values_to_drop=encode_values_to_drop,
-                                                        train_encoded=None,
-                                                        test_data=False)
+        train_scaled, drop_vals, numerical_pipeline = process_data_pipeline(df=train_unscaled.copy(),
+                                                                            numerical_features=numerical_features,
+                                                                            categorical_features=categorical_features,
+                                                                            target_column=target_column,
+                                                                            weight_column=weight_column,
+                                                                            sample_size_encode=sample_size_encode,
+                                                                            select_encode_values=select_encode_values,
+                                                                            encode_values_to_drop=encode_values_to_drop,
+                                                                            train_encoded=None,
+                                                                            test_data=False,
+                                                                            numerical_pipeline=None,
+                                                                            output_folder=output_path)
 
-        test_scaled, _ = process_data_pipeline(df=test_unscaled.copy(),
-                                               numerical_features=numerical_features,
-                                               categorical_features=categorical_features,
-                                               target_column=target_column,
-                                               weight_column=weight_column,
-                                               sample_size_encode=sample_size_encode,
-                                               select_encode_values=select_encode_values,
-                                               encode_values_to_drop=encode_values_to_drop,
-                                               train_encoded=train_scaled,
-                                               test_data=True)
+        test_scaled, _, _ = process_data_pipeline(df=test_unscaled.copy(),
+                                                  numerical_features=numerical_features,
+                                                  categorical_features=categorical_features,
+                                                  target_column=target_column,
+                                                  weight_column=weight_column,
+                                                  sample_size_encode=sample_size_encode,
+                                                  select_encode_values=select_encode_values,
+                                                  encode_values_to_drop=encode_values_to_drop,
+                                                  train_encoded=train_scaled,
+                                                  test_data=True,
+                                                  numerical_pipeline=numerical_pipeline,
+                                                  output_folder=output_path)
 
         data_dict = {
             'train_scaled': train_scaled,
@@ -169,7 +173,7 @@ def main_input_data(output_path: Path,
             'test_unscaled': test_unscaled,
             'validate': validate
         }
-        return data_dict, drop_vals
+        return data_dict, drop_vals, numerical_pipeline
 
     else:
         processor = InitialDataProcessing(file_path=file_path,
@@ -204,27 +208,31 @@ def main_input_data(output_path: Path,
         if validate is not None:
             validate[target_column] = validate[target_column].astype(int)
 
-        train_scaled, drop_vals = process_data_pipeline(df=train_unscaled.copy(),
-                                                        numerical_features=numerical_features,
-                                                        categorical_features=categorical_features,
-                                                        target_column=target_column,
-                                                        weight_column=weight_column,
-                                                        sample_size_encode=sample_size_encode,
-                                                        select_encode_values=select_encode_values,
-                                                        encode_values_to_drop=encode_values_to_drop,
-                                                        train_encoded=None,
-                                                        test_data=False)
+        train_scaled, drop_vals, numerical_pipeline = process_data_pipeline(df=train_unscaled.copy(),
+                                                                            numerical_features=numerical_features,
+                                                                            categorical_features=categorical_features,
+                                                                            target_column=target_column,
+                                                                            weight_column=weight_column,
+                                                                            sample_size_encode=sample_size_encode,
+                                                                            select_encode_values=select_encode_values,
+                                                                            encode_values_to_drop=encode_values_to_drop,
+                                                                            train_encoded=None,
+                                                                            test_data=False,
+                                                                            numerical_pipeline=None,
+                                                                            output_folder=output_path)
 
-        test_scaled, _ = process_data_pipeline(df=test_unscaled.copy(),
-                                               numerical_features=numerical_features,
-                                               categorical_features=categorical_features,
-                                               target_column=target_column,
-                                               weight_column=weight_column,
-                                               sample_size_encode=sample_size_encode,
-                                               select_encode_values=select_encode_values,
-                                               encode_values_to_drop=encode_values_to_drop,
-                                               train_encoded=train_scaled,
-                                               test_data=True)
+        test_scaled, _, _ = process_data_pipeline(df=test_unscaled.copy(),
+                                                  numerical_features=numerical_features,
+                                                  categorical_features=categorical_features,
+                                                  target_column=target_column,
+                                                  weight_column=weight_column,
+                                                  sample_size_encode=sample_size_encode,
+                                                  select_encode_values=select_encode_values,
+                                                  encode_values_to_drop=encode_values_to_drop,
+                                                  train_encoded=train_scaled,
+                                                  test_data=True,
+                                                  numerical_pipeline=numerical_pipeline,
+                                                  output_folder=output_path)
 
         train_unscaled[target_column] = train_unscaled[target_column].astype(int)
         train_scaled[target_column] = train_scaled[target_column].astype(int)
@@ -238,4 +246,4 @@ def main_input_data(output_path: Path,
             'validate': validate
         }
 
-        return data_dict, drop_vals
+        return data_dict, drop_vals, numerical_pipeline

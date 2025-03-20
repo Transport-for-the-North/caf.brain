@@ -45,7 +45,8 @@ def pre_forecast_data_analysis(residuals: pd.Series,
                                weight_column: str,
                                x_train: pd.Series,
                                output_folder: Path,
-                               is_time_series: bool):
+                               is_time_series: bool,
+                               numerical_pipeline):
     """
     Function to conduct basic data analysis and fix where and if
     applicable.
@@ -73,6 +74,9 @@ def pre_forecast_data_analysis(residuals: pd.Series,
     :param is_time_series: If true then data must be time series. Time series
                            based characteristics are taken into consideration
                            during function execution.
+    :param numerical_pipeline: Stored numerical transformation pipeline for
+                               full model runs. Left as None if not a full
+                               model run.
 
     :return:
         train_final: Final train data post data transformations.
@@ -185,13 +189,20 @@ def pre_forecast_data_analysis(residuals: pd.Series,
                                          numerical_features=numerical_features,
                                          categorical_features=categorical_features,
                                          target_column=target_column,
-                                         weight_column=weight_column)
+                                         weight_column=weight_column,
+                                         is_test_data=False,
+                                         numerical_pipeline=numerical_pipeline,
+                                         output_folder=output_folder)
 
             test_final = transform_data(df=test_unscaled,
                                         numerical_features=numerical_features,
                                         categorical_features=categorical_features,
                                         target_column=target_column,
-                                        weight_column=weight_column)
+                                        weight_column=weight_column,
+                                        is_test_data=True,
+                                        numerical_pipeline=numerical_pipeline,
+                                        output_folder=output_folder)
+
             issues_df.to_csv(os.path.join(output_folder, 'data_issues_present.csv'))
             return train_final, test_final
         else:
@@ -211,7 +222,10 @@ def transform_data(df: pd.DataFrame,
                    numerical_features: List[str],
                    categorical_features: List[str],
                    target_column: str,
-                   weight_column: str):
+                   weight_column: str,
+                   is_test_data: bool,
+                   numerical_pipeline,
+                   output_folder: Path):
     """
     Function to apply data transformations.
 
@@ -222,6 +236,11 @@ def transform_data(df: pd.DataFrame,
                                  categorical variables.
     :param target_column: String column name of value to predict.
     :param weight_column: Optional string column value to be used as weight.
+    :param is_test_data: bool. True if test data being passed.
+    :param numerical_pipeline: Stored numerical transformation pipeline for
+                               full model runs. Left as None if not a full
+                               model run.
+    :param output_folder: Path to outputs.
 
     :return:
         transformed_df: Transformed data.
@@ -242,11 +261,26 @@ def transform_data(df: pd.DataFrame,
     numerical_data = df[numerical_features].copy()
 
     # log
-    numerical_transformed = numerical_data.apply(lambda x: np.log(x + 1))
+    numerical_transformed = numerical_data.apply(lambda x: np.log1p(x))  # log1p = log(1+x)
+    # numerical_transformed = numerical_data.apply(lambda x: np.log(x + 1))
+
+    # force fixing any issues post log transformations
+    numerical_transformed = numerical_transformed.replace([np.inf, -np.inf], np.nan)
+    numerical_transformed = numerical_transformed.fillna(numerical_transformed.mean())
 
     # scale
-    numerical_scaled = preprocess_numerical_data(df=numerical_transformed,
-                                                 numerical_features=numerical_features)
+    if is_test_data:
+        numerical_scaled = preprocess_numerical_data(df=numerical_transformed,
+                                                     numerical_features=numerical_features,
+                                                     is_test_data=is_test_data,
+                                                     numerical_pipeline_train=numerical_pipeline,
+                                                     output_folder=output_folder)
+    else:
+        numerical_scaled, _ = preprocess_numerical_data(df=numerical_transformed,
+                                                        numerical_features=numerical_features,
+                                                        is_test_data=is_test_data,
+                                                        numerical_pipeline_train=numerical_pipeline,
+                                                        output_folder=output_folder)
 
     # pca
     # pca = PCA()

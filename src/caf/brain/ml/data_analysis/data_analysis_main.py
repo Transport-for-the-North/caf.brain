@@ -26,7 +26,8 @@ def main_evaluate_input_data(model_fit,
                              weight_column: str,
                              x_train: pd.Series,
                              output_folder: Path,
-                             is_time_series: bool):
+                             is_time_series: bool,
+                             numerical_pipeline):
     """
     Main function for testing data quality
 
@@ -53,6 +54,9 @@ def main_evaluate_input_data(model_fit,
     :param is_time_series: If true then data must be time series. Time series
                            based characteristics are taken into consideration
                            during function execution.
+    :param numerical_pipeline: Stored numerical transformation pipeline for
+                               full model runs. Left as None if not a full
+                               model run.
 
     :return:
         train_transformed: training data with the numerical features transformed
@@ -75,7 +79,8 @@ def main_evaluate_input_data(model_fit,
                                                                      x_train=x_train,
                                                                      model_initialised=model_initialised,
                                                                      output_folder=output_folder,
-                                                                     is_time_series=is_time_series)
+                                                                     is_time_series=is_time_series,
+                                                                     numerical_pipeline=numerical_pipeline)
 
     if train_transformed is not None:
         return train_transformed, test_transformed

@@ -1,54 +1,15 @@
-file_path: "E:\\2025 work streams\\forecasting work w Yan\\growth_values_input_data.csv"
+file_path:
 folder_path: null
-output_path: "E:\\2025 work streams\\forecasting work w Yan\\caf.brain prediction outputs"
+output_path:
 validation_path: null
 
-target_column: "target_hb_prod_gr_pop_gr"
+target_column:
 custom_index:
-  - "year"
 column_name_to_drop_rows: null
 value_in_row: null
 
 categorical_features: null
 numerical_features:
-  - "Pop under 16"
-  - "Pop 16-74"
-  - "Pop 75+"
-  - "0-74"
-  - "Proportion of 16-74 over all"
-  - "Proportion of 16-74 over 0-74"
-  - "Proportion of 0-74 over all"
-  - "Proportion of 75+ over all"
-  - "Total HH"
-  - "HH with car"
-  - "HH without car"
-  - "Proportion of HH with car"
-  - "Proportion of HH with car_CHECK_THIS"
-  - "DDG GDP"
-  - "DDG Worker Proportion"
-  - "Petrol Cost"
-  - "Diesel Cost"
-  - "Electricity Cost"
-  - "FuelCost"
-  - "RealGDP_Index"
-  - "AveGDP_PP_Index"
-  - "AveGDP_PHh_Index"
-#    - "Pop under 16"
-#    - "Pop 16-74"
-#    - "Pop 75+"
-#    - "0-74"
-#    - "Total HH"
-#    - "HH with car"
-#    - "HH without car"
-#    - "DDG GDP"
-#    - "DDG Worker Proportion"
-#    - "Petrol Cost"
-#    - "Diesel Cost"
-#    - "Electricity Cost"
-#    - "FuelCost"
-#    - "RealGDP_Index"
-#    - "AveGDP_PP_Index"
-#    - "AveGDP_PHh_Index"
 weight_column: null
 classification_prediction: null
 split_by_value: null
@@ -58,17 +19,8 @@ select_encode_values: False
 encode_values_to_drop: null
 
 model_choice:
-    - RANDOM_FOREST_REGRESSOR
-    - EXTRA_TREES_REGRESSOR
-    - DECISION_TREE_REGRESSOR
-    - ADABOOST_REGRESSOR
-    - BAGGING_REGRESSOR
-    - KNN
-    - LINEAR_REGRESSION
-    - RIDGE
-    - LASSO
 is_time_series: False
 full_transformations: True
-cv: "kfold"
+cv:
 skip_feature_selection: False
 intensive_feature_selection: True

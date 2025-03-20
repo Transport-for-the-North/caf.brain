@@ -1,6 +1,6 @@
 file_path: "E:\\2025 work streams\\redo_cafml\\cb_tfn_v15.csv"
 folder_path: null
-output_path: "E:\\2025 work streams\\redo_cafml"
+output_path: "E:\\2025 work streams\\caf.brAIn\\prediction_model\\final_testing"
 validation_path: null
 
 target_column: "numcarvan"
@@ -18,7 +18,9 @@ categorical_features:
   - "hh_child"
   - "ns"
   - "hholdnumadults"
-numerical_features: null
+numerical_features:
+  - "hh_income"
+  - "trips"
 weight_column: "w2"
 classification_prediction: [0, 1]
 split_by_value: null

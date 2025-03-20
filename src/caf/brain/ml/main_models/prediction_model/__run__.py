@@ -13,7 +13,7 @@ import os
 
 
 def model_setup():
-    with open('empty_config.yaml', 'r') as file:
+    with open('prediction_config.yaml', 'r') as file:
         config_data = yaml.safe_load(file)
 
     if isinstance(config_data['model_choice'], str):

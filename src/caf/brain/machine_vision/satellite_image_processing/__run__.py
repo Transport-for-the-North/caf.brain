@@ -8,21 +8,21 @@ Original author: Adil Zaheer
 import os
 import yaml
 from caf.toolkit import ToolDetails, LogHelper
-from caf.brain.machine_vision.__inputs__ import MachineVisionInputs
-from caf.brain.machine_vision.__main__ import main
+from caf.brain.machine_vision.__inputs__ import GenerateSatelliteImagesInput
+from caf.brain.machine_vision.satellite_image_processing.__main__ import main
 
 def model_setup():
-    with open('run_config.yaml', 'r') as file:
+    with open('generate_satellite_images_config.yaml', 'r') as file:
         config_data = yaml.safe_load(file)
 
-    params = MachineVisionInputs(**config_data)
+    params = GenerateSatelliteImagesInput(**config_data)
 
     output_path = os.path.join(params.output_path, 'output')
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
     path = os.path.join(output_path, 'log_file.log')
-    details = ToolDetails("caf.brAIn Machine Vision Model", "1.0.0")
+    details = ToolDetails("caf.brAIn Generate satellite images", "1.0.0")
 
     with LogHelper("caf.brain", details, console=True, log_file=path):
         main(params)

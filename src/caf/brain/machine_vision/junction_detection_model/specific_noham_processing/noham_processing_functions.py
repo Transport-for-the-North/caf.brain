@@ -47,8 +47,8 @@ def noham_data(geo_path, noham_path, output):
     noham_data = df_geo.merge(df, how='outer', on='N')
     noham_data.dropna(subset=['geometry'], inplace=True)
     noham_data.fillna(value='was_nan_value', inplace=True)
-    noham_data['junction_easting'] = noham_data['geometry'].x
-    noham_data['junction_northing'] = noham_data['geometry'].y
+    noham_data['coordinates_easting'] = noham_data['geometry'].x
+    noham_data['coordinates_northing'] = noham_data['geometry'].y
 
     noham_data.reset_index(drop=True, inplace=True)
     noham_data.to_csv(os.path.join(output, 'noham_data.csv'), index=False)

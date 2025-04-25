@@ -1,4 +1,0 @@
-training_data: "B:\\RGB_12.5cm"
-noham_path: "E:\\2025 work streams\\caf.brAIn\\machine vision\\NN input data\\04.Final Base Network\\NoHAM_Base.DBF"
-output_path: "E:\\2025 work streams\\caf.brAIn\\machine vision"
-geo_path: "E:\\2025 work streams\\caf.brAIn\\machine vision\\NN input data\\test"

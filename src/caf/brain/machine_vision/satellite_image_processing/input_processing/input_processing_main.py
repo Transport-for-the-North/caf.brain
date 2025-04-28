@@ -8,7 +8,9 @@ Original author: Adil Zaheer
 import geopandas as gpd
 import pandas as pd
 from pathlib import Path
-from caf.brain.machine_vision.satellite_image_processing.image_processing.image_processing_functions import directory_iterator, image_crop
+from caf.brain.machine_vision.satellite_image_processing.image_processing.image_processing_functions import (directory_iterator,
+                                                                                                             create_satellite_image_metadata)
+from caf.brain.machine_vision.satellite_image_processing.image_processing.main_image_crop import image_crop_main
 from caf.brain.machine_vision.satellite_image_processing.input_processing.input_processing_functions import process_coordinates
 
 
@@ -35,10 +37,14 @@ def main_input_processing(geo_df: gpd.geodataframe,
                                                        image_reference_column='box_boundary',
                                                        output=output_path)
 
-    image_crop(path_list=path_list_of_your_coordinates,
-               image_supporting_data=coordinate_df,
-               output=output_path,
-               image_folder=image_folder)
+    metadata = create_satellite_image_metadata(dir_path=image_folder,
+                                               output=output_path)
+
+    image_crop_main(path_list=path_list_of_your_coordinates,
+                    image_supporting_data=coordinate_df,
+                    output=output_path,
+                    image_folder=image_folder,
+                    satellite_metadata=metadata)
 
     return
 

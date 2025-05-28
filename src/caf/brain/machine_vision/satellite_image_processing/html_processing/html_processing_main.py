@@ -15,6 +15,7 @@ from caf.brain.machine_vision.satellite_image_processing.html_processing.html_pr
 import logging
 LOG = logging.getLogger(__name__)
 
+
 def main_process_html(folder_path: Path,
                       output_path: Path) -> dict:
     """

@@ -27,3 +27,11 @@ class GenerateSatelliteImagesInput(BaseConfig):
     # only relevant if noham_path and geo_path are none. The columns easting and northing coordinates for what you're trying to predict
     x_column: Optional[str] = None
     y_column: Optional[str] = None
+
+
+class ObjectDetectionInputs(BaseConfig):
+    output: Optional[Path] = None
+    class_names: Optional[list[str]] = None
+    hyperparameter_optimisation: Optional[str] = None
+    image_path: Optional[Path] = None
+    path_to_code: Optional[Path] = None  # path to where your brain folder is inside caf.brAIn e.g. C:\Users\Liberty\Documents\GitHub\caf.brain\src\caf\brain

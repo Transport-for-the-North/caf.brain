@@ -93,7 +93,6 @@ def image_crop_main(path_list,
                         LOG.info(f"Image {path} needs expanding")
 
                         # gives you the names of all the surrounding tiles
-                        # todo image_layout_dict adding extra prefix at from of centre image
                         image_layout_dict = find_surrounding_names(file_name=file_name)
 
                         image_paths_to_concat = surrounding_img_path_finder(image_layout_dict=image_layout_dict,

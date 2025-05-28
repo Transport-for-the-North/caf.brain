@@ -8,7 +8,7 @@ Original author: Adil Zaheer
 import time
 import os
 import logging
-from caf.brain.machine_vision.junction_detection_model.specific_noham_processing.noham_processing_main import main_process_noham
+from caf.brain.machine_vision.junction_detection_functions.noham_processing.noham_processing_main import main_process_noham
 from caf.brain.machine_vision.satellite_image_processing.input_processing.input_processing_functions import process_file
 from caf.brain.machine_vision.satellite_image_processing.input_processing.input_processing_main import main_input_processing
 LOG = logging.getLogger(__name__)
@@ -68,47 +68,3 @@ def main(params):
     LOG.info(f"Total run time: {end_time - start_time:.2f} seconds")
 
     return
-
-
-
-# todo read_and_store_images only needs to be ones where we have junctions? runs out of memory otherwise
-# images_dict = read_and_store_images(folder_path=folder_path,
-#                                     output_path=output_path)
-
-# model_path = Path(r"E:\2025 work streams\redo_cafml\output\final_model.pkl")
-# with open(model_path, 'rb') as model_file:
-#     model_data = joblib.load(model_file)
-
-# from dbfread import DBF
-#
-# path = r"E:\2025 work streams\caf.brAIn\machine vision\NN input data\04.Final Base Network\NoHAM_Base.DBF"
-# table = DBF(path)
-# records = [record for record in table]
-# df = pd.DataFrame(records)
-# print(df)
-#
-# import geopandas as gpd
-#
-# path_geo = r"E:\2025 work streams\caf.brAIn\machine vision\NN input data\shapefiles\NoHAM_Base.shp"
-# df_geo = gpd.read_file(path_geo)
-#
-# test = gpd.GeoDataFrame(path_geo, geometry='column name')
-
-# read extra info
-# plot image
-# make sure correct image corresponds with correct info
-
-# create database of regul
-
-# create geodataframe of each area, find midpoint of each bounding
-# have a corresponding satellite image
-# based on bng coordinates provided, find that location based on the geodatframes
-# then extract that satellite image. this can then be used for two things, one is labelling for training
-# second would be finding new junctions that noham wants to verify what they look like
-
-# todo now convert the midpoint to bng so i can now have the midpoint of each satellite image as bng
-# so when someone provides coordinates, we find the closest midpoints and then look for that junction?
-# or can we just find the exact coordinate based on what we have, will have to check
-
-
-# todo make each item in the dictionary a list, add the corresponding image to the list as it will have the same name

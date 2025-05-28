@@ -1,5 +1,0 @@
-train: path/to/train/images
-val: path/to/val/images
-
-nc: 5
-names: ['class1', 'class2', 'class3', 'class4', 'class5']

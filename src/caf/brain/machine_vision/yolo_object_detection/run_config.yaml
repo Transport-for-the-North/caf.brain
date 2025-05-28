@@ -1,0 +1,13 @@
+output: "E:\\2025 work streams\\caf.brAIn\\machine vision\\reduced search space, 15% split, nano used throughout"
+image_path: "E:\\2025 work streams\\caf.brAIn\\machine vision\\generate_training_images_test\\output\\images_for_labelling"
+class_names: ['PM', 'R', 'P', 'EP', 'S', 'ES', 'M']  # need to make sure this is in the same order as yolo label classes
+hyperparameter_optimisation: "moderate"
+path_to_code: "C:\\Users\\Liberty\\Documents\\GitHub\\caf.brain\\src\\caf\\brain"
+
+# PM = motorway merge
+# R = roundabout
+# P = give way
+# EP = give way on approach to roundabout
+# S = signalised junc
+# ES = traffic signal on approach to roundabout
+# M = mini roundabout

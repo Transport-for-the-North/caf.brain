@@ -75,7 +75,7 @@ def main_model_selection(
                           Provide a valid model(s) from the Models Enum class."
         )
 
-    (model_fit, residuals, x_train, x_test, y_train, y_test, mse) = initialise_model(
+    (model_fit, residuals, x_train, x_test, mse) = initialise_model(
         train=train,
         target_column=target_column,
         output_folder=output,
@@ -84,4 +84,4 @@ def main_model_selection(
         classification_prediction=classification_prediction,
     )
 
-    return model_initialised, model_fit, residuals, x_test, x_train, y_train, mse
+    return model_initialised, model_fit, residuals, x_test, x_train, mse

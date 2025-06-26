@@ -92,7 +92,7 @@ def initialise_model(
             os.path.join(output_folder, "initial_model_coefficients.csv"), index=False
         )
 
-    return model_fit, residuals, x_train, x_test, y_train, y_test, mse
+    return model_fit, residuals, x_train, x_test, mse
 
 
 def select_model(

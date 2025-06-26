@@ -116,4 +116,3 @@ def prediction(
         {"predicted_target_column": predictions}, index=test.index
     )
     final_predictions.to_csv(os.path.join(output_folder, "final_predictions.csv"))
-    return predictions

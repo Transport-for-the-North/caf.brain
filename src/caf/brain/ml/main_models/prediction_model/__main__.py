@@ -6,6 +6,8 @@ Original author: Adil Zaheer
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 import os
+import time
+import logging
 import pandas as pd
 from caf.brain.ml.data_analysis.data_analysis_main import main_evaluate_input_data
 from caf.brain.ml.feature_selection.feature_selection_main import main_feature_selection
@@ -16,15 +18,8 @@ from caf.brain.ml.model_selection.model_selection_main import main_model_selecti
 from caf.brain.ml.prediction.prediction_main import main_prediction
 from caf.brain.ml.inputs_and_baseclasses.run_inputs import run_file_inputs
 from caf.brain.ml.process_data_functions.process_data_main import main_input_data
-import time
 from caf.brain.ml.statsmodel_pipeline.statsmodel_main import main_stats_model
-import logging
-
 LOG = logging.getLogger(__name__)
-
-# todo need to see if it drops multiple rows or not with my existing func
-# todo ordinary encoding for to mitigate lots of rows issue
-# todo track model scores with initial versus improved model so test with training data twice (at start and at the end)
 
 
 def main(params: run_file_inputs):
@@ -74,14 +69,14 @@ def main(params: run_file_inputs):
         for base in params.model_choice.__class__.__mro__
     )
     if is_statsmodel:
-        return main_stats_model(
+        main_stats_model(
             model_choice=params.model_choice,
             train=train_scaled,
             target_column=params.target_column,
             weight_column=params.weight_column,
         )
 
-    (model_initialised, x_train_model_fit, residuals, x_test, x_train, y_train, mse) = (
+    (model_initialised, x_train_model_fit, residuals, x_test, x_train, mse) = (
         main_model_selection(
             train=train_scaled,
             target_column=params.target_column,
@@ -138,7 +133,7 @@ def main(params: run_file_inputs):
         is_time_series=params.is_time_series,
     )
 
-    y_pred = main_prediction(
+    main_prediction(
         model=best_model,
         test=test_final,
         target_column=params.target_column,
@@ -153,4 +148,3 @@ def main(params: run_file_inputs):
 
     end_time = time.time()
     LOG.info(f"Total run time: {end_time - start_time:.2f} seconds")
-    return

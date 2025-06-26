@@ -45,7 +45,7 @@ def main_prediction(
                 index.
     """
 
-    y_pred = prediction(
+    prediction(
         model=model,
         test=test,
         target_column=target_column,
@@ -57,5 +57,3 @@ def main_prediction(
         drop_vals=drop_vals,
         cols_dropped_by_feat_select=cols_dropped_by_feat_select,
     )
-
-    return y_pred

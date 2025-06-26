@@ -3,57 +3,45 @@ requires = ["setuptools>=64.0.0", "versioningit"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "caf.ml"
-dynamic = ["version"]
-description = "Package Description"
+name = "caf.brain"
+dynamic = ["version", "dependencies", "optional-dependencies"]
+description = "Common Analytical Framework package of Machine and Deep Learning tools."
 readme = "README.md"
-license = {"file"= "LICENSE"}
+license = { "file" = "LICENSE" }
 requires-python = ">=3.9"
-authors = [
-    { name = "Transport for the North" },
-]
+authors = [{ name = "Transport for the North" }]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-]
-dependencies = [
-    "numpy>=1.19.0",
-    "pandas>=1.4.0, <3.0.0" ,
-]
-
-[project.optional-dependencies]
-lint = [
-    "black>=22.6.0",
-    "mypy>=1.0.0, <2.0.0",
-    "mypy_extensions>=1.0.0, <2.0.0",
-    "pydocstyle[toml]>=6.1.1",
-    "pylint>=2.14.5",
-]
-
-test = [
-    "pytest>=7.4.0, <8.0.0",
-    "pytest-cov>=4.1.0, < 5.0.0",
-    "pytest-xdist>=3.3.1, <4.0.0",
-    "tox>=3.24.3, <4.0.0",
-]
-
-edit_install = [
-    "versioningit>= 2.2.0, < 4.0.0"
+    "Programming Language :: Python :: 3.12",
 ]
 
 [project.urls]
-"Bug Tracker" = "https://github.com/Transport-for-the-North/caf.ml/issues"
-Homepage = "https://github.com/Transport-for-the-North/caf.ml"
-Source = "https://github.com/Transport-for-the-North/caf.ml"
+"Bug Tracker" = "https://github.com/transport-for-the-north/caf.brain/issues"
+Homepage = "https://github.com/transport-for-the-north/caf.brain"
+Source = "https://github.com/transport-for-the-north/caf.brain"
+
+[tool.setuptools.dynamic]
+dependencies = { "file" = "requirements.txt" }
+
+[tool.setuptools.dynamic.optional-dependencies]
+dev = { "file" = "requirements_dev.txt" }
+docs = { "file" = "docs/requirements.txt" }
+vision = { "file" = "requirements_machine_vision.txt" }
+
+# Dynamic versioning for editable installs
+[tool.setuptools.cmdclass]
+build_py = "versioningit.cmdclass.build_py"
+sdist = "versioningit.cmdclass.sdist"
 
 # Packaging options
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-"caf.ml" = ["py.typed"]
+"caf.brain" = ["py.typed"]
 
 # Linters
 [tool.black]
@@ -70,7 +58,7 @@ disable = [
 
 # Pylint settings
 [tool.pylint.basic]
-good-names = ["df", "fn", "ca", "tp", "x", "i",]
+good-names = ["df", "fn", "ca", "tp", "x", "i"]
 
 [tool.pylint.main]
 ignore = ["__init__.py", "_version.py"]
@@ -81,7 +69,7 @@ max-attributes = 15
 max-statements = 100
 
 [tool.mypy]
-packages = ["caf.ml"]
+packages = ["caf.brain"]
 namespace_packages = true
 ignore_missing_imports = true
 allow_redefinition = true
@@ -90,8 +78,20 @@ allow_redefinition = true
 convention = "numpy"
 match = '(?!_test)(?!test_)(?!__init__).*\.py'
 add-ignore = [
-    "D202",    # Temporary compatibility with black
+    "D202", # Temporary compatibility with black
 ]
+
+[tool.isort]
+profile = "black"
+src_paths = ["src", "tests"]
+
+skip = ["__init__.py", "_version.py"]
+skip_glob = [".*"]
+
+# Section commenting
+import_heading_stdlib = "Built-Ins"
+import_heading_thirdparty = "Third Party"
+import_heading_firstparty = "Local Imports"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
@@ -107,8 +107,8 @@ match = ["v*"]
 default-tag = "0.0.1"
 
 [tool.versioningit.onbuild]
-source-file = "src/caf/ml/_version.py"
-build-file = "caf/ml/_version.py"
+source-file = "src/caf/brain/_version.py"
+build-file = "caf/brain/_version.py"
 
 [tool.versioningit.format]
 distance = "{base_version}+{distance}.{vcs}{rev}"

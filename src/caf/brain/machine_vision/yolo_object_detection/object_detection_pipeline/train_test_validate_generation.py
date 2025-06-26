@@ -6,17 +6,20 @@ Created on: 5/6/2025
 Original author: Adil Zaheer
 """
 import os
-import joblib
 from pathlib import Path
 import glob
 import shutil
-import pandas as pd
 import random
 import logging
+import joblib
+import pandas as pd
 LOG = logging.getLogger(__name__)
 
 
 class BuildImagesTT:
+    """
+Need to fill out
+    """
     def __init__(self, output: Path, image_location: Path, image_dict: dict, split_ratio=0.15):
         self.output = output
         self.split_ratio = split_ratio
@@ -24,10 +27,15 @@ class BuildImagesTT:
         self.image_location = image_location
 
     def run_fullclass(self):
+        """
+        Runs full class
+        Returns
+        -------
+
+        """
         image_dict = self.create_dict()
-        df = self.create_label_data(image_dict=image_dict)
-        train, test = self.split_dict(dictionary=image_dict, label_data=df)
-        final_train, validation = self.split_dict(dictionary=train, label_data=df)
+        train, test = self.split_dict(dictionary=image_dict)
+        final_train, validation = self.split_dict(dictionary=train)
 
         if self.output is not None:
             train_dict_name = os.path.join(self.output, 'train_dict.pkl')
@@ -43,9 +51,19 @@ class BuildImagesTT:
 
 
     def create_label_data(self, image_dict):
+        """
+
+        Parameters
+        ----------
+        image_dict
+
+        Returns
+        -------
+
+        """
         label_list = []
-        for key, value in image_dict.items():
-            with open(os.path.join(value), 'r') as file:
+        for _, value in image_dict.items():
+            with open(os.path.join(value), 'r', encoding='UTF-8') as file:
                 lines = file.readlines()
                 for line in lines:
                     label_list.append(line[0])
@@ -58,7 +76,14 @@ class BuildImagesTT:
 
         return df
 
+
     def create_dict(self):
+        """
+        
+        Returns
+        -------
+
+        """
         # key: image path
         # value: bounding box path
         dictionary = {}
@@ -76,7 +101,18 @@ class BuildImagesTT:
 
         return dictionary
 
-    def split_dict(self, dictionary, label_data):
+
+    def split_dict(self, dictionary):
+        """
+
+        Parameters
+        ----------
+        dictionary
+
+        Returns
+        -------
+
+        """
         # how many items go into test with new method
         split_index = int(len(dictionary) * self.split_ratio)
         # items = list(dictionary.items())
@@ -90,7 +126,19 @@ class BuildImagesTT:
 
         return train, test
 
+
     def generate_folders(self, dictionary, folder_name):
+        """
+
+        Parameters
+        ----------
+        dictionary
+        folder_name
+
+        Returns
+        -------
+
+        """
         counter = 0
         for key, value in dictionary.items():
             new_img_dir = os.path.join(self.output, f'{folder_name}')
@@ -116,6 +164,14 @@ def ensure_labels(folder_path):
     """
     check that all the images actually have labels
     go into text files, if empty. remove the image and the text file from the folder (same names)
+
+    Parameters
+    ----------
+    folder_path
+
+    Returns
+    -------
+
     """
     txt_paths = glob.glob(os.path.join(folder_path, '**/*.txt'), recursive=True)
     for txt_file in txt_paths:

@@ -6,7 +6,6 @@ Created on: 5/7/2025
 Original author: Adil Zaheer
 """
 import os
-import sys
 from caf.brain.machine_vision.yolo_object_detection.object_detection_pipeline.prediction_and_evaluation import prediction, extract_results
 from caf.brain.machine_vision.yolo_object_detection.object_detection_pipeline.train_test_validate_generation import \
     BuildImagesTT, ensure_labels
@@ -15,6 +14,17 @@ from caf.brain.machine_vision.yolo_object_detection.object_detection_pipeline.mo
 
 
 def main(params):
+    """
+    Main run function for object detection
+
+    Parameters
+    ----------
+    params
+
+    Returns
+    -------
+
+    """
     main_output_folder = os.path.join(params.output, 'ObjectDetectionOutputs')
     os.makedirs(main_output_folder, exist_ok=True)
 
@@ -52,5 +62,3 @@ def main(params):
     extract_results(prediction_results_dir=prediction_results_dir, model=model)
 
     # todo apply comprehensive evaluation, can use what ive already written? IoU etc?
-
-    return

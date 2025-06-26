@@ -8,32 +8,37 @@ Original author: Adil Zaheer
 import pandas as pd
 from sklearn.metrics import mean_squared_error, r2_score
 import os
-from caf.ml.process_data_functions import (index_sorter,
-                                           function_remove_spaces,
-                                           convert_to_dataframe,
-                                           find_numeric_target_column,
-                                           process_data_numeric,
-                                           remove_and_export_outliers)
+from caf.ml.process_data_functions import (
+    index_sorter,
+    function_remove_spaces,
+    convert_to_dataframe,
+    find_numeric_target_column,
+    process_data_numeric,
+    remove_and_export_outliers,
+)
 
 
-def process_data_loaded_model(df,
-                              index_columns,
-                              drop_columns,
-                              target_column,
-                              keep_columns,
-                              outlier_threshold,
-                              categorical_target):
+def process_data_loaded_model(
+    df,
+    index_columns,
+    drop_columns,
+    target_column,
+    keep_columns,
+    outlier_threshold,
+    categorical_target,
+):
 
     df.columns = df.columns.astype(str)
     dat = process_data_numeric(df, keep_columns=keep_columns)
     dat = index_sorter(dat, index_columns=index_columns, drop_columns=drop_columns)
-    #dat = dat.astype(float)
+    # dat = dat.astype(float)
     dat = function_remove_spaces(dat)
     dat = convert_to_dataframe(dat)
 
-
-    dat = find_numeric_target_column(dat, target_column=target_column, categorical_target=categorical_target)
-    #dat = handle_nans_and_duplicates(dat)
+    dat = find_numeric_target_column(
+        dat, target_column=target_column, categorical_target=categorical_target
+    )
+    # dat = handle_nans_and_duplicates(dat)
     dat = remove_and_export_outliers(dat, outlier_threshold=outlier_threshold)
     data = convert_to_dataframe(dat)
 
@@ -44,14 +49,16 @@ def process_data_loaded_model(df,
     return data
 
 
-def process_forecast_data(df,
-                          index_columns_p,
-                          drop_columns_p,
-                          target_column,
-                          keep_columns_p,
-                          outlier_threshold_p,
-                          categorical_target,
-                          output_folder):
+def process_forecast_data(
+    df,
+    index_columns_p,
+    drop_columns_p,
+    target_column,
+    keep_columns_p,
+    outlier_threshold_p,
+    categorical_target,
+    output_folder,
+):
 
     x_ = pd.read_csv(df, low_memory=False)
 
@@ -60,13 +67,15 @@ def process_forecast_data(df,
 
     dat = index_sorter(dat, index_columns=index_columns_p, drop_columns=drop_columns_p)
 
-    #dat = dat.astype(float)
+    # dat = dat.astype(float)
     dat = function_remove_spaces(dat)
     dat = convert_to_dataframe(dat)
 
-    dat = find_numeric_target_column(dat, target_column=target_column, categorical_target=categorical_target)
+    dat = find_numeric_target_column(
+        dat, target_column=target_column, categorical_target=categorical_target
+    )
 
-    #dat = handle_nans_and_duplicates(dat, output_folder=output_folder)
+    # dat = handle_nans_and_duplicates(dat, output_folder=output_folder)
 
     dat = remove_and_export_outliers(dat, outlier_threshold=outlier_threshold_p)
 
@@ -83,11 +92,12 @@ def align_dataframes(df1, df2, output_folder):
     common_columns = df1.columns.intersection(df2.columns)
     aligned_df2 = df2[common_columns]
 
-    predict_data_path = os.path.join(output_folder, 'Final_prediction_data.csv')
+    predict_data_path = os.path.join(output_folder, "Final_prediction_data.csv")
 
     if os.path.exists(predict_data_path):
         print(
-            f"The file Final_prediction_data.csv already exists in {output_folder} and is being replaced.")
+            f"The file Final_prediction_data.csv already exists in {output_folder} and is being replaced."
+        )
 
     aligned_df2.to_csv(predict_data_path, index=True)
     print(f"Predict data post transformations saved to: {predict_data_path}")
@@ -106,7 +116,7 @@ def apply_feature_selection_single_year(trained_data, predict_data):
     return df_final
 
 
-'''def predict_complex(single_year_prediction,
+"""def predict_complex(single_year_prediction,
             trained_data,
             predict_data,
             trained_model,
@@ -243,11 +253,18 @@ def apply_feature_selection_single_year(trained_data, predict_data):
             print(f"Predictions saved to: {prediction_file_path}")
 
             return predictions
-'''
+"""
 
 
-def predict_refined(trained_data, predict_data, trained_model, target_column,
-                    output_folder, index_col, FinalModelParameters):
+def predict_refined(
+    trained_data,
+    predict_data,
+    trained_model,
+    target_column,
+    output_folder,
+    index_col,
+    FinalModelParameters,
+):
     # Handle missing columns
     common_columns = set(trained_data.columns) & set(predict_data.columns)
     common_columns = list(common_columns - {target_column})
@@ -264,24 +281,22 @@ def predict_refined(trained_data, predict_data, trained_model, target_column,
     else:
         print("Using default model parameters")
 
-
     trained_model.fit(x_train, y_train)
     predictions = trained_model.predict(x_predict)
     y_proba = trained_model.predict_proba(x_predict)
 
     # Save predictions
     prediction_df = pd.DataFrame({target_column: predictions}, index=predict_data.index)
-    prediction_file_path = os.path.join(output_folder, 'predictions.csv')
+    prediction_file_path = os.path.join(output_folder, "predictions.csv")
     prediction_df.to_csv(prediction_file_path, index_label=index_col, index=True)
     print(f"Predictions saved to: {prediction_file_path}")
 
     return predictions, y_proba
 
 
-
 def evaluate_forecast_accuracy(forecast_df: pd.DataFrame, actual_values: pd.Series):
-    mse = mean_squared_error(actual_values, forecast_df['Predicted'])
-    r2 = r2_score(actual_values, forecast_df['Predicted'])
+    mse = mean_squared_error(actual_values, forecast_df["Predicted"])
+    r2 = r2_score(actual_values, forecast_df["Predicted"])
 
     print(f"Mean Squared Error (MSE): {mse}")
     print(f"R-squared (R2): {r2}")

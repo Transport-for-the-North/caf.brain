@@ -14,15 +14,13 @@ from sklearn.model_selection import KFold, GridSearchCV
 from caf.ml.backlog.functions_to_be_processed import select_model
 from caf.ml.backlog.old_inputs import CV_models, Models, Default_regression_methods, ModelGrids
 from caf.ml.backlog.functions_to_be_processed import get_cv_class
+
 warnings.filterwarnings("ignore", category=UserWarning)
 
 
-def feature_selection_with_optimization(df,
-                                        splits,
-                                        repeats,
-                                        model_type,
-                                        target_column,
-                                        cv_method=None):
+def feature_selection_with_optimization(
+    df, splits, repeats, model_type, target_column, cv_method=None
+):
 
     # DATA PROCESSING
     x = df.drop(columns=[target_column])
@@ -59,7 +57,7 @@ def feature_selection_with_optimization(df,
 
     # MODEL AND PARAMETER INITIALISATION
     best_alpha = None
-    best_score = float('inf')
+    best_score = float("inf")
     final_model = None
     outer_scores = []
     selected_features = None
@@ -67,7 +65,11 @@ def feature_selection_with_optimization(df,
 
     # CV METHOD INITIALIZATION
     cv_class = get_cv_class(cv_method, splits, repeats) if cv_method else KFold
-    cv = cv_class(n_splits=splits, n_repeats=repeats) if "repeated" in str(cv_method) else cv_class(n_splits=splits)
+    cv = (
+        cv_class(n_splits=splits, n_repeats=repeats)
+        if "repeated" in str(cv_method)
+        else cv_class(n_splits=splits)
+    )
 
     # CROSS VALIDATION
     for train_index, test_index in tqdm(cv.split(x_scaled), desc="Outer CV Progress"):
@@ -83,12 +85,16 @@ def feature_selection_with_optimization(df,
         X_selected_combined[train_index[:, np.newaxis], selected_features] = X_selected
 
         # GRID SEARCH FOR HYPERPARAMETER OPTIMIZATION
-        grid_search = GridSearchCV(estimator=final_model_inner, param_grid=param_grid,
-                                   scoring='neg_mean_squared_error', cv=cv)
+        grid_search = GridSearchCV(
+            estimator=final_model_inner,
+            param_grid=param_grid,
+            scoring="neg_mean_squared_error",
+            cv=cv,
+        )
         grid_search.fit(X_selected, y_train)
 
         # UPDATE BEST ALPHA AND SCORE
-        best_alpha_inner = grid_search.best_params_['alpha']
+        best_alpha_inner = grid_search.best_params_["alpha"]
         best_score_inner = -grid_search.best_score_
         final_model_inner.alpha = best_alpha_inner
         final_model_inner.fit(X_selected, y_train)
@@ -110,7 +116,9 @@ def feature_selection_with_optimization(df,
     print("Selected Features:", np.array(df.columns[:-1])[selected_features])
     print("Mean Outer Score:", np.mean(outer_scores))
 
-    selected_features_df = pd.DataFrame(X_selected_combined[:, selected_features],
-                                        columns=np.array(df.columns[:-1])[selected_features])
+    selected_features_df = pd.DataFrame(
+        X_selected_combined[:, selected_features],
+        columns=np.array(df.columns[:-1])[selected_features],
+    )
 
     return final_model, selected_features_df

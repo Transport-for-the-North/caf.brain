@@ -7,14 +7,13 @@ Original author: Adil Zaheer
 # pylint: enable=import-error,wrong-import-position
 import statsmodels.api as sm
 from sklearn.model_selection import train_test_split
+
 # TODO make stats model pipeline, decide on data flow.
 # TODO all functions written in statsmodels_functions_backlog
 # TODO data analysis will need to be done first, strict data processing required for statsmodels
 
-def main_stats_model(model_choice,
-                     train,
-                     target_column,
-                     weight_column):
+
+def main_stats_model(model_choice, train, target_column, weight_column):
     x = train.drop(columns=[target_column])
     x = sm.add_constant(x)
     y = train[target_column]

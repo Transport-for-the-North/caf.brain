@@ -144,12 +144,7 @@ Original author: Adil Zaheer
 #         return train_scaled, test_scaled
 
 
-
-
-
-
-
-'''def pre_forecast_data_analysis(data,
+"""def pre_forecast_data_analysis(data,
                                regression_method,
                                target_column,
                                threshold,
@@ -375,7 +370,7 @@ Original author: Adil Zaheer
     print(dataframe.columns)
 
     return dataframe, transformations
-'''
+"""
 """def assess_multicolinearity(dataframe,
                             input_data,
                             target_column,
@@ -460,10 +455,16 @@ Original author: Adil Zaheer
     return dataframe, transformations_done"""
 
 
-def apply_transformations(predict_data, transformations,
-                          target_column, numerical_features,
-                          categorical_features, output_folder,
-                          training_data, features_to_transform):
+def apply_transformations(
+    predict_data,
+    transformations,
+    target_column,
+    numerical_features,
+    categorical_features,
+    output_folder,
+    training_data,
+    features_to_transform,
+):
 
     transformed_data = predict_data.copy()
     columns_changed = False
@@ -471,56 +472,61 @@ def apply_transformations(predict_data, transformations,
     # transformed_data['car'] = 0
 
     for transform_name, transform_obj in transformations:
-        if transform_name == 'Scaling and encoding':
-            transformed_data, _ = process_data_pipeline(df=transformed_data,
-                                                        numerical_features=numerical_features,
-                                                        categorical_features=categorical_features,
-                                                        target_column=target_column,
-                                                        output_folder=output_folder)
+        if transform_name == "Scaling and encoding":
+            transformed_data, _ = process_data_pipeline(
+                df=transformed_data,
+                numerical_features=numerical_features,
+                categorical_features=categorical_features,
+                target_column=target_column,
+                output_folder=output_folder,
+            )
             if isinstance(transformed_data, tuple):
                 transformed_data = transformed_data[0]
             columns_changed = True
             new_columns = transformed_data.columns.values
             print(transformed_data.columns)
-        elif transform_name == 'log':
+        elif transform_name == "log":
             transformed_data = transformed_data.apply(lambda x: np.log(x + 1))
 
+        elif transform_name == "interaction_terms_and_poly_features":
+            transformed_data, _ = experimental_functions(
+                data=transformed_data,
+                categorical_transformations=transformations,
+                features_to_interact=transformed_data.columns,
+                features_to_transform=features_to_transform,
+                output_folder=output_folder,
+            )
 
-        elif transform_name == 'interaction_terms_and_poly_features':
-            transformed_data, _ = experimental_functions(data=transformed_data,
-                                                         categorical_transformations=transformations,
-                                                         features_to_interact=transformed_data.columns,
-                                                         features_to_transform=features_to_transform,
-                                                         output_folder=output_folder)
-
-        elif transform_name == 'scaling':
+        elif transform_name == "scaling":
             # scaler = transform_obj
-            numerical_pipeline = Pipeline([
-                ('imputer', SimpleImputer(strategy='median')),
-                ('scaler', StandardScaler())
-            ])
+            numerical_pipeline = Pipeline(
+                [("imputer", SimpleImputer(strategy="median")), ("scaler", StandardScaler())]
+            )
             scaled_data = numerical_pipeline.fit_transform(transformed_data)
-            transformed_data = pd.DataFrame(scaled_data, columns=transformed_data.columns, index=transformed_data.index)
+            transformed_data = pd.DataFrame(
+                scaled_data, columns=transformed_data.columns, index=transformed_data.index
+            )
 
             # transformed_data = scaler.transform(transformed_data)
 
-        elif transform_name == 'PCA':
+        elif transform_name == "PCA":
             print(training_data.columns)
             training_data = training_data.drop(columns=target_column)
             transformed_data = transformed_data[training_data.columns]
             pca = transform_obj
             transformed_data = pca.transform(transformed_data)
 
-
         print(f"Transformation: {transform_name}")
         print(f"Type of transformed_data: {type(transformed_data)}")
         if isinstance(transformed_data, (pd.DataFrame, np.ndarray)):
             print(f"Shape of transformed_data: {transformed_data.shape}")
 
-    data = convert_to_dataframe(transformed_data, columns=new_columns, index=predict_data.index)
+    data = convert_to_dataframe(
+        transformed_data, columns=new_columns, index=predict_data.index
+    )
 
     if data is None:
-        raise ValueError('Transformation application failed')
+        raise ValueError("Transformation application failed")
 
     final_predict_data = data.astype(float)
     print("Predict_data_post_transformations:")
@@ -528,8 +534,13 @@ def apply_transformations(predict_data, transformations,
     return final_predict_data
 
 
-
-def experimental_functions(data, categorical_transformations, features_to_interact, features_to_transform, output_folder):
+def experimental_functions(
+    data,
+    categorical_transformations,
+    features_to_interact,
+    features_to_transform,
+    output_folder,
+):
     transformations = []
     transformations.extend(categorical_transformations)
 
@@ -538,12 +549,11 @@ def experimental_functions(data, categorical_transformations, features_to_intera
 
     interaction_terms = {}
     for i, f1 in enumerate(features_to_interact):
-        for f2 in features_to_interact[i + 1:]:
-            interaction_terms[f'{f1}_{f2}_interaction'] = data[f1] * data[f2]
+        for f2 in features_to_interact[i + 1 :]:
+            interaction_terms[f"{f1}_{f2}_interaction"] = data[f1] * data[f2]
 
     interaction_df = pd.DataFrame(interaction_terms)
     final_df = pd.concat([data, interaction_df], axis=1)
-
 
     if features_to_transform is None or len(features_to_transform) == 0:
         features_to_transform = data.columns.tolist()
@@ -556,24 +566,24 @@ def experimental_functions(data, categorical_transformations, features_to_intera
 
     feature_names = []
     for feature_indices, _ in zip(poly.powers_, poly_features.T):
-        feature_name = ' * '.join(
-            [features_to_transform[i] for i, p in enumerate(feature_indices) if p > 0])
+        feature_name = " * ".join(
+            [features_to_transform[i] for i, p in enumerate(feature_indices) if p > 0]
+        )
         feature_names.append(feature_name)
 
     poly_df = pd.DataFrame(poly_features, columns=feature_names, index=final_df.index)
 
     for col in poly_df.columns:
         if col in final_df.columns:
-            poly_df = poly_df.rename(columns={col: f'poly_{col}'})
+            poly_df = poly_df.rename(columns={col: f"poly_{col}"})
 
     final_df = pd.concat([final_df, poly_df], axis=1)
 
-    transformations.append(('interaction_terms_and_poly_features', None))
+    transformations.append(("interaction_terms_and_poly_features", None))
 
-
-    output_filename = 'experimental_function_results.csv'
+    output_filename = "experimental_function_results.csv"
     output_path = os.path.join(output_folder, output_filename)
     final_df.to_csv(output_path, index=True)
-    print(f'Experimental function results: {final_df.shape}')
+    print(f"Experimental function results: {final_df.shape}")
 
     return final_df, transformations

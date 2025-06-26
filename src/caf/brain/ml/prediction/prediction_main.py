@@ -10,16 +10,18 @@ import pandas as pd
 from caf.brain.ml.prediction.prediction_functions import prediction
 
 
-def main_prediction(model,
-                    test: pd.DataFrame,
-                    target_column: str,
-                    output_folder: Path,
-                    validation: pd.DataFrame,
-                    weight_column: str,
-                    classification_prediction: tuple[int, ...],
-                    mse: pd.Series,
-                    drop_vals: pd.DataFrame,
-                    cols_dropped_by_feat_select: pd.DataFrame):
+def main_prediction(
+    model,
+    test: pd.DataFrame,
+    target_column: str,
+    output_folder: Path,
+    validation: pd.DataFrame,
+    weight_column: str,
+    classification_prediction: tuple[int, ...],
+    mse: pd.Series,
+    drop_vals: pd.DataFrame,
+    cols_dropped_by_feat_select: pd.DataFrame,
+):
     """
     Main prediction function.
 
@@ -43,15 +45,17 @@ def main_prediction(model,
                 index.
     """
 
-    y_pred = prediction(model=model,
-                        test=test,
-                        target_column=target_column,
-                        output_folder=output_folder,
-                        validation=validation,
-                        weight_column=weight_column,
-                        classification_prediction=classification_prediction,
-                        mse=mse,
-                        drop_vals=drop_vals,
-                        cols_dropped_by_feat_select=cols_dropped_by_feat_select)
+    y_pred = prediction(
+        model=model,
+        test=test,
+        target_column=target_column,
+        output_folder=output_folder,
+        validation=validation,
+        weight_column=weight_column,
+        classification_prediction=classification_prediction,
+        mse=mse,
+        drop_vals=drop_vals,
+        cols_dropped_by_feat_select=cols_dropped_by_feat_select,
+    )
 
     return y_pred

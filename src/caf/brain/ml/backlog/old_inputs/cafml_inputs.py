@@ -3,6 +3,7 @@
 input classes for caf_ml models
 """
 import numpy as np
+
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 from sklearn.linear_model import LogisticRegression
@@ -16,19 +17,24 @@ from sklearn.ensemble import (
     RandomForestRegressor,
     GradientBoostingRegressor,
     AdaBoostRegressor,
-    BaggingRegressor, RandomForestClassifier, ExtraTreesClassifier,
+    BaggingRegressor,
+    RandomForestClassifier,
+    ExtraTreesClassifier,
 )
 from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 from sklearn.svm import SVR
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neural_network import MLPRegressor
-from sklearn.model_selection import (KFold,
-                                     RandomizedSearchCV,
-                                     GridSearchCV,
-                                     StratifiedKFold,
-                                     RepeatedKFold,
-                                     RepeatedStratifiedKFold, TimeSeriesSplit)
+from sklearn.model_selection import (
+    KFold,
+    RandomizedSearchCV,
+    GridSearchCV,
+    StratifiedKFold,
+    RepeatedKFold,
+    RepeatedStratifiedKFold,
+    TimeSeriesSplit,
+)
 
 
 class CarAccessInputs(BaseConfig):
@@ -53,14 +59,12 @@ class CarAccessInputs(BaseConfig):
     # optional imports
     outlier_threshold: Optional[int] = None
 
-
     #### FEATURE SELECTION ####
-    #process_data_used: Optional[bool] = True
+    # process_data_used: Optional[bool] = True
     model_type: Any  # abc.ABCMeta not supported by caf.toolkit currently
     cv_method: Optional[str] = None
     splits: Optional[str] = None
     repeats: Optional[str] = None
-
 
     #### PREDICTION FUNCTIONS ####
     single_year_prediction: Optional[str] = None
@@ -75,7 +79,6 @@ class CarAccessInputs(BaseConfig):
 
     #### STORE MODEL ####
     saved_model: Optional[str] = None
-
 
     threshold: Optional[float] = None
     threshold_corr: Optional[float] = None
@@ -94,16 +97,19 @@ class CarAccessInputs(BaseConfig):
     column_name_to_drop_rows: Optional[List[str]] = None
     value_in_row: Optional[List[Union[str, int, float]]] = None
 
-    #experimantal functions_to_be_processed
+    # experimantal functions_to_be_processed
     features_to_transform: Optional[List[str]] = None
     norcom_run: Optional[str] = None
 
 
 class Models(enum.Enum):
-    LOGIT_REGRESSION_L1 = (LogisticRegression, {'penalty': 'l1', 'solver': 'liblinear'})
-    LOGIT_REGRESSION_L2 = (LogisticRegression, {'penalty': 'l2'})
-    LOGIT_REGRESSION_ELASTICNET = (LogisticRegression, {'penalty': 'elasticnet', 'solver': 'saga', 'l1_ratio': 0.5})
-    MULTINOMIAL = (LogisticRegression, {'multi_class': 'multinomial', 'solver': 'lbfgs'})
+    LOGIT_REGRESSION_L1 = (LogisticRegression, {"penalty": "l1", "solver": "liblinear"})
+    LOGIT_REGRESSION_L2 = (LogisticRegression, {"penalty": "l2"})
+    LOGIT_REGRESSION_ELASTICNET = (
+        LogisticRegression,
+        {"penalty": "elasticnet", "solver": "saga", "l1_ratio": 0.5},
+    )
+    MULTINOMIAL = (LogisticRegression, {"multi_class": "multinomial", "solver": "lbfgs"})
 
     RANDOM_FOREST = RandomForestRegressor
 
@@ -145,11 +151,29 @@ class Models(enum.Enum):
 
 
 Default_regression_methods = [Models.LASSO, Models.RIDGE, Models.ELASTICNET]
-Models_List_ = [Models.RANDOM_FOREST, Models.EXTRA_TREES, Models.GRADIENT_BOOSTING, Models.ADABOOST,
-               Models.BAGGING, Models.SVR, Models.KNN, Models.RIDGE, Models.LASSO, Models.ELASTICNET,
-               Models.LINEAR_REGRESSION, Models.DECISION_TREE, Models.NEURAL_NETWORK, Models.LOGIT_REGRESSION_L1,
-                Models.LOGIT_REGRESSION_L2, Models.LOGIT_REGRESSION_ELASTICNET, Models.PROBIT, Models.MULTINOMIAL, Models.RANDOM_FOREST_CLASSIFIER,
-                Models.EXTRA_TREES_CLASSIFIER, Models.DECISION_TREE_CLASSIFIER]
+Models_List_ = [
+    Models.RANDOM_FOREST,
+    Models.EXTRA_TREES,
+    Models.GRADIENT_BOOSTING,
+    Models.ADABOOST,
+    Models.BAGGING,
+    Models.SVR,
+    Models.KNN,
+    Models.RIDGE,
+    Models.LASSO,
+    Models.ELASTICNET,
+    Models.LINEAR_REGRESSION,
+    Models.DECISION_TREE,
+    Models.NEURAL_NETWORK,
+    Models.LOGIT_REGRESSION_L1,
+    Models.LOGIT_REGRESSION_L2,
+    Models.LOGIT_REGRESSION_ELASTICNET,
+    Models.PROBIT,
+    Models.MULTINOMIAL,
+    Models.RANDOM_FOREST_CLASSIFIER,
+    Models.EXTRA_TREES_CLASSIFIER,
+    Models.DECISION_TREE_CLASSIFIER,
+]
 
 
 class ModelGrids(enum.Enum):
@@ -207,8 +231,11 @@ class ModelGrids(enum.Enum):
 
     PROBIT = {"method": ["newton", "bfgs", "lbfgs"], "disp": [False]}
 
-    #MULTINOMIAL = {"C": [0.1, 1.0, 10.0], "solver": ["lbfgs", "newton-cg", "sag", "saga"]}
-    MULTINOMIAL = {"C": np.arange(0.1, 10, 0.1).tolist(), "solver": ["lbfgs", "newton-cg", "sag", "saga"]}
+    # MULTINOMIAL = {"C": [0.1, 1.0, 10.0], "solver": ["lbfgs", "newton-cg", "sag", "saga"]}
+    MULTINOMIAL = {
+        "C": np.arange(0.1, 10, 0.1).tolist(),
+        "solver": ["lbfgs", "newton-cg", "sag", "saga"],
+    }
 
     RANDOM_FOREST_CLASSIFIER = {
         "n_estimators": [10, 50, 100, 200],
@@ -247,18 +274,11 @@ class CV_models(enum.Enum):
 
 
 class DefaultRegressionMethods(enum.Enum):
-    LASSO = {
-        "alpha": [0.1, 1.0, 10.0]
-    }
+    LASSO = {"alpha": [0.1, 1.0, 10.0]}
 
-    RIDGE = {
-        "alpha": [0.1, 1.0, 10.0]
-    }
+    RIDGE = {"alpha": [0.1, 1.0, 10.0]}
 
-    ELASTICNET = {
-        "alpha": [0.1, 1.0, 10.0],
-        "l1_ratio": [0.1, 0.5, 0.9]
-    }
+    ELASTICNET = {"alpha": [0.1, 1.0, 10.0], "l1_ratio": [0.1, 0.5, 0.9]}
 
 
 class NorCom_cafml_inputs(BaseConfig):

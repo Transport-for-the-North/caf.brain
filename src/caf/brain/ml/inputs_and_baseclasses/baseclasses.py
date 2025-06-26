@@ -16,19 +16,21 @@ class BaseDataClass(ABC):
     """
     Base class for defining basic DataFrame configuration requirements.
     """
-    def __init__(self,
-                 dataframe: pd.DataFrame,
-                 custom_index: list = None,
-                 target_column: str = None,
-                 column_name_to_drop_rows: str = None,
-                 value_in_row: Union[str, float, int] = None):
 
-                 self.dataframe = dataframe
-                 self.custom_index = custom_index
-                 self.target_column = target_column
-                 self.column_name_to_drop_rows = column_name_to_drop_rows
-                 self.value_in_row = value_in_row
+    def __init__(
+        self,
+        dataframe: pd.DataFrame,
+        custom_index: list = None,
+        target_column: str = None,
+        column_name_to_drop_rows: str = None,
+        value_in_row: Union[str, float, int] = None,
+    ):
 
+        self.dataframe = dataframe
+        self.custom_index = custom_index
+        self.target_column = target_column
+        self.column_name_to_drop_rows = column_name_to_drop_rows
+        self.value_in_row = value_in_row
 
     @abstractmethod
     def index_present(self) -> bool:
@@ -63,15 +65,16 @@ class ValidateData(BaseDataClass):
         """
         if self.custom_index is not None:
 
-            missing_columns = [col for col in self.custom_index if
-                               col not in self.dataframe.index.names]
+            missing_columns = [
+                col for col in self.custom_index if col not in self.dataframe.index.names
+            ]
             if missing_columns:
-                raise ValueError(f'Custom index columns missing: {missing_columns}')
+                raise ValueError(f"Custom index columns missing: {missing_columns}")
 
             if isinstance(self.dataframe.index, pd.MultiIndex):
                 index_names = self.dataframe.index.names
                 if not all(name in self.custom_index for name in index_names):
-                    raise ValueError('MultiIndex does not match custom index')
+                    raise ValueError("MultiIndex does not match custom index")
             return True
 
         return True
@@ -92,14 +95,17 @@ class ValidateData(BaseDataClass):
         """
         Check for explanatory variables
         """
-        explanatory_columns = [col for col in self.dataframe.columns if col != self.target_column]
+        explanatory_columns = [
+            col for col in self.dataframe.columns if col != self.target_column
+        ]
 
         if len(explanatory_columns) == 0:
-            raise ValueError('No explanatory data present')
+            raise ValueError("No explanatory data present")
 
         if len(explanatory_columns) < 2:
             warnings.warn(
-                "Only one explanatory variable present. More variables are generally advised for machine learning modeling.")
+                "Only one explanatory variable present. More variables are generally advised for machine learning modeling."
+            )
 
         return True
 
@@ -107,12 +113,18 @@ class ValidateData(BaseDataClass):
         """
         Check if all columns (except target) are numeric
         """
-        non_target_columns = [col for col in self.dataframe.columns if col != self.target_column]
+        non_target_columns = [
+            col for col in self.dataframe.columns if col != self.target_column
+        ]
 
-        non_numeric_columns = [col for col in non_target_columns if self.dataframe[col].dtype not in ['int64', 'float64']]
+        non_numeric_columns = [
+            col
+            for col in non_target_columns
+            if self.dataframe[col].dtype not in ["int64", "float64"]
+        ]
 
         if non_numeric_columns:
-            raise ValueError(f'Non-numeric columns found: {non_numeric_columns}')
+            raise ValueError(f"Non-numeric columns found: {non_numeric_columns}")
 
         return True
 
@@ -121,14 +133,16 @@ class ValidateData(BaseDataClass):
         Validate DataFrame structure
         """
         if self.dataframe.empty:
-            raise ValueError('DataFrame is empty')
+            raise ValueError("DataFrame is empty")
 
         if self.target_column not in self.dataframe.columns:
             raise ValueError(f'Target column "{self.target_column}" not found in DataFrame')
 
-        explanatory_columns = [col for col in self.dataframe.columns if col != self.target_column]
+        explanatory_columns = [
+            col for col in self.dataframe.columns if col != self.target_column
+        ]
 
         if not explanatory_columns:
-            raise ValueError('No explanatory variables found in DataFrame')
+            raise ValueError("No explanatory variables found in DataFrame")
 
         return True

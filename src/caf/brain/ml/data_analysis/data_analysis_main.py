@@ -11,23 +11,25 @@ import pandas as pd
 from caf.brain.ml.data_analysis.data_analysis_functions import pre_forecast_data_analysis
 
 
-def main_evaluate_input_data(model_fit,
-                             model_initialised,
-                             residuals: pd.Series,
-                             x_test: pd.Series,
-                             train_scaled: pd.DataFrame,
-                             test_scaled: pd.DataFrame,
-                             full_transformations: bool,
-                             train_unscaled: pd.DataFrame,
-                             test_unscaled: pd.DataFrame,
-                             numerical_features: List[str],
-                             categorical_features: List[str],
-                             target_column: str,
-                             weight_column: str,
-                             x_train: pd.Series,
-                             output_folder: Path,
-                             is_time_series: bool,
-                             numerical_pipeline):
+def main_evaluate_input_data(
+    model_fit,
+    model_initialised,
+    residuals: pd.Series,
+    x_test: pd.Series,
+    train_scaled: pd.DataFrame,
+    test_scaled: pd.DataFrame,
+    full_transformations: bool,
+    train_unscaled: pd.DataFrame,
+    test_unscaled: pd.DataFrame,
+    numerical_features: List[str],
+    categorical_features: List[str],
+    target_column: str,
+    weight_column: str,
+    x_train: pd.Series,
+    output_folder: Path,
+    is_time_series: bool,
+    numerical_pipeline,
+):
     """
     Main function for testing data quality
 
@@ -64,23 +66,25 @@ def main_evaluate_input_data(model_fit,
         test_transformed: test data with the numerical features transformed
                            or test_scaled if transformations not applied.
     """
-    train_transformed, test_transformed = pre_forecast_data_analysis(residuals=residuals,
-                                                                     model=model_fit,
-                                                                     x_test=x_test,
-                                                                     train_scaled=train_scaled,
-                                                                     test_scaled=test_scaled,
-                                                                     full_transformations=full_transformations,
-                                                                     train_unscaled=train_unscaled,
-                                                                     test_unscaled=test_unscaled,
-                                                                     numerical_features=numerical_features,
-                                                                     categorical_features=categorical_features,
-                                                                     target_column=target_column,
-                                                                     weight_column=weight_column,
-                                                                     x_train=x_train,
-                                                                     model_initialised=model_initialised,
-                                                                     output_folder=output_folder,
-                                                                     is_time_series=is_time_series,
-                                                                     numerical_pipeline=numerical_pipeline)
+    train_transformed, test_transformed = pre_forecast_data_analysis(
+        residuals=residuals,
+        model=model_fit,
+        x_test=x_test,
+        train_scaled=train_scaled,
+        test_scaled=test_scaled,
+        full_transformations=full_transformations,
+        train_unscaled=train_unscaled,
+        test_unscaled=test_unscaled,
+        numerical_features=numerical_features,
+        categorical_features=categorical_features,
+        target_column=target_column,
+        weight_column=weight_column,
+        x_train=x_train,
+        model_initialised=model_initialised,
+        output_folder=output_folder,
+        is_time_series=is_time_series,
+        numerical_pipeline=numerical_pipeline,
+    )
 
     if train_transformed is not None:
         return train_transformed, test_transformed

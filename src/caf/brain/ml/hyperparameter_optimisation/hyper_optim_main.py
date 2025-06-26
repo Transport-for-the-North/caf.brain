@@ -9,15 +9,18 @@ from caf.brain.ml.hyperparameter_optimisation.hyper_optim_functions import selec
 from pathlib import Path
 import pandas as pd
 
-def main_hyperparameter_optimisation(train_final: pd.DataFrame,
-                                     target_column: str,
-                                     model_instance,
-                                     model_name,
-                                     classification_prediction: tuple[int, ...],
-                                     cv: str,
-                                     weight_column: str,
-                                     output_folder: Path,
-                                     is_time_series: bool):
+
+def main_hyperparameter_optimisation(
+    train_final: pd.DataFrame,
+    target_column: str,
+    model_instance,
+    model_name,
+    classification_prediction: tuple[int, ...],
+    cv: str,
+    weight_column: str,
+    output_folder: Path,
+    is_time_series: bool,
+):
     """
     Main function for hyperparameter optimisation.
 
@@ -43,14 +46,16 @@ def main_hyperparameter_optimisation(train_final: pd.DataFrame,
         best_model: Fitted final model for prediction on unseen (test) data.
     """
 
-    best_model = select_param(train_final=train_final,
-                              target_column=target_column,
-                              model_instance=model_instance,
-                              model_name=model_name,
-                              classification_prediction=classification_prediction,
-                              cv=cv,
-                              weight_column=weight_column,
-                              output_folder=output_folder,
-                              is_time_series=is_time_series)
+    best_model = select_param(
+        train_final=train_final,
+        target_column=target_column,
+        model_instance=model_instance,
+        model_name=model_name,
+        classification_prediction=classification_prediction,
+        cv=cv,
+        weight_column=weight_column,
+        output_folder=output_folder,
+        is_time_series=is_time_series,
+    )
 
     return best_model

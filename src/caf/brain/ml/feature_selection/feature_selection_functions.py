@@ -12,26 +12,31 @@ from matplotlib import pyplot as plt
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.feature_selection import SelectFromModel, RFE
 from sklearn.inspection import permutation_importance
-from sklearn.linear_model import (LogisticRegression,
-                                  Ridge,
-                                  Lasso)
-from sklearn.model_selection import (cross_val_score,
-                                     KFold,
-                                     StratifiedKFold,
-                                     RepeatedKFold,
-                                     RepeatedStratifiedKFold, TimeSeriesSplit)
+from sklearn.linear_model import LogisticRegression, Ridge, Lasso
+from sklearn.model_selection import (
+    cross_val_score,
+    KFold,
+    StratifiedKFold,
+    RepeatedKFold,
+    RepeatedStratifiedKFold,
+    TimeSeriesSplit,
+)
 from tqdm import tqdm
 import seaborn as sb
 import logging
+
 LOG = logging.getLogger(__name__)
 
-def rf_feature_selection(data: pd.DataFrame,
-                         target_column: str,
-                         cv: str,
-                         regression_method,
-                         weight_column: str,
-                         classification_prediction: bool,
-                         is_time_series: bool) -> pd.DataFrame:
+
+def rf_feature_selection(
+    data: pd.DataFrame,
+    target_column: str,
+    cv: str,
+    regression_method,
+    weight_column: str,
+    classification_prediction: bool,
+    is_time_series: bool,
+) -> pd.DataFrame:
     """
     Two stage feature selection through Random Forest importance and if
     required, a combination of algorithms.
@@ -69,14 +74,14 @@ def rf_feature_selection(data: pd.DataFrame,
         score_threshold = 0.6
         if n_unique_classes <= 2:
             # binary
-            scoring = 'accuracy'
+            scoring = "accuracy"
         else:
             # multi
-            scoring = 'f1_weighted'
+            scoring = "f1_weighted"
     else:
         score_threshold = -0.4
         model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
-        scoring = 'neg_mean_squared_error'
+        scoring = "neg_mean_squared_error"
 
     with tqdm(total=1, desc="Fitting Random Forest") as pbar:
         model.fit(X, y, sample_weight=weight)
@@ -85,26 +90,27 @@ def rf_feature_selection(data: pd.DataFrame,
     selector = SelectFromModel(model, prefit=True)
     selected_features = X.columns[selector.get_support()].tolist()
 
-    feature_importance = pd.DataFrame({
-        'feature': X.columns,
-        'importance': model.feature_importances_
-    }).sort_values('importance', ascending=False)
+    feature_importance = pd.DataFrame(
+        {"feature": X.columns, "importance": model.feature_importances_}
+    ).sort_values("importance", ascending=False)
 
     LOG.info("Feature Importances:")
     for _, row in feature_importance.iterrows():
         LOG.info(f"{row['feature']}: {row['importance']:.4f}")
 
-    n_splits = cv.n_splits if hasattr(cv, 'n_splits') else cv
+    n_splits = cv.n_splits if hasattr(cv, "n_splits") else cv
     fold_scores = []
     with tqdm(total=n_splits, desc="Cross-validation") as pbar:
         for fold in range(n_splits):
-            score = cross_val_score(regression_method,
-                                    X[selected_features],
-                                    y,
-                                    cv=cv,
-                                    scoring=scoring,
-                                    n_jobs=-1,
-                                    verbose=0)[0]
+            score = cross_val_score(
+                regression_method,
+                X[selected_features],
+                y,
+                cv=cv,
+                scoring=scoring,
+                n_jobs=-1,
+                verbose=0,
+            )[0]
             fold_scores.append(score)
             pbar.update(1)
 
@@ -114,31 +120,40 @@ def rf_feature_selection(data: pd.DataFrame,
     LOG.info(f"Number of features selected: {len(selected_features)}")
     LOG.info(f"Cross-validated ROC AUC score: {mean_score:.3f} (+/- {std_score:.3f})")
 
-    needs_intensive = (mean_score < score_threshold) if classification_prediction else (mean_score > score_threshold)
+    needs_intensive = (
+        (mean_score < score_threshold)
+        if classification_prediction
+        else (mean_score > score_threshold)
+    )
 
     if needs_intensive:
-        LOG.warning('Initial feature selection attempt was inaccurate, trying alternative method')
-        dataframe_final = feature_selection_intensive(x=X,
-                                                      y=y,
-                                                      cv=cv,
-                                                      regression_method=regression_method,
-                                                      weight=weight,
-                                                      weight_df=weight_df,
-                                                      classification_prediction=classification_prediction)
+        LOG.warning(
+            "Initial feature selection attempt was inaccurate, trying alternative method"
+        )
+        dataframe_final = feature_selection_intensive(
+            x=X,
+            y=y,
+            cv=cv,
+            regression_method=regression_method,
+            weight=weight,
+            weight_df=weight_df,
+            classification_prediction=classification_prediction,
+        )
     else:
         dataframe_final = pd.concat([X[selected_features], y], axis=1)
         dataframe_final = pd.concat([dataframe_final, weight_df], axis=1)
     return dataframe_final
 
 
-def feature_selection_intensive(x: pd.DataFrame,
-                                y: pd.DataFrame,
-                                cv: str,
-                                regression_method,
-                                weight: pd.Series,
-                                weight_df: pd.DataFrame,
-                                classification_prediction: tuple[int, ...]
-                                ) -> pd.DataFrame:
+def feature_selection_intensive(
+    x: pd.DataFrame,
+    y: pd.DataFrame,
+    cv: str,
+    regression_method,
+    weight: pd.Series,
+    weight_df: pd.DataFrame,
+    classification_prediction: tuple[int, ...],
+) -> pd.DataFrame:
     """
     Thorough feature selection with multiple algorithms.
 
@@ -179,7 +194,7 @@ def feature_selection_intensive(x: pd.DataFrame,
 
     cv_score = np.mean(scores)
     if cv_score < 0.5:
-        LOG.warning('CV score is still not optimal, feature selection is being ignored')
+        LOG.warning("CV score is still not optimal, feature selection is being ignored")
         result = pd.concat([x, y], axis=1)
         if weight_df is not None:
             result = pd.concat([result, weight_df], axis=1)
@@ -191,9 +206,7 @@ def feature_selection_intensive(x: pd.DataFrame,
     return result.set_index(original_index)
 
 
-def _classification_feature_selection(x: pd.DataFrame,
-                                      y: pd.DataFrame,
-                                      weight: pd.Series):
+def _classification_feature_selection(x: pd.DataFrame, y: pd.DataFrame, weight: pd.Series):
     """
     Feature selection algorithms for classification problems.
 
@@ -205,13 +218,12 @@ def _classification_feature_selection(x: pd.DataFrame,
         List of selected features based on both algorithms used.
     """
     rfe = RFE(
-        estimator=LogisticRegression(random_state=42, max_iter=2000),
-        n_features_to_select=10
+        estimator=LogisticRegression(random_state=42, max_iter=2000), n_features_to_select=10
     )
     rfe.fit(x, y, sample_weight=weight)
     rfe_selected = x.columns[rfe.support_].tolist()
 
-    logit_lasso = LogisticRegression(penalty='l1', solver='saga', random_state=42)
+    logit_lasso = LogisticRegression(penalty="l1", solver="saga", random_state=42)
     logit_lasso.fit(x, y, sample_weight=weight)
     l1_selected = x.columns[abs(logit_lasso.coef_[0]) > 0].tolist()
 
@@ -219,9 +231,7 @@ def _classification_feature_selection(x: pd.DataFrame,
     return final_features
 
 
-def _regression_feature_selection(x: pd.DataFrame,
-                                  y: pd.DataFrame,
-                                  weight: pd.Series):
+def _regression_feature_selection(x: pd.DataFrame, y: pd.DataFrame, weight: pd.Series):
     """
     Feature selection algorithms for regression problems.
 
@@ -244,10 +254,7 @@ def _regression_feature_selection(x: pd.DataFrame,
     return final_features
 
 
-def get_cv_class(cv_method: str,
-                 splits: int,
-                 repeats: int,
-                 is_time_series: bool):
+def get_cv_class(cv_method: str, splits: int, repeats: int, is_time_series: bool):
     """
     Select which SciKitLearn cross validation method to use.
 
@@ -266,15 +273,19 @@ def get_cv_class(cv_method: str,
     if is_time_series is True:
         return TimeSeriesSplit(n_splits=splits if splits else 5)
     if cv_method:
-        if cv_method.lower() == 'kfold':
+        if cv_method.lower() == "kfold":
             return KFold(n_splits=splits if splits else 5, shuffle=True)
-        elif cv_method.lower() == 'stratifiedkfold':
+        elif cv_method.lower() == "stratifiedkfold":
             return StratifiedKFold(n_splits=splits if splits else 5, shuffle=True)
-        elif cv_method.lower() == 'repeatedkfold':
-            return RepeatedKFold(n_splits=splits if splits else 5, n_repeats=repeats if repeats else 5)
-        elif cv_method.lower() == 'repeatedstratifiedkfold':
-            return RepeatedStratifiedKFold(n_splits=splits if splits else 5, n_repeats=repeats if repeats else 5)
-        elif cv_method.lower() == 'timeseriessplit':
+        elif cv_method.lower() == "repeatedkfold":
+            return RepeatedKFold(
+                n_splits=splits if splits else 5, n_repeats=repeats if repeats else 5
+            )
+        elif cv_method.lower() == "repeatedstratifiedkfold":
+            return RepeatedStratifiedKFold(
+                n_splits=splits if splits else 5, n_repeats=repeats if repeats else 5
+            )
+        elif cv_method.lower() == "timeseriessplit":
             return TimeSeriesSplit(n_splits=splits if splits else 5)
         else:
             LOG.error(f"Invalid cross-validation method: {cv_method}")
@@ -283,10 +294,9 @@ def get_cv_class(cv_method: str,
         return KFold(n_splits=5, shuffle=True)
 
 
-def analyse_feature_importance(train_transformed: pd.DataFrame,
-                               target_column: str,
-                               weight_column: str,
-                               output_path: str) -> pd.DataFrame:
+def analyse_feature_importance(
+    train_transformed: pd.DataFrame, target_column: str, weight_column: str, output_path: str
+) -> pd.DataFrame:
     """
     Simple feature selection through importance and correlation metrics with
     results plotted.
@@ -299,85 +309,87 @@ def analyse_feature_importance(train_transformed: pd.DataFrame,
     :return:
         filtered_data: Training data post feature selection.
     """
-    pd.set_option('display.float_format', lambda x: '%.10f' % x)
+    pd.set_option("display.float_format", lambda x: "%.10f" % x)
 
-    X = train_transformed.drop(columns=[target_column] + ([weight_column] if weight_column else []))
+    X = train_transformed.drop(
+        columns=[target_column] + ([weight_column] if weight_column else [])
+    )
     y = train_transformed[target_column]
-
 
     is_classification = len(np.unique(train_transformed[target_column])) <= 2
     if is_classification:
-        rf = RandomForestRegressor(
-            n_estimators=100,
-            random_state=42,
-            n_jobs=-1
-        )
+        rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
     else:
-        rf = RandomForestClassifier(
-            n_estimators=100,
-            random_state=42,
-            n_jobs=-1
-        )
+        rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
 
     rf.fit(X, y)
     results = {}
 
     # Random Forest importance
-    importance_df = pd.DataFrame({
-        'feature': X.columns,
-        'importance_rf': rf.feature_importances_
-    }).sort_values('importance_rf', ascending=False)
-    results['random_forest_importance'] = importance_df
+    importance_df = pd.DataFrame(
+        {"feature": X.columns, "importance_rf": rf.feature_importances_}
+    ).sort_values("importance_rf", ascending=False)
+    results["random_forest_importance"] = importance_df
 
     # Permutation importance
     perm_importance = permutation_importance(
-        rf, X, y,
-        n_repeats=10,
-        random_state=42,
-        n_jobs=-1
+        rf, X, y, n_repeats=10, random_state=42, n_jobs=-1
     )
-    perm_importance_df = pd.DataFrame({
-        'feature': X.columns,
-        'importance_mean_perm': perm_importance.importances_mean,
-        'importance_std_perm': perm_importance.importances_std
-    }).sort_values('importance_mean_perm', ascending=False)
-    results['permutation_importance'] = perm_importance_df
+    perm_importance_df = pd.DataFrame(
+        {
+            "feature": X.columns,
+            "importance_mean_perm": perm_importance.importances_mean,
+            "importance_std_perm": perm_importance.importances_std,
+        }
+    ).sort_values("importance_mean_perm", ascending=False)
+    results["permutation_importance"] = perm_importance_df
 
     # Target correlations
-    correlations = pd.DataFrame({
-        'feature': X.columns,
-        'correlation': [abs(X[col].corr(y)) for col in X.columns]
-    }).sort_values('correlation', ascending=False)
-    results['target_correlations'] = correlations
+    correlations = pd.DataFrame(
+        {"feature": X.columns, "correlation": [abs(X[col].corr(y)) for col in X.columns]}
+    ).sort_values("correlation", ascending=False)
+    results["target_correlations"] = correlations
 
-    results_df = pd.concat([
-        importance_df.set_index('feature'),
-        perm_importance_df.set_index('feature')[['importance_mean_perm', 'importance_std_perm']],
-        correlations.set_index('feature')
-    ], axis=1)
+    results_df = pd.concat(
+        [
+            importance_df.set_index("feature"),
+            perm_importance_df.set_index("feature")[
+                ["importance_mean_perm", "importance_std_perm"]
+            ],
+            correlations.set_index("feature"),
+        ],
+        axis=1,
+    )
 
-    importance_metrics, filtered_data = filtering_results(results_df=results_df,
-                                                          target_column=target_column,
-                                                          weight_column=weight_column,
-                                                          original_data=train_transformed)
+    importance_metrics, filtered_data = filtering_results(
+        results_df=results_df,
+        target_column=target_column,
+        weight_column=weight_column,
+        original_data=train_transformed,
+    )
 
     if importance_metrics.empty:
-        LOG.warning("All feature importance metrics are zero or near-zero. "
-                    "This likely indicates insufficient data or data quality issues. "
-                    "Returning original dataset without feature selection.")
+        LOG.warning(
+            "All feature importance metrics are zero or near-zero. "
+            "This likely indicates insufficient data or data quality issues. "
+            "Returning original dataset without feature selection."
+        )
         return train_transformed
 
-    create_importance_plots(results_df=importance_metrics,
-                            output_path=output_path)
-    results_df.to_csv(os.path.join(output_path, 'feature_importances.csv'), float_format='%.10f')
+    create_importance_plots(results_df=importance_metrics, output_path=output_path)
+    results_df.to_csv(
+        os.path.join(output_path, "feature_importances.csv"), float_format="%.10f"
+    )
 
     return filtered_data
 
 
-def filtering_results(results_df: pd.DataFrame,
-                      target_column: str,
-                      weight_column: pd.DataFrame,
-                      original_data: pd.DataFrame):
+def filtering_results(
+    results_df: pd.DataFrame,
+    target_column: str,
+    weight_column: pd.DataFrame,
+    original_data: pd.DataFrame,
+):
     """
     Helper function for analyse_feature_importance. Results are analysed and
     applied to input data.
@@ -393,10 +405,10 @@ def filtering_results(results_df: pd.DataFrame,
     """
 
     important_features = results_df[
-        (results_df['importance_rf'] > 0.05) |
-        (results_df['correlation'] > 0.3) |
-        (results_df['importance_mean_perm'] > 0.01)
-        ]
+        (results_df["importance_rf"] > 0.05)
+        | (results_df["correlation"] > 0.3)
+        | (results_df["importance_mean_perm"] > 0.01)
+    ]
 
     selected_features = important_features.index.tolist()
     additional_columns = []
@@ -408,10 +420,9 @@ def filtering_results(results_df: pd.DataFrame,
     return important_features, original_data[selected_features + additional_columns]
 
 
-def combine_results(train_final: pd.DataFrame,
-                    target_column: str,
-                    weight_column: str,
-                    test: pd.DataFrame):
+def combine_results(
+    train_final: pd.DataFrame, target_column: str, weight_column: str, test: pd.DataFrame
+):
     """
     Function to apply feature selection results to training data.
 
@@ -442,8 +453,7 @@ def combine_results(train_final: pd.DataFrame,
     return test_final, cols_dropped_by_feat_select
 
 
-def create_importance_plots(results_df: pd.DataFrame,
-                            output_path: str) -> None:
+def create_importance_plots(results_df: pd.DataFrame, output_path: str) -> None:
     """
     Plotting feature selection scores where applicable.
 
@@ -454,14 +464,10 @@ def create_importance_plots(results_df: pd.DataFrame,
     """
     # rf importance
     plt.figure(figsize=(12, 6))
-    sb.barplot(
-        data=results_df.reset_index().head(10),
-        x='importance_rf',
-        y='feature'
-    )
-    plt.title('Top 10 Features by Random Forest Importance')
+    sb.barplot(data=results_df.reset_index().head(10), x="importance_rf", y="feature")
+    plt.title("Top 10 Features by Random Forest Importance")
     plt.tight_layout()
-    plt.savefig(os.path.join(output_path, 'rf_importance.png'))
+    plt.savefig(os.path.join(output_path, "rf_importance.png"))
     plt.close()
 
     # Permutation importance
@@ -469,23 +475,19 @@ def create_importance_plots(results_df: pd.DataFrame,
     results_plot = results_df.reset_index().head(10)
     sb.barplot(
         data=results_plot,
-        x='importance_mean_perm',
-        y='feature',
+        x="importance_mean_perm",
+        y="feature",
         # xerr=results_plot['importance_std_perm']
     )
-    plt.title('Top 10 Features by Permutation Importance')
+    plt.title("Top 10 Features by Permutation Importance")
     plt.tight_layout()
-    plt.savefig(os.path.join(output_path, 'perm_importance.png'))
+    plt.savefig(os.path.join(output_path, "perm_importance.png"))
     plt.close()
 
     # correlations
     plt.figure(figsize=(12, 6))
-    sb.barplot(
-        data=results_df.reset_index().head(10),
-        x='correlation',
-        y='feature'
-    )
-    plt.title('Top 10 Features by Correlation with Target')
+    sb.barplot(data=results_df.reset_index().head(10), x="correlation", y="feature")
+    plt.title("Top 10 Features by Correlation with Target")
     plt.tight_layout()
-    plt.savefig(os.path.join(output_path, 'correlations.png'))
+    plt.savefig(os.path.join(output_path, "correlations.png"))
     plt.close()

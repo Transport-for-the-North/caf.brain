@@ -16,6 +16,7 @@ from sklearn.metrics import explained_variance_score, mean_squared_error
 from scipy.stats import pearsonr, spearmanr
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from caf.ml.backlog.old_inputs import CarInputs2
+
 ALLOWED_MODELS = (ElasticNet, Lasso, Ridge)
 
 from caf.ml.backlog.functions_to_be_processed import DataProcessor
@@ -52,8 +53,8 @@ def test_function(df11, num_folds=5, regression_method=ElasticNet):
     the feature selection performed.
     """
     # Extract X and y
-    X = df11.drop(columns='sum_cars').values
-    y = df11['sum_cars'].values
+    X = df11.drop(columns="sum_cars").values
+    y = df11["sum_cars"].values
 
     # Apply feature scaling, each feature has mean of 0 and SD of 1 (standard practice for this form of ML)
     scale = StandardScaler()
@@ -62,10 +63,10 @@ def test_function(df11, num_folds=5, regression_method=ElasticNet):
     # Initialise (done so created variables have a starting point)
     alpha_range = np.arange(0.1, 10, 0.1)
     # used for the grid search, creates dictionary with each dictionary key containing an alpha range value
-    param_grid = {'alpha': alpha_range}
+    param_grid = {"alpha": alpha_range}
     best_alpha = None
     # set to infinite as best score will always be lower
-    best_score = float('inf')
+    best_score = float("inf")
     final_model = None
 
     # Outer cross-validation loop for model evaluation
@@ -74,8 +75,9 @@ def test_function(df11, num_folds=5, regression_method=ElasticNet):
     X_selected_combined = None
 
     # data split into training and old_run_files with 5 folds
-    for train_index, test_index in tqdm(KFold(n_splits=num_folds, shuffle=True).split(X_scaled),
-                                        desc="Outer CV Progress"):
+    for train_index, test_index in tqdm(
+        KFold(n_splits=num_folds, shuffle=True).split(X_scaled), desc="Outer CV Progress"
+    ):
         X_train, X_test = X_scaled[train_index], X_scaled[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
@@ -99,12 +101,16 @@ def test_function(df11, num_folds=5, regression_method=ElasticNet):
         X_selected_combined[train_index[:, np.newaxis], selected_features] = X_selected
 
         # Perform grid search with cross-validation to find best alpha for selected features
-        grid_search = GridSearchCV(estimator=final_model_inner, param_grid=param_grid,
-                                   scoring='neg_mean_squared_error', cv=num_folds)
+        grid_search = GridSearchCV(
+            estimator=final_model_inner,
+            param_grid=param_grid,
+            scoring="neg_mean_squared_error",
+            cv=num_folds,
+        )
         grid_search.fit(X_selected, y_train)
 
         # Get the best alpha and best score from inner loop
-        best_alpha_inner = grid_search.best_params_['alpha']
+        best_alpha_inner = grid_search.best_params_["alpha"]
         best_score_inner = -grid_search.best_score_
 
         # Fit the final model with the best alpha from inner loop
@@ -129,8 +135,10 @@ def test_function(df11, num_folds=5, regression_method=ElasticNet):
     if best_alpha >= 9:
         print(f"Alpha value is {best_alpha}. Consider increasing alpha range.")
 
-    selected_features_df = pd.DataFrame(X_selected_combined[:, selected_features],
-                                        columns=np.array(df11.columns[:-1])[selected_features])
+    selected_features_df = pd.DataFrame(
+        X_selected_combined[:, selected_features],
+        columns=np.array(df11.columns[:-1])[selected_features],
+    )
 
     return final_model, selected_features_df
 
@@ -160,7 +168,7 @@ def calculate_correlation(x1, x2, y1, y2):
         if column in x2.columns:
             correlation1, _ = pearsonr(x1[column], y1)
             correlation2, _ = pearsonr(x2[column], y2)
-            correlations[column] = {'correlation1': correlation1, 'correlation2': correlation2}
+            correlations[column] = {"correlation1": correlation1, "correlation2": correlation2}
 
     correlation_df = pd.DataFrame(correlations).T
     return correlation_df
@@ -177,10 +185,12 @@ def evaluate_independence(x1, x2, y1, y2):
         spearman_1[column] = corr_1
         spearman_2[column] = corr_2
 
-    spearman_df_1 = pd.DataFrame.from_dict(spearman_1,
-                                           orient='index', columns=['Spearman Correlation 2011'])
-    spearman_df_2 = pd.DataFrame.from_dict(spearman_2,
-                                           orient='index', columns=['Spearman Correlation 2021'])
+    spearman_df_1 = pd.DataFrame.from_dict(
+        spearman_1, orient="index", columns=["Spearman Correlation 2011"]
+    )
+    spearman_df_2 = pd.DataFrame.from_dict(
+        spearman_2, orient="index", columns=["Spearman Correlation 2021"]
+    )
 
     results = pd.concat([spearman_df_1, spearman_df_2], axis=1)
 
@@ -196,8 +206,9 @@ def test_multicollinearity(x):
 
 
 # processes data to be ready for hyperparamter (alpha) optimisation
-def df_hyperparam_optimisation(df11: pd.DataFrame,
-                               modified_df_11: pd.DataFrame, target_column: str):
+def df_hyperparam_optimisation(
+    df11: pd.DataFrame, modified_df_11: pd.DataFrame, target_column: str
+):
     # made lists in order to remove expected warning
     y = df11[target_column].values
     x = modified_df_11.values
@@ -221,13 +232,12 @@ def hyperparam_optimisation(data_x: np.ndarray, data_y: np.ndarray, alpha_vals: 
 
 
 # applies specified modelling technique on the final selection of variables and alpha
-def retrained_model(x_train, x_test, y_train, alpha: float,
-                    regression_method='ElasticNet'):
-    if regression_method == 'ElasticNet':
+def retrained_model(x_train, x_test, y_train, alpha: float, regression_method="ElasticNet"):
+    if regression_method == "ElasticNet":
         model = linear_model.ElasticNet(alpha=alpha)
-    elif regression_method == 'Lasso':
+    elif regression_method == "Lasso":
         model = linear_model.Lasso(alpha=alpha)
-    elif regression_method == 'Ridge':
+    elif regression_method == "Ridge":
         model = linear_model.Ridge(alpha=alpha)
     else:
         raise ValueError("Invalid regression method.")
@@ -269,13 +279,13 @@ def cross_validation(x: np.ndarray, y: np.ndarray, alpha: float, k_folds: int = 
 def evaluate_model(y_true, y_pred):
     # score calculated directly in dictionary for dictionary literal warning
     scores = {
-        'R2 Score': r2_score(y_true, y_pred),
-        'Mean Absolute Error': mean_absolute_error(y_true, y_pred),
-        'Mean Absolute Percentage Error': mean_absolute_percentage_error(y_true, y_pred),
-        'Explained Variance Score': explained_variance_score(y_true, y_pred)
+        "R2 Score": r2_score(y_true, y_pred),
+        "Mean Absolute Error": mean_absolute_error(y_true, y_pred),
+        "Mean Absolute Percentage Error": mean_absolute_percentage_error(y_true, y_pred),
+        "Explained Variance Score": explained_variance_score(y_true, y_pred),
     }
     # Convert scores to a DataFrame
-    df_scores = pd.DataFrame.from_dict(scores, orient='index', columns=['Score'])
+    df_scores = pd.DataFrame.from_dict(scores, orient="index", columns=["Score"])
 
     return df_scores
 
@@ -283,9 +293,8 @@ def evaluate_model(y_true, y_pred):
 ###################### NEW FUNCTIONS ######################
 
 
-
 def main(params: CarInputs2, output_folder, reg_method, custom_regression_methods):
-    """ Main function requires the following old_inputs:
+    """Main function requires the following old_inputs:
     1) Path to the 2011 census data/base year census data you are using
     2) A forecast year set of data
     3) A regression method (Lasso, ElasticNet or Ridge)
@@ -303,22 +312,32 @@ def main(params: CarInputs2, output_folder, reg_method, custom_regression_method
     - The data provided (i.e path_2011, path_2021) must be in the same format.
     The two csv documents must have identical column names and be in the same order.
     The file should also include the target (Y) variable.
-    The predicted variable year data does not need to include the target (Y) """
+    The predicted variable year data does not need to include the target (Y)"""
     # process data: raw data -> model format
     data_processor = DataProcessor()
-    data = data_processor.process_data(params.x, params.y, params.folder_path,
-                                       params.index1, params.index2, params.wide_format,
-                                    params.variable_name, params.value_name)
+    data = data_processor.process_data(
+        params.x,
+        params.y,
+        params.folder_path,
+        params.index1,
+        params.index2,
+        params.wide_format,
+        params.variable_name,
+        params.value_name,
+    )
     # tidy data: remove correlated values etc.
     data_to_model = main_tdf(data, output_folder)
 
     data_final = process_data_numeric(data_to_model)
 
-    final_model, selected_features_df = feature_selection(data_final, num_folds=5,
-                                                          selected_algorithm=reg_method,
-                                                          target_column=params.target_column)
+    final_model, selected_features_df = feature_selection(
+        data_final,
+        num_folds=5,
+        selected_algorithm=reg_method,
+        target_column=params.target_column,
+    )
 
-    print('hi', selected_features_df)
+    print("hi", selected_features_df)
 
     # applying feature selection to 2021 census data (old_run_files data (21) must match training data (11))
     scaled_df = apply_feature_selection(selected_features_df, df21)
@@ -348,10 +367,15 @@ def main(params: CarInputs2, output_folder, reg_method, custom_regression_method
     y_2011 = df11[[params.target_column]].values
     x_2011 = x1.values
     x_21 = x2.values
-    y_pred = retrained_model(x_train=x_2011, x_test=x_21, y_train=y_2011,
-                             alpha=best_alpha, regression_method=params.method.__name__)
+    y_pred = retrained_model(
+        x_train=x_2011,
+        x_test=x_21,
+        y_train=y_2011,
+        alpha=best_alpha,
+        regression_method=params.method.__name__,
+    )
 
-    y_pred_final = pd.DataFrame(y_pred, columns=['y_pred'])
+    y_pred_final = pd.DataFrame(y_pred, columns=["y_pred"])
 
     # final evaluation tests to see accuracy of prediction
     y_true = df21[params.target_column]
@@ -359,25 +383,25 @@ def main(params: CarInputs2, output_folder, reg_method, custom_regression_method
 
     # dictionaries to store outputs from model tests and outputs
     dataframes = {
-        'modified_df_11': modified_df_11,
-        'modified_df_21': modified_df_21,
-        'correlations': correlations,
-        'iid': iid,
-        'vif_results_1': vif_results_1,
-        'vif_results_2': vif_results_2,
-        'y_pred_final': y_pred_final,
-        'evaluation_scores': evaluation_scores
+        "modified_df_11": modified_df_11,
+        "modified_df_21": modified_df_21,
+        "correlations": correlations,
+        "iid": iid,
+        "vif_results_1": vif_results_1,
+        "vif_results_2": vif_results_2,
+        "y_pred_final": y_pred_final,
+        "evaluation_scores": evaluation_scores,
     }
 
     filenames = {
-        'modified_df_11': 'modified_df_11.csv',
-        'modified_df_21': 'modified_df_21.csv',
-        'correlations': 'correlations.csv',
-        'iid': 'iid.csv',
-        'vif_results_1': 'vif_results_1.csv',
-        'vif_results_2': 'vif_results_2.csv',
-        'y_pred_final': 'y_pred_final.csv',
-        'evaluation_scores': 'evaluation_scores.csv',
+        "modified_df_11": "modified_df_11.csv",
+        "modified_df_21": "modified_df_21.csv",
+        "correlations": "correlations.csv",
+        "iid": "iid.csv",
+        "vif_results_1": "vif_results_1.csv",
+        "vif_results_2": "vif_results_2.csv",
+        "y_pred_final": "y_pred_final.csv",
+        "evaluation_scores": "evaluation_scores.csv",
     }
 
     save_dataframes_to_folder(dataframes, filenames, params.folder)
@@ -386,23 +410,25 @@ def main(params: CarInputs2, output_folder, reg_method, custom_regression_method
 
 
 if __name__ == "__main__":
-    """PATH_2011 and PATH_2021 are current links to a local drive. These of 
-       are included to keep functionality of the model. These paths would be 
-       replaces for your specific use of the model."""
-    params = CarInputs2(x=Path(r"E:\caf.ml\data_process_function\test_data\cb_tfn_v12_smallerversion.csv"),
-                        y=None,
-                        folder_path=None,
-                        index1='SurveyYear',
-                        index2=None,
-                        wide_format=None,
-                        variable_name=None,
-                        value_name=None,
-                        method=Ridge,
-                        target_column='weighted_trips',
-                        folder=Path(r"E:\caf.ml\data_process_function\car_model_results"))
+    """PATH_2011 and PATH_2021 are current links to a local drive. These of
+    are included to keep functionality of the model. These paths would be
+    replaces for your specific use of the model."""
+    params = CarInputs2(
+        x=Path(r"E:\caf.ml\data_process_function\test_data\cb_tfn_v12_smallerversion.csv"),
+        y=None,
+        folder_path=None,
+        index1="SurveyYear",
+        index2=None,
+        wide_format=None,
+        variable_name=None,
+        value_name=None,
+        method=Ridge,
+        target_column="weighted_trips",
+        folder=Path(r"E:\caf.ml\data_process_function\car_model_results"),
+    )
     output_folder = r"E:\caf.ml\data_process_function\test_data\output"
     reg_method = Lasso
     custom_regression_methods = [Lasso, ElasticNet]
-# path 2011 r"E:\TRSE\data\final\sorted_data\data_no_geography\sum_car\2021finalsumcar.csv"
-# path 2021 r"E:\TRSE\data\final\sorted_data\data_no_geography\sum_car\2021finalsumcar.csv"
+    # path 2011 r"E:\TRSE\data\final\sorted_data\data_no_geography\sum_car\2021finalsumcar.csv"
+    # path 2021 r"E:\TRSE\data\final\sorted_data\data_no_geography\sum_car\2021finalsumcar.csv"
     main(params, output_folder, reg_method, custom_regression_methods)

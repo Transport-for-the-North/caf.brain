@@ -14,7 +14,9 @@ from sklearn.ensemble import (
     RandomForestRegressor,
     GradientBoostingRegressor,
     AdaBoostRegressor,
-    BaggingRegressor, RandomForestClassifier, ExtraTreesClassifier,
+    BaggingRegressor,
+    RandomForestClassifier,
+    ExtraTreesClassifier,
 )
 from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
@@ -40,12 +42,14 @@ class NorCom_inputs(BaseConfig):
     binary_prediction: Optional[str] = None
 
 
-
 class Models(enum.Enum):
-    LOGIT_REGRESSION_L1 = (LogisticRegression, {'penalty': 'l1', 'solver': 'liblinear'})
-    LOGIT_REGRESSION_L2 = (LogisticRegression, {'penalty': 'l2'})
-    LOGIT_REGRESSION_ELASTICNET = (LogisticRegression, {'penalty': 'elasticnet', 'solver': 'saga', 'l1_ratio': 0.5})
-    MULTINOMIAL = (LogisticRegression, {'multi_class': 'multinomial', 'solver': 'lbfgs'})
+    LOGIT_REGRESSION_L1 = (LogisticRegression, {"penalty": "l1", "solver": "liblinear"})
+    LOGIT_REGRESSION_L2 = (LogisticRegression, {"penalty": "l2"})
+    LOGIT_REGRESSION_ELASTICNET = (
+        LogisticRegression,
+        {"penalty": "elasticnet", "solver": "saga", "l1_ratio": 0.5},
+    )
+    MULTINOMIAL = (LogisticRegression, {"multi_class": "multinomial", "solver": "lbfgs"})
 
     RANDOM_FOREST = RandomForestRegressor
 
@@ -87,11 +91,29 @@ class Models(enum.Enum):
 
 
 Default_regression_methods = [Models.LASSO, Models.RIDGE, Models.ELASTICNET]
-Models_List_ = [Models.RANDOM_FOREST, Models.EXTRA_TREES, Models.GRADIENT_BOOSTING, Models.ADABOOST,
-               Models.BAGGING, Models.SVR, Models.KNN, Models.RIDGE, Models.LASSO, Models.ELASTICNET,
-               Models.LINEAR_REGRESSION, Models.DECISION_TREE, Models.NEURAL_NETWORK, Models.LOGIT_REGRESSION_L1,
-                Models.LOGIT_REGRESSION_L2, Models.LOGIT_REGRESSION_ELASTICNET, Models.PROBIT, Models.MULTINOMIAL, Models.RANDOM_FOREST_CLASSIFIER,
-                Models.EXTRA_TREES_CLASSIFIER, Models.DECISION_TREE_CLASSIFIER]
+Models_List_ = [
+    Models.RANDOM_FOREST,
+    Models.EXTRA_TREES,
+    Models.GRADIENT_BOOSTING,
+    Models.ADABOOST,
+    Models.BAGGING,
+    Models.SVR,
+    Models.KNN,
+    Models.RIDGE,
+    Models.LASSO,
+    Models.ELASTICNET,
+    Models.LINEAR_REGRESSION,
+    Models.DECISION_TREE,
+    Models.NEURAL_NETWORK,
+    Models.LOGIT_REGRESSION_L1,
+    Models.LOGIT_REGRESSION_L2,
+    Models.LOGIT_REGRESSION_ELASTICNET,
+    Models.PROBIT,
+    Models.MULTINOMIAL,
+    Models.RANDOM_FOREST_CLASSIFIER,
+    Models.EXTRA_TREES_CLASSIFIER,
+    Models.DECISION_TREE_CLASSIFIER,
+]
 
 
 class ModelGrids(enum.Enum):
@@ -149,8 +171,11 @@ class ModelGrids(enum.Enum):
 
     PROBIT = {"method": ["newton", "bfgs", "lbfgs"], "disp": [False]}
 
-    #MULTINOMIAL = {"C": [0.1, 1.0, 10.0], "solver": ["lbfgs", "newton-cg", "sag", "saga"]}
-    MULTINOMIAL = {"C": np.arange(0.1, 10, 0.1).tolist(), "solver": ["lbfgs", "newton-cg", "sag", "saga"]}
+    # MULTINOMIAL = {"C": [0.1, 1.0, 10.0], "solver": ["lbfgs", "newton-cg", "sag", "saga"]}
+    MULTINOMIAL = {
+        "C": np.arange(0.1, 10, 0.1).tolist(),
+        "solver": ["lbfgs", "newton-cg", "sag", "saga"],
+    }
 
     RANDOM_FOREST_CLASSIFIER = {
         "n_estimators": [10, 50, 100, 200],

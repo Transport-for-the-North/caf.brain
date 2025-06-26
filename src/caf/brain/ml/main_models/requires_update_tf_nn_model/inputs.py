@@ -9,6 +9,7 @@ from pathlib import Path
 from caf.toolkit import BaseConfig
 from typing import Optional, List, Any, Union
 
+
 class TensorFlowModelInputs(BaseConfig):
     training_data: Optional[Path] = None
     prediction_data: Optional[Path] = None

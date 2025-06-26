@@ -1,4 +1,4 @@
-""" ACTUAL MODEL
+"""ACTUAL MODEL
 Created on: 27/07/2023
 Updated on: 08/09/2023
 
@@ -9,6 +9,7 @@ Other updates made by: Isaac Scott
 File purpose: Land Value uplift model. Forecast rateable value
 
 """
+
 # IMPORTS
 import pandas as pd
 import os
@@ -129,9 +130,7 @@ def main(params: LvuInputs):
     else:
         model_params = params.model_params
     if model_params is None:
-        LOG.warning(
-            "No model had an acceptable accuracy, so the model is being stopped."
-        )
+        LOG.warning("No model had an acceptable accuracy, so the model is being stopped.")
         return None
     LOG.info("Best params for model determined to be: %s", model_params)
     ml_mod = inputs.Models[model_name].value(**model_params)
@@ -191,9 +190,7 @@ if __name__ == "__main__":
                 y_data_path=y_dir / file,
                 custom_x=[
                     XVar(
-                        dataframe=Path(
-                            r"I:\Transfer\IS\EVCI_inputs\gva_inc_forecast.csv"
-                        ),
+                        dataframe=Path(r"I:\Transfer\IS\EVCI_inputs\gva_inc_forecast.csv"),
                         geog_col="ZoneID",
                         year_col="year",
                         val_name="gva",

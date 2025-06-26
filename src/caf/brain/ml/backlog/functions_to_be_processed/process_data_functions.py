@@ -11,6 +11,7 @@ from scipy.stats import zscore
 
 ######### READ DATA FUNCTIONS #########
 
+
 def read_folder(folder_path):
     dataframes_in = {}
     for file_name in os.listdir(folder_path):
@@ -40,24 +41,23 @@ def find_numeric_target_column(data: pd.DataFrame, target_column, categorical_ta
 
     if target_column in data.columns:
         # Check if the target column is numeric
-        if not pd.to_numeric(data[target_column], errors='coerce').notna().all():
-            data[target_column] = pd.to_numeric(data[target_column], errors='coerce')
+        if not pd.to_numeric(data[target_column], errors="coerce").notna().all():
+            data[target_column] = pd.to_numeric(data[target_column], errors="coerce")
             if not data[target_column].notna().all():
-                raise ValueError(
-                    "The target column could not be converted to numeric.")
-            print(
-                f"The target column '{target_column}' has been converted to numeric.")
+                raise ValueError("The target column could not be converted to numeric.")
+            print(f"The target column '{target_column}' has been converted to numeric.")
         return data
 
     raise ValueError(
-        "Target column not found in the data. Modeling may require a numeric target column.")
+        "Target column not found in the data. Modeling may require a numeric target column."
+    )
 
 
 def process_data_numeric(data, keep_columns=None, target_column=None, output_folder=None):
     if not isinstance(data, pd.DataFrame):
         data = convert_to_dataframe(data)
 
-    data = data.apply(pd.to_numeric, errors='coerce')
+    data = data.apply(pd.to_numeric, errors="coerce")
 
     non_numeric_columns = data.columns[~data.map(np.isreal).all()]
 
@@ -67,7 +67,8 @@ def process_data_numeric(data, keep_columns=None, target_column=None, output_fol
 
     if target_column and target_column in columns_to_drop:
         raise ValueError(
-            f"Target column '{target_column}' is still not numeric. Please review the data.")
+            f"Target column '{target_column}' is still not numeric. Please review the data."
+        )
 
     if not columns_to_drop.empty:
         print(f"Dropping non-numeric columns: {', '.join(columns_to_drop)}")
@@ -91,7 +92,6 @@ def index_sorter(df: pd.DataFrame, index_columns, drop_columns):
         if col not in df.columns:
             raise ValueError(f"Column '{col}' not found in DataFrame.")
 
-
     df_indexed = df.copy()
 
     df_indexed.set_index(index_columns, inplace=True, verify_integrity=False)
@@ -104,7 +104,8 @@ def index_sorter(df: pd.DataFrame, index_columns, drop_columns):
 
     return df_indexed
 
-'''def index_sorter(*dataframes: pd.DataFrame, index_columns=None, drop_columns=None):
+
+"""def index_sorter(*dataframes: pd.DataFrame, index_columns=None, drop_columns=None):
 
     if not dataframes:
         raise ValueError("At least one dataframe must be provided")
@@ -122,10 +123,10 @@ def index_sorter(df: pd.DataFrame, index_columns, drop_columns):
 
     result = [df.reset_index() for df in result]
 
-    return result if len(result) > 1 else result[0]'''
+    return result if len(result) > 1 else result[0]"""
 
 
-'''def index_sorter(*dataframes: pd.DataFrame, index_columns=None, drop_columns=None):
+"""def index_sorter(*dataframes: pd.DataFrame, index_columns=None, drop_columns=None):
     if not dataframes:
         raise ValueError("At least one dataframe must be provided")
 
@@ -140,7 +141,7 @@ def index_sorter(df: pd.DataFrame, index_columns, drop_columns):
     result = [set_multi_index(df) for df in dataframes]
     if drop_columns:
         result = [df.drop(columns=drop_columns, errors='ignore') for df in result]
-    return result if len(result) > 1 else result[0]'''
+    return result if len(result) > 1 else result[0]"""
 
 
 def custom_melt(df: pd.DataFrame, variable_name, value_name):
@@ -176,9 +177,14 @@ def convert_to_dataframe(data, columns=None, index=None):
 
 ######### CLEANING DATA #########
 
-def handle_nans_and_duplicates(dataframe: pd.DataFrame, target_column=None, output_folder=None):
+
+def handle_nans_and_duplicates(
+    dataframe: pd.DataFrame, target_column=None, output_folder=None
+):
     if target_column and dataframe[target_column].isna().any():
-        raise ValueError(f"Target column '{target_column}' has NaN values. Please review the data.")
+        raise ValueError(
+            f"Target column '{target_column}' has NaN values. Please review the data."
+        )
 
     rows_with_nans = dataframe[dataframe.isna().any(axis=1)]
 
@@ -192,7 +198,7 @@ def handle_nans_and_duplicates(dataframe: pd.DataFrame, target_column=None, outp
     exact_duplicates = cleaned_dataframe[cleaned_dataframe.duplicated(keep=False)]
 
     if not exact_duplicates.empty:
-        print('Exact duplicate rows found:')
+        print("Exact duplicate rows found:")
         print(exact_duplicates)
 
         if output_folder:
@@ -206,18 +212,22 @@ def handle_nans_and_duplicates(dataframe: pd.DataFrame, target_column=None, outp
 
 
 def function_remove_spaces(df: pd.DataFrame):
-    df = df.map(lambda x: str(x).replace(' ', ''))
+    df = df.map(lambda x: str(x).replace(" ", ""))
     return df
 
 
 ######### CLEANING DATA: specific functions_to_be_processed #########
 
 
-def remove_and_export_outliers(df: pd.DataFrame, outlier_threshold=None, target_column=None, output_folder=None):
+def remove_and_export_outliers(
+    df: pd.DataFrame, outlier_threshold=None, target_column=None, output_folder=None
+):
     if outlier_threshold is None:
         return df
 
-    columns_for_zscore = df.columns.difference([target_column]) if target_column else df.columns
+    columns_for_zscore = (
+        df.columns.difference([target_column]) if target_column else df.columns
+    )
 
     z_scores = np.abs(zscore(df[columns_for_zscore]))
 
@@ -244,4 +254,3 @@ def drop_rows(df, column_name_to_drop_rows, value_in_row):
         else:
             print(f"Column {col} does not exist in the DataFrame.")
     return df
-

@@ -12,22 +12,26 @@ import numpy as np
 import pandas as pd
 from caf.brain.ml.inputs_and_baseclasses.baseclasses import ValidateData
 import logging
+
 LOG = logging.getLogger(__name__)
 
+
 class InitialDataProcessing:
-    def __init__(self,
-                 file_path: Path,
-                 folder_path: Path,
-                 output_path: Path,
-                 target_column: str,
-                 custom_index: List[str],
-                 column_name_to_drop_rows: List[str],
-                 value_in_row: List[str],
-                 weight_column: str,
-                 categorical_features: List[str],
-                 numerical_features: List[str],
-                 classification_prediction: tuple[int, ...],
-                 is_test_data: bool = False):
+    def __init__(
+        self,
+        file_path: Path,
+        folder_path: Path,
+        output_path: Path,
+        target_column: str,
+        custom_index: List[str],
+        column_name_to_drop_rows: List[str],
+        value_in_row: List[str],
+        weight_column: str,
+        categorical_features: List[str],
+        numerical_features: List[str],
+        classification_prediction: tuple[int, ...],
+        is_test_data: bool = False,
+    ):
         """
         Class for processing initial input data to the caf.brAIn prediction
         model.
@@ -75,8 +79,7 @@ class InitialDataProcessing:
         self.dataframes: Dict[pd.DataFrame] = {}
 
     # # # Data flow pipelines # # #
-    def execute_pipeline(self,
-                         is_test_data: bool) -> Dict[str, pd.DataFrame]:
+    def execute_pipeline(self, is_test_data: bool) -> Dict[str, pd.DataFrame]:
         """
         Runs the InitialDataProcessing pipeline.
 
@@ -87,8 +90,7 @@ class InitialDataProcessing:
         self.validate_data(is_test_data)
         return self.dataframes
 
-    def data_already_split_pipeline(self,
-                                    is_test_data: bool) -> Dict[str, pd.DataFrame]:
+    def data_already_split_pipeline(self, is_test_data: bool) -> Dict[str, pd.DataFrame]:
         """
         Runs the pipeline if train and test data is already split by the user
         or previous model runs.
@@ -121,9 +123,11 @@ class InitialDataProcessing:
 
         if len(self.dataframes) > 1:
             if self.custom_index is None:
-                raise ValueError("Must provide custom index in order to process \
+                raise ValueError(
+                    "Must provide custom index in order to process \
                                   multiple dataframes. Data processing outside of \
-                                  caf.ml is advised.")
+                                  caf.ml is advised."
+                )
             else:
                 self.df = pd.concat(self.dataframes, axis=0)
 
@@ -133,19 +137,32 @@ class InitialDataProcessing:
 
         df = self.convert_to_dataframe(self.df)
 
-        target_column_ = [] if is_test_data else (
-            [self.target_column] if isinstance(self.target_column, str) else [])
+        target_column_ = (
+            []
+            if is_test_data
+            else ([self.target_column] if isinstance(self.target_column, str) else [])
+        )
         weight_column_ = [self.weight_column] if isinstance(self.weight_column, str) else []
         custom_index = self.custom_index or []
         categorical_features = self.categorical_features or []
         numerical_features = self.numerical_features or []
 
         if self.numerical_features is None:
-            columns_to_keep = custom_index + categorical_features + target_column_ + weight_column_
+            columns_to_keep = (
+                custom_index + categorical_features + target_column_ + weight_column_
+            )
         elif self.categorical_features is None:
-            columns_to_keep = custom_index + numerical_features + target_column_ + weight_column_
+            columns_to_keep = (
+                custom_index + numerical_features + target_column_ + weight_column_
+            )
         else:
-            columns_to_keep = custom_index + categorical_features + numerical_features + target_column_ + weight_column_
+            columns_to_keep = (
+                custom_index
+                + categorical_features
+                + numerical_features
+                + target_column_
+                + weight_column_
+            )
 
         columns_to_keep = [col for col in columns_to_keep if col in df.columns]
         df = df[columns_to_keep]
@@ -155,14 +172,12 @@ class InitialDataProcessing:
             df = self.function_remove_spaces(df)
 
             if self.column_name_to_drop_rows and self.value_in_row:
-                df = self.drop_rows(df,
-                                    self.column_name_to_drop_rows,
-                                    self.value_in_row)
+                df = self.drop_rows(df, self.column_name_to_drop_rows, self.value_in_row)
 
-            df = self.handle_nans_and_duplicates(df,
-                                                 target_column=None,
-                                                 output_folder=self.output_path)
-            df = df.apply(pd.to_numeric, errors='coerce')
+            df = self.handle_nans_and_duplicates(
+                df, target_column=None, output_folder=self.output_path
+            )
+            df = df.apply(pd.to_numeric, errors="coerce")
 
             if self.custom_index:
                 df = self.index_sorter(df, self.custom_index)
@@ -171,18 +186,17 @@ class InitialDataProcessing:
             df = self.function_remove_spaces(df)
 
             if self.column_name_to_drop_rows and self.value_in_row:
-                df = self.drop_rows(df,
-                                    self.column_name_to_drop_rows,
-                                    self.value_in_row)
+                df = self.drop_rows(df, self.column_name_to_drop_rows, self.value_in_row)
 
             if self.target_column not in df.columns:
                 LOG.error(f"Target column '{self.target_column}' not found in training data")
                 raise ValueError(
-                    f"Target column '{self.target_column}' not found in training data")
+                    f"Target column '{self.target_column}' not found in training data"
+                )
 
-            df = self.handle_nans_and_duplicates(df,
-                                                 target_column=self.target_column,
-                                                 output_folder=self.output_path)
+            df = self.handle_nans_and_duplicates(
+                df, target_column=self.target_column, output_folder=self.output_path
+            )
 
             df = self.numeric_transformation(df, self.target_column)
 
@@ -190,9 +204,11 @@ class InitialDataProcessing:
                 df = self.index_sorter(df, self.custom_index)
 
             if self.classification_prediction:
-                df = self.transform_target_column(df,
-                                                  target_column=self.target_column,
-                                                  classification_prediction=self.classification_prediction)
+                df = self.transform_target_column(
+                    df,
+                    target_column=self.target_column,
+                    classification_prediction=self.classification_prediction,
+                )
 
         df = self.convert_to_dataframe(df, columns=df.columns, index=df.index)
 
@@ -207,9 +223,7 @@ class InitialDataProcessing:
         LOG.info("Starting data validation")
         for name, df in self.dataframes.items():
             validator = ValidateData(
-                dataframe=df,
-                custom_index=self.custom_index,
-                target_column=self.target_column
+                dataframe=df, custom_index=self.custom_index, target_column=self.target_column
             )
 
             if is_test_data is False:
@@ -224,7 +238,6 @@ class InitialDataProcessing:
                 validator.explanatory_data()
                 validator.is_data_numeric()
 
-
     # # # DATA PROCESSING METHODS # # #
     @staticmethod
     def read_file(file_path) -> pd.DataFrame:
@@ -236,33 +249,37 @@ class InitialDataProcessing:
         file_extension = os.path.splitext(file_path)[1].lower()
 
         try:
-            if file_extension == '.csv':
-                encodings = ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252']
+            if file_extension == ".csv":
+                encodings = ["utf-8", "latin-1", "iso-8859-1", "cp1252"]
                 for encoding in encodings:
                     try:
                         df = pd.read_csv(file_path, encoding=encoding, low_memory=False)
                         return df
                     except (UnicodeDecodeError, pd.errors.ParserError):
                         continue
-                raise UnicodeDecodeError(f"Unable to read CSV file with encodings: {encodings}")
+                raise UnicodeDecodeError(
+                    f"Unable to read CSV file with encodings: {encodings}"
+                )
 
-            elif file_extension in ['.xlsx', '.xls']:
+            elif file_extension in [".xlsx", ".xls"]:
                 df = pd.read_excel(file_path)
                 return df
 
-            elif file_extension == '.json':
+            elif file_extension == ".json":
                 df = pd.read_json(file_path)
                 return df
 
             else:
-                LOG.error(f"Unsupported file type: {file_extension}. Supported types: CSV, XLSX and JSON")
+                LOG.error(
+                    f"Unsupported file type: {file_extension}. Supported types: CSV, XLSX and JSON"
+                )
                 raise ValueError(
-                    f"Unsupported file type: {file_extension}. Supported types: CSV, XLSX and JSON")
+                    f"Unsupported file type: {file_extension}. Supported types: CSV, XLSX and JSON"
+                )
 
         except Exception as e:
             LOG.error(f"Error reading file {file_path}: {e}")
             raise
-
 
     @staticmethod
     def read_folder(folder_path: Path) -> dict:
@@ -289,12 +306,11 @@ class InitialDataProcessing:
         :param df: input dataframe.
         :return: dataframe with tidy column titles.
         """
-        df = df.map(lambda x: str(x).replace(' ', ''))
+        df = df.map(lambda x: str(x).replace(" ", ""))
         return df
 
     @staticmethod
-    def index_sorter(df: pd.DataFrame,
-                     custom_index: list[str]) -> pd.DataFrame:
+    def index_sorter(df: pd.DataFrame, custom_index: list[str]) -> pd.DataFrame:
         """
         Sets columns in a dataframe as the index.
 
@@ -312,9 +328,9 @@ class InitialDataProcessing:
         return df
 
     @staticmethod
-    def drop_rows(df: pd.DataFrame,
-                  column_name_to_drop_rows: str,
-                  value_in_row: Union[str, float, int]) -> pd.DataFrame:
+    def drop_rows(
+        df: pd.DataFrame, column_name_to_drop_rows: str, value_in_row: Union[str, float, int]
+    ) -> pd.DataFrame:
         """
         Removes specified rows from the input dataframe.
 
@@ -334,9 +350,9 @@ class InitialDataProcessing:
         return df
 
     @staticmethod
-    def handle_nans_and_duplicates(dataframe: pd.DataFrame,
-                                   target_column: str = None,
-                                   output_folder: Path = None) -> pd.DataFrame:
+    def handle_nans_and_duplicates(
+        dataframe: pd.DataFrame, target_column: str = None, output_folder: Path = None
+    ) -> pd.DataFrame:
         """
         Removes and exports nans and duplicates.
 
@@ -346,10 +362,14 @@ class InitialDataProcessing:
         :return: dataframe without nans and duplicates.
         """
         if target_column and dataframe[target_column].isna().any():
-            LOG.error(f"Target column '{target_column}' has NaN values. \
-                               Please review the data.")
-            raise ValueError(f"Target column '{target_column}' has NaN values. \
-                               Please review the data.")
+            LOG.error(
+                f"Target column '{target_column}' has NaN values. \
+                               Please review the data."
+            )
+            raise ValueError(
+                f"Target column '{target_column}' has NaN values. \
+                               Please review the data."
+            )
 
         rows_with_nans = dataframe[dataframe.isna().any(axis=1)]
         cleaned_dataframe = dataframe.dropna()
@@ -374,8 +394,7 @@ class InitialDataProcessing:
         return cleaned_dataframe
 
     @staticmethod
-    def numeric_transformation(data: pd.DataFrame,
-                               target_column: str) -> pd.DataFrame:
+    def numeric_transformation(data: pd.DataFrame, target_column: str) -> pd.DataFrame:
         """
         Ensures all data is numeric.
 
@@ -386,24 +405,25 @@ class InitialDataProcessing:
         if target_column not in data.columns:
             LOG.error("The target column is not in the dataframe. Please evaluate data.")
             raise ValueError(
-                "The target column is not in the dataframe. Please evaluate data.")
+                "The target column is not in the dataframe. Please evaluate data."
+            )
 
-        data = data.apply(pd.to_numeric, errors='coerce')
+        data = data.apply(pd.to_numeric, errors="coerce")
 
-        if not pd.to_numeric(data[target_column], errors='coerce').notna().all():
-            data[target_column] = pd.to_numeric(data[target_column], errors='coerce')
+        if not pd.to_numeric(data[target_column], errors="coerce").notna().all():
+            data[target_column] = pd.to_numeric(data[target_column], errors="coerce")
             if not data[target_column].notna().all():
                 LOG.error("The target column could not be converted to numeric.")
-                raise ValueError(
-                    "The target column could not be converted to numeric.")
+                raise ValueError("The target column could not be converted to numeric.")
 
         return data
 
     @staticmethod
-    def convert_to_dataframe(data: Union[pd.DataFrame, List[Any], tuple, set,
-                                   np.ndarray, pd.Series, dict],
-                             columns: Optional[List[str]] = None,
-                             index: Optional[List[Any]] = None) -> pd.DataFrame:
+    def convert_to_dataframe(
+        data: Union[pd.DataFrame, List[Any], tuple, set, np.ndarray, pd.Series, dict],
+        columns: Optional[List[str]] = None,
+        index: Optional[List[Any]] = None,
+    ) -> pd.DataFrame:
         """
         Converts data to a dataframe.
 
@@ -425,7 +445,9 @@ class InitialDataProcessing:
                 df = pd.DataFrame(data)
             else:
                 LOG.error("Unsupported data type. Please provide a supported data type.")
-                raise ValueError("Unsupported data type. Please provide a supported data type.")
+                raise ValueError(
+                    "Unsupported data type. Please provide a supported data type."
+                )
 
             if columns is not None:
                 df.columns = columns
@@ -439,12 +461,18 @@ class InitialDataProcessing:
 
     @staticmethod
     def transform_target_column(df, target_column, classification_prediction):
-        if isinstance(classification_prediction, tuple) and len(classification_prediction) == 2:
-            LOG.info(f'Binary model selected for values {classification_prediction}')
+        if (
+            isinstance(classification_prediction, tuple)
+            and len(classification_prediction) == 2
+        ):
+            LOG.info(f"Binary model selected for values {classification_prediction}")
             df = df[df[target_column].isin(classification_prediction)]
 
-        elif isinstance(classification_prediction, tuple) and len(classification_prediction) == 3:
-            LOG.info(f'Multiclass model selected for values {classification_prediction}')
+        elif (
+            isinstance(classification_prediction, tuple)
+            and len(classification_prediction) == 3
+        ):
+            LOG.info(f"Multiclass model selected for values {classification_prediction}")
             df = df[df[target_column].isin(classification_prediction)]
 
         df[target_column] = df[target_column].astype(int)
@@ -452,6 +480,7 @@ class InitialDataProcessing:
         LOG.info(f"Unique values in {target_column} after transformation: {unique_values}")
 
         return df
+
 
 # TODO: Custom outliers
 # def remove_and_export_outliers(df: pd.DataFrame, outlier_threshold=None, target_column=None, output_folder=None):
@@ -475,47 +504,46 @@ class InitialDataProcessing:
 #     return df_no_outliers#
 
 
-
-        # processed_dataframes = {}
-        # for name, df in self.dataframes.items():
-        #     if df.empty:
-        #         print(f"Warning: Dataframe '{name}' is empty. Skipping processing.")
-        #         processed_dataframes[name] = df
-        #         continue
-        #     df = self.convert_to_dataframe(df)
-        #     print(
-        #         f"Columns before processing '{name}': {df.columns}")
-        #     target_column_ = [self.target_column] if isinstance(self.target_column, str) else []
-        #     weight_column_ = [self.weight_column] if isinstance(self.weight_column, str) else []
-        #     custom_index = self.custom_index or []
-        #     categorical_features = self.categorical_features or []
-        #     numerical_features = self.numerical_features or []
-        #
-        #     if self.numerical_features is None:
-        #         columns_to_keep = custom_index + categorical_features + target_column_ + weight_column_
-        #     elif self.categorical_features is None:
-        #         columns_to_keep = custom_index + numerical_features + target_column_ + weight_column_
-        #     else:
-        #         columns_to_keep = custom_index + categorical_features + numerical_features + target_column_ + weight_column_
-        #
-        #     columns_to_keep = [col for col in columns_to_keep if col in df.columns]
-        #     df = df[columns_to_keep]
-        #
-        #     df = self.function_remove_spaces(df)
-        #     if self.custom_index:
-        #         df = self.index_sorter(df, self.custom_index)
-        #
-        #     if self.column_name_to_drop_rows and self.value_in_row:
-        #         df = self.drop_rows(df,
-        #                             self.column_name_to_drop_rows,
-        #                             self.value_in_row)
-        #
-        #     df = self.handle_nans_and_duplicates(df,
-        #                                          target_column=self.target_column,
-        #                                          output_folder=self.output_path)
-        #
-        #     df = self.numeric_transformation(df, self.target_column)
-        #     df = self.convert_to_dataframe(df, columns=df.columns, index=df.index)
-        #     processed_dataframes[name] = df
-        #
-        # self.dataframes = processed_dataframes
+# processed_dataframes = {}
+# for name, df in self.dataframes.items():
+#     if df.empty:
+#         print(f"Warning: Dataframe '{name}' is empty. Skipping processing.")
+#         processed_dataframes[name] = df
+#         continue
+#     df = self.convert_to_dataframe(df)
+#     print(
+#         f"Columns before processing '{name}': {df.columns}")
+#     target_column_ = [self.target_column] if isinstance(self.target_column, str) else []
+#     weight_column_ = [self.weight_column] if isinstance(self.weight_column, str) else []
+#     custom_index = self.custom_index or []
+#     categorical_features = self.categorical_features or []
+#     numerical_features = self.numerical_features or []
+#
+#     if self.numerical_features is None:
+#         columns_to_keep = custom_index + categorical_features + target_column_ + weight_column_
+#     elif self.categorical_features is None:
+#         columns_to_keep = custom_index + numerical_features + target_column_ + weight_column_
+#     else:
+#         columns_to_keep = custom_index + categorical_features + numerical_features + target_column_ + weight_column_
+#
+#     columns_to_keep = [col for col in columns_to_keep if col in df.columns]
+#     df = df[columns_to_keep]
+#
+#     df = self.function_remove_spaces(df)
+#     if self.custom_index:
+#         df = self.index_sorter(df, self.custom_index)
+#
+#     if self.column_name_to_drop_rows and self.value_in_row:
+#         df = self.drop_rows(df,
+#                             self.column_name_to_drop_rows,
+#                             self.value_in_row)
+#
+#     df = self.handle_nans_and_duplicates(df,
+#                                          target_column=self.target_column,
+#                                          output_folder=self.output_path)
+#
+#     df = self.numeric_transformation(df, self.target_column)
+#     df = self.convert_to_dataframe(df, columns=df.columns, index=df.index)
+#     processed_dataframes[name] = df
+#
+# self.dataframes = processed_dataframes

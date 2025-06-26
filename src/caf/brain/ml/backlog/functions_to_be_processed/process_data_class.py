@@ -6,34 +6,39 @@ Original author: Adil Zaheer
 import os
 
 import pandas as pd
-from caf.ml.backlog.functions_to_be_processed import (read_folder,
-                                                      read_csvs,
-                                                      find_numeric_target_column,
-                                                      process_data_numeric,
-                                                      index_sorter,
-                                                      custom_melt,
-                                                      function_remove_spaces,
-                                                      remove_and_export_outliers,
-                                                      convert_to_dataframe, drop_rows)
+from caf.ml.backlog.functions_to_be_processed import (
+    read_folder,
+    read_csvs,
+    find_numeric_target_column,
+    process_data_numeric,
+    index_sorter,
+    custom_melt,
+    function_remove_spaces,
+    remove_and_export_outliers,
+    convert_to_dataframe,
+    drop_rows,
+)
 
 
 class DataProcessor:
-    def __init__(self,
-                 x,
-                 y,
-                 folder_path,
-                 index_columns,
-                 drop_columns,
-                 keep_columns,
-                 target_column,
-                 output_folder,
-                 wide_format,
-                 variable_name,
-                 value_name,
-                 outlier_threshold,
-                 categorical_target,
-                 column_name_to_drop_rows,
-                 value_in_row):
+    def __init__(
+        self,
+        x,
+        y,
+        folder_path,
+        index_columns,
+        drop_columns,
+        keep_columns,
+        target_column,
+        output_folder,
+        wide_format,
+        variable_name,
+        value_name,
+        outlier_threshold,
+        categorical_target,
+        column_name_to_drop_rows,
+        value_in_row,
+    ):
         final_data = None
         if x is not None and wide_format is None:
             x_ = pd.read_csv(x, low_memory=False)
@@ -78,7 +83,9 @@ class DataProcessor:
             if wide_format is not None:
                 dat_ = custom_melt(dat, variable_name, value_name)
                 dat1 = {
-                    key: index_sorter(df, index_columns=index_columns, drop_columns=drop_columns)
+                    key: index_sorter(
+                        df, index_columns=index_columns, drop_columns=drop_columns
+                    )
                     for key, df in dat_.items()
                 }
                 data = pd.concat(dat1, axis=0)
@@ -87,13 +94,14 @@ class DataProcessor:
 
             else:
                 dat1 = {
-                    key: index_sorter(df, index_columns=index_columns, drop_columns=drop_columns)
+                    key: index_sorter(
+                        df, index_columns=index_columns, drop_columns=drop_columns
+                    )
                     for key, df in dat.items()
                 }
                 data = pd.concat(dat1, axis=0)
                 final_data = function_remove_spaces(data)
                 final_data = convert_to_dataframe(final_data)
-
 
         self.data = final_data
         self.keep_columns = keep_columns
@@ -106,31 +114,36 @@ class DataProcessor:
         self.output_folder = output_folder
 
         self.data = self.find_numeric_target_column()
-        #self.data = self.handle_nans_and_duplicates()
+        # self.data = self.handle_nans_and_duplicates()
         self.data = self.remove_and_export_outliers()
         self.data = self.convert_to_dataframe()
         self.data = self.drop_rows()
         self.print_final_data_info()
         self.output_folder = output_folder
         self.output_processed_data()
-        print('----------------------------------------------')
-        print('Data Processor is finished')
-        print('----------------------------------------------')
-
+        print("----------------------------------------------")
+        print("Data Processor is finished")
+        print("----------------------------------------------")
 
     def find_numeric_target_column(self):
-        return find_numeric_target_column(self.data, target_column=self.target_column, categorical_target=self.categorical_target)
+        return find_numeric_target_column(
+            self.data,
+            target_column=self.target_column,
+            categorical_target=self.categorical_target,
+        )
 
-    #def handle_nans_and_duplicates(self):
+    # def handle_nans_and_duplicates(self):
     #    return handle_nans_and_duplicates(self.data, output_folder=self.output_folder)
 
     def remove_and_export_outliers(self):
         return remove_and_export_outliers(self.data, outlier_threshold=self.outlier_threshold)
 
     def drop_rows(self):
-        return drop_rows(self.data,
-                         column_name_to_drop_rows=self.column_name_to_drop_rows,
-                         value_in_row=self.value_in_row)
+        return drop_rows(
+            self.data,
+            column_name_to_drop_rows=self.column_name_to_drop_rows,
+            value_in_row=self.value_in_row,
+        )
 
     def convert_to_dataframe(self):
         return convert_to_dataframe(self.data)
@@ -141,10 +154,8 @@ class DataProcessor:
         print(self.data)
 
     def output_processed_data(self):
-        output_filename = 'Tidy_processed_data.csv'
+        output_filename = "Tidy_processed_data.csv"
         output_path = os.path.join(self.output_folder, output_filename)
         self.data.to_csv(output_path, index=True)
-        print('-------------------------------------------------------------')
+        print("-------------------------------------------------------------")
         print(f"Tidy and processed data exported to: {output_path}")
-
-

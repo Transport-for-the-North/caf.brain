@@ -9,19 +9,23 @@ import os.path
 from pathlib import Path
 from typing import List
 import pandas as pd
-from caf.brain.ml.process_data_functions.process_input_data_functions import InitialDataProcessing
+from caf.brain.ml.process_data_functions.process_input_data_functions import (
+    InitialDataProcessing,
+)
 from sklearn.model_selection import train_test_split
 
 
-def split_data(processed_dataframes: dict,
-               index_columns: List[str],
-               weight_column: str,
-               split_by_value: str,
-               target_column: str,
-               validation_path: Path,
-               output_path: Path,
-               split_size: int,
-               categorical_features: List[str]) -> pd.DataFrame:
+def split_data(
+    processed_dataframes: dict,
+    index_columns: List[str],
+    weight_column: str,
+    split_by_value: str,
+    target_column: str,
+    validation_path: Path,
+    output_path: Path,
+    split_size: int,
+    categorical_features: List[str],
+) -> pd.DataFrame:
     """
     Function to split data into training and test if not already done by the
     user.
@@ -57,36 +61,42 @@ def split_data(processed_dataframes: dict,
 
     if split_by_value is not None:
 
-        train, test, validate = split_by_column_value(df=df,
-                                                      index_columns=index_columns,
-                                                      split_by_value=split_by_value,
-                                                      weight_column=weight_column,
-                                                      target_column=target_column,
-                                                      validation_path=validation_path,
-                                                      output_path=output_path)
+        train, test, validate = split_by_column_value(
+            df=df,
+            index_columns=index_columns,
+            split_by_value=split_by_value,
+            weight_column=weight_column,
+            target_column=target_column,
+            validation_path=validation_path,
+            output_path=output_path,
+        )
 
         return train, test, validate
 
     else:
-        train, test, validate = stratified_split_with_categories(df=df,
-                                                                 categorical_features=categorical_features,
-                                                                 target_column=target_column,
-                                                                 weight_column=weight_column,
-                                                                 split_size=split_size,
-                                                                 validation_path=validation_path,
-                                                                 index_columns=index_columns,
-                                                                 output_path=output_path)
+        train, test, validate = stratified_split_with_categories(
+            df=df,
+            categorical_features=categorical_features,
+            target_column=target_column,
+            weight_column=weight_column,
+            split_size=split_size,
+            validation_path=validation_path,
+            index_columns=index_columns,
+            output_path=output_path,
+        )
         return train, test, validate
 
 
-def stratified_split_with_categories(df: pd.DataFrame,
-                                     categorical_features: List[str],
-                                     target_column: str,
-                                     weight_column: str,
-                                     split_size: float,
-                                     validation_path: Path,
-                                     index_columns: List[str],
-                                     output_path: Path) -> pd.DataFrame:
+def stratified_split_with_categories(
+    df: pd.DataFrame,
+    categorical_features: List[str],
+    target_column: str,
+    weight_column: str,
+    split_size: float,
+    validation_path: Path,
+    index_columns: List[str],
+    output_path: Path,
+) -> pd.DataFrame:
     """
     Function to split data into train, test and validate by using a value
     provided by the user. The value is the ratio in which to split the data
@@ -111,10 +121,9 @@ def stratified_split_with_categories(df: pd.DataFrame,
     """
 
     strat = pd.cut(df.iloc[:, 0], 4)
-    train, test = train_test_split(df,
-                                   test_size=split_size if not None else 0.2,
-                                   random_state=42,
-                                   stratify=strat)
+    train, test = train_test_split(
+        df, test_size=split_size if not None else 0.2, random_state=42, stratify=strat
+    )
 
     if categorical_features is not None:
         missing_categories = {}
@@ -138,7 +147,7 @@ def stratified_split_with_categories(df: pd.DataFrame,
 
     if target_column in test.columns:
         validate = pd.DataFrame({target_column: test[target_column]}, index=test.index)
-        validate.to_csv(os.path.join(output_path, 'validate.csv'), index=True)
+        validate.to_csv(os.path.join(output_path, "validate.csv"), index=True)
         test = test.drop(columns=target_column)
 
     if validation_path is not None:
@@ -146,18 +155,20 @@ def stratified_split_with_categories(df: pd.DataFrame,
         if index_columns in validate.columns:
             validate = validate.set_index(index_columns)
 
-    train.to_csv(os.path.join(output_path, 'train.csv'), index=True)
-    test.to_csv(os.path.join(output_path, 'test.csv'), index=True)
+    train.to_csv(os.path.join(output_path, "train.csv"), index=True)
+    test.to_csv(os.path.join(output_path, "test.csv"), index=True)
     return train, test, validate
 
 
-def split_by_column_value(df: pd.DataFrame,
-                          index_columns: List[str],
-                          split_by_value: str,
-                          weight_column: str,
-                          target_column: str,
-                          validation_path: Path,
-                          output_path: Path) -> pd.DataFrame:
+def split_by_column_value(
+    df: pd.DataFrame,
+    index_columns: List[str],
+    split_by_value: str,
+    weight_column: str,
+    target_column: str,
+    validation_path: Path,
+    output_path: Path,
+) -> pd.DataFrame:
     """
     Function to split data into train, test and validate by using a value
     provided by the user. The value must correspond to the index column
@@ -197,11 +208,11 @@ def split_by_column_value(df: pd.DataFrame,
         test = test.drop(columns=weight_column)
     if target_column in test:
         validate = pd.DataFrame({target_column: test[target_column]}, index=test.index)
-        validate.to_csv(os.path.join(output_path, 'validate.csv'), index=True)
+        validate.to_csv(os.path.join(output_path, "validate.csv"), index=True)
         test = test.drop(columns=target_column)
 
-    train.to_csv(os.path.join(output_path, 'train.csv'), index=True)
-    test.to_csv(os.path.join(output_path, 'test.csv'), index=True)
+    train.to_csv(os.path.join(output_path, "train.csv"), index=True)
+    test.to_csv(os.path.join(output_path, "test.csv"), index=True)
 
     if validation_path is not None:
         validate = InitialDataProcessing.read_file(file_path=validation_path)

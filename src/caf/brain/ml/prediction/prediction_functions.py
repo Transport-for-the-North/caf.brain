@@ -14,18 +14,22 @@ from sklearn.svm import LinearSVC
 from sklearn.metrics import r2_score, mean_squared_error
 from caf.brain.ml.model_selection.model_selection_functions import calculate_final_coefficients
 import logging
+
 LOG = logging.getLogger(__name__)
 
-def prediction(model,
-               test: pd.DataFrame,
-               target_column: str,
-               output_folder: Path,
-               validation: pd.DataFrame,
-               weight_column: str,
-               classification_prediction: tuple[int, ...],
-               mse: pd.Series,
-               drop_vals: pd.DataFrame,
-               cols_dropped_by_feat_select: pd.DataFrame):
+
+def prediction(
+    model,
+    test: pd.DataFrame,
+    target_column: str,
+    output_folder: Path,
+    validation: pd.DataFrame,
+    weight_column: str,
+    classification_prediction: tuple[int, ...],
+    mse: pd.Series,
+    drop_vals: pd.DataFrame,
+    cols_dropped_by_feat_select: pd.DataFrame,
+):
     """
     Final prediction function which calls final coefficient generation if
     applicable.
@@ -69,9 +73,9 @@ def prediction(model,
                 y_true = validation[target_column].values
                 accuracy = accuracy_score(y_true, pred_classes, sample_weight=weight)
 
-            LOG.info(f'Accuracy: {accuracy}')
-            accuracy_df = pd.DataFrame({'accuracy': [accuracy]})
-            accuracy_df.to_csv(os.path.join(output_folder, 'model_performance.csv'))
+            LOG.info(f"Accuracy: {accuracy}")
+            accuracy_df = pd.DataFrame({"accuracy": [accuracy]})
+            accuracy_df.to_csv(os.path.join(output_folder, "model_performance.csv"))
             predictions = pred_classes
         else:
             if isinstance(model, LinearSVC):
@@ -84,24 +88,32 @@ def prediction(model,
         predictions = model.predict(test)
         if validation is not None:
             r2 = r2_score(validation[target_column], predictions, sample_weight=weight)
-            mse = mean_squared_error(validation[target_column], predictions, sample_weight=weight)
-            LOG.info(f'r2: {r2}')
-            LOG.info(f'mse: {mse}')
-            metrics_df = pd.DataFrame({'r2': [r2], 'mse': [mse]})
-            metrics_df.to_csv(os.path.join(output_folder, 'model_performance.csv'))
+            mse = mean_squared_error(
+                validation[target_column], predictions, sample_weight=weight
+            )
+            LOG.info(f"r2: {r2}")
+            LOG.info(f"mse: {mse}")
+            metrics_df = pd.DataFrame({"r2": [r2], "mse": [mse]})
+            metrics_df.to_csv(os.path.join(output_folder, "model_performance.csv"))
 
-    coeff_df = calculate_final_coefficients(model=model,
-                                            test_data=test,
-                                            training_mse=mse,
-                                            predictions=predictions,
-                                            validation_data=validation,
-                                            target_column=target_column,
-                                            is_classification=classification_prediction,
-                                            drop_vals=drop_vals,
-                                            cols_dropped_by_feat_select=cols_dropped_by_feat_select)
+    coeff_df = calculate_final_coefficients(
+        model=model,
+        test_data=test,
+        training_mse=mse,
+        predictions=predictions,
+        validation_data=validation,
+        target_column=target_column,
+        is_classification=classification_prediction,
+        drop_vals=drop_vals,
+        cols_dropped_by_feat_select=cols_dropped_by_feat_select,
+    )
     if coeff_df is not None:
-        coeff_df.to_csv(os.path.join(output_folder, 'final_model_coefficients.csv'), index=False)
+        coeff_df.to_csv(
+            os.path.join(output_folder, "final_model_coefficients.csv"), index=False
+        )
 
-    final_predictions = pd.DataFrame({'predicted_target_column': predictions}, index=test.index)
-    final_predictions.to_csv(os.path.join(output_folder, 'final_predictions.csv'))
+    final_predictions = pd.DataFrame(
+        {"predicted_target_column": predictions}, index=test.index
+    )
+    final_predictions.to_csv(os.path.join(output_folder, "final_predictions.csv"))
     return predictions

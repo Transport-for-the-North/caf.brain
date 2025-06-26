@@ -7,23 +7,29 @@ Original author: Adil Zaheer
 # pylint: enable=import-error,wrong-import-position
 from pathlib import Path
 import pandas as pd
-from caf.brain.ml.feature_selection.feature_selection_functions import (rf_feature_selection,
-                                                                        combine_results,
-                                                                        analyse_feature_importance)
+from caf.brain.ml.feature_selection.feature_selection_functions import (
+    rf_feature_selection,
+    combine_results,
+    analyse_feature_importance,
+)
 import logging
+
 LOG = logging.getLogger(__name__)
 
-def main_feature_selection(train: pd.DataFrame,
-                           test: pd.DataFrame,
-                           target_column: str,
-                           cv: str,
-                           regression_method,
-                           weight_column: str,
-                           classification_prediction: tuple[int, ...],
-                           output: Path,
-                           skip_feature_selection: bool,
-                           intensive_feature_selection: bool,
-                           is_time_series: bool):
+
+def main_feature_selection(
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+    target_column: str,
+    cv: str,
+    regression_method,
+    weight_column: str,
+    classification_prediction: tuple[int, ...],
+    output: Path,
+    skip_feature_selection: bool,
+    intensive_feature_selection: bool,
+    is_time_series: bool,
+):
     """
     Main feature selection function.
 
@@ -57,53 +63,70 @@ def main_feature_selection(train: pd.DataFrame,
 
     if intensive_feature_selection:
         # eval no. samples
-        n_features = len(train.columns) - (1 if target_column in train.columns else 0) - (
-            1 if weight_column else 0)
+        n_features = (
+            len(train.columns)
+            - (1 if target_column in train.columns else 0)
+            - (1 if weight_column else 0)
+        )
         n_samples = len(train)
 
         min_samples_per_feature = 15
         required_samples = n_features * min_samples_per_feature
 
         if n_samples < required_samples:
-            LOG.warning(f"Insufficient data for intensive feature selection. "
-                        f"Falling back to basic feature importance analysis.")
-            train_final = analyse_feature_importance(train_transformed=train,
-                                                     target_column=target_column,
-                                                     weight_column=weight_column,
-                                                     output_path=output)
+            LOG.warning(
+                f"Insufficient data for intensive feature selection. "
+                f"Falling back to basic feature importance analysis."
+            )
+            train_final = analyse_feature_importance(
+                train_transformed=train,
+                target_column=target_column,
+                weight_column=weight_column,
+                output_path=output,
+            )
 
-            test_final, cols_dropped_by_feat_select = combine_results(train_final=train_final,
-                                                                      target_column=target_column,
-                                                                      weight_column=weight_column,
-                                                                      test=test)
+            test_final, cols_dropped_by_feat_select = combine_results(
+                train_final=train_final,
+                target_column=target_column,
+                weight_column=weight_column,
+                test=test,
+            )
 
             return train_final, test_final, cols_dropped_by_feat_select
 
         else:
-            train_final = rf_feature_selection(data=train,
-                                               target_column=target_column,
-                                               cv=cv,
-                                               regression_method=regression_method,
-                                               weight_column=weight_column,
-                                               classification_prediction=classification_prediction,
-                                               is_time_series=is_time_series)
+            train_final = rf_feature_selection(
+                data=train,
+                target_column=target_column,
+                cv=cv,
+                regression_method=regression_method,
+                weight_column=weight_column,
+                classification_prediction=classification_prediction,
+                is_time_series=is_time_series,
+            )
 
-            test_final, cols_dropped_by_feat_select = combine_results(train_final=train_final,
-                                                                      target_column=target_column,
-                                                                      weight_column=weight_column,
-                                                                      test=test)
+            test_final, cols_dropped_by_feat_select = combine_results(
+                train_final=train_final,
+                target_column=target_column,
+                weight_column=weight_column,
+                test=test,
+            )
 
             return train_final, test_final, cols_dropped_by_feat_select
 
     else:
-        train_final = analyse_feature_importance(train_transformed=train,
-                                                 target_column=target_column,
-                                                 weight_column=weight_column,
-                                                 output_path=output)
+        train_final = analyse_feature_importance(
+            train_transformed=train,
+            target_column=target_column,
+            weight_column=weight_column,
+            output_path=output,
+        )
 
-        test_final, cols_dropped_by_feat_select = combine_results(train_final=train_final,
-                                                                  target_column=target_column,
-                                                                  weight_column=weight_column,
-                                                                  test=test)
+        test_final, cols_dropped_by_feat_select = combine_results(
+            train_final=train_final,
+            target_column=target_column,
+            weight_column=weight_column,
+            test=test,
+        )
 
         return train_final, test_final, cols_dropped_by_feat_select

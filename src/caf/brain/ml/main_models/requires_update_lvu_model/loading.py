@@ -77,7 +77,9 @@ def read_multiple_files(folder_path):
     return dataframes
 
 
-def process_ntem(params: inputs.NtemInputInfo,):
+def process_ntem(
+    params: inputs.NtemInputInfo,
+):
     """
     This function processes the ntem data for future modelling. A list is returned
     which contains the processed data in the model appropriate format. The
@@ -148,7 +150,10 @@ def x_variable_processing(dataframes: list[XVar]):
         melted_dataframes.append(melted_df)
 
     # Merge the dataframes together
-    merged_df = reduce(lambda left, right: left.join(right), melted_dataframes,)
+    merged_df = reduce(
+        lambda left, right: left.join(right),
+        melted_dataframes,
+    )
     merged_df = merged_df.replace(",", "")
 
     return merged_df
@@ -163,8 +168,6 @@ def tuning_features(merged_df):
     scaled_data = scaler.fit_transform(merged_df)
 
     # done in this way to ensure non-scaled variables are preserved
-    scaled_df = pd.DataFrame(
-        scaled_data, columns=merged_df.columns, index=merged_df.index
-    )
+    scaled_df = pd.DataFrame(scaled_data, columns=merged_df.columns, index=merged_df.index)
 
     return scaled_df

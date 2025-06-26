@@ -7,5 +7,4 @@ Original author: Adil Zaheer
 # pylint: enable=import-error,wrong-import-position
 
 
-
 # todo talk about what models are available

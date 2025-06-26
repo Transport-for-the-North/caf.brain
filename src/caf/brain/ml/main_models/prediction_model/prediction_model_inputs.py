@@ -10,26 +10,25 @@ from pathlib import Path
 from typing import Optional, List, Union, Any
 import numpy as np
 from caf.toolkit import BaseConfig
-from sklearn.ensemble import (GradientBoostingClassifier,
-                              RandomForestClassifier,
-                              RandomForestRegressor,
-                              ExtraTreesRegressor,
-                              GradientBoostingRegressor,
-                              AdaBoostRegressor,
-                              BaggingRegressor,
-                              ExtraTreesClassifier)
+from sklearn.ensemble import (
+    GradientBoostingClassifier,
+    RandomForestClassifier,
+    RandomForestRegressor,
+    ExtraTreesRegressor,
+    GradientBoostingRegressor,
+    AdaBoostRegressor,
+    BaggingRegressor,
+    ExtraTreesClassifier,
+)
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.linear_model import (LogisticRegression,
-                                  Ridge,
-                                  Lasso,
-                                  ElasticNet,
-                                  LinearRegression)
+from sklearn.linear_model import LogisticRegression, Ridge, Lasso, ElasticNet, LinearRegression
 from sklearn.svm import SVR
 from sklearn.svm import LinearSVC
 from sklearn.multiclass import OneVsRestClassifier
 import statsmodels.api as sm
 from statsmodels.miscmodels.ordinal_model import OrderedModel
+
 
 class run_file_inputs(BaseConfig):
     # # # INPUT/OUTPUT PATHS # # #
@@ -63,11 +62,15 @@ class run_file_inputs(BaseConfig):
     skip_feature_selection: Optional[bool] = False
     intensive_feature_selection: Optional[bool] = False
 
+
 class Models(enum.Enum):
-    LOGIT_REGRESSION_L1 = (LogisticRegression, {'penalty': 'l1', 'solver': 'liblinear'})
-    LOGIT_REGRESSION_L2 = (LogisticRegression, {'penalty': 'l2'})
-    LOGIT_REGRESSION_ELASTICNET = (LogisticRegression, {'penalty': 'elasticnet', 'solver': 'saga', 'l1_ratio': 0.5})
-    MULTINOMIAL = (LogisticRegression, {'multi_class': 'multinomial', 'solver': 'lbfgs'})
+    LOGIT_REGRESSION_L1 = (LogisticRegression, {"penalty": "l1", "solver": "liblinear"})
+    LOGIT_REGRESSION_L2 = (LogisticRegression, {"penalty": "l2"})
+    LOGIT_REGRESSION_ELASTICNET = (
+        LogisticRegression,
+        {"penalty": "elasticnet", "solver": "saga", "l1_ratio": 0.5},
+    )
+    MULTINOMIAL = (LogisticRegression, {"multi_class": "multinomial", "solver": "lbfgs"})
     RANDOM_FOREST_REGRESSOR = (RandomForestRegressor, {})
     EXTRA_TREES_REGRESSOR = (ExtraTreesRegressor, {})
     GRADIENT_BOOSTING_REGRESSOR = (GradientBoostingRegressor, {})
@@ -84,20 +87,19 @@ class Models(enum.Enum):
     RANDOM_FOREST_CLASSIFIER = (RandomForestClassifier, {})
     EXTRA_TREES_CLASSIFIER = (ExtraTreesClassifier, {})
     DECISION_TREE_CLASSIFIER = (DecisionTreeClassifier, {})
-    SVM_CLASSIFIER = (OneVsRestClassifier, {'estimator': LinearSVC()})
+    SVM_CLASSIFIER = (OneVsRestClassifier, {"estimator": LinearSVC()})
     STATS_OLS_REGRESSOR = (sm.OLS, {})
     STATS_MLR_REGRESSOR = (sm.RLM, {})
     STATS_LOGISTIC_CLASSIFIER = (sm.Logit, {})
     STATS_PROBIT_CLASSIFIER = (sm.Probit, {})
-    STATS_POISSON_REGRESSOR = (sm.GLM, {'family': sm.families.Poisson()})
-    STATS_NEGATIVE_BINOMIAL_REGRESSOR = (sm.GLM, {'family': sm.families.NegativeBinomial()})
+    STATS_POISSON_REGRESSOR = (sm.GLM, {"family": sm.families.Poisson()})
+    STATS_NEGATIVE_BINOMIAL_REGRESSOR = (sm.GLM, {"family": sm.families.NegativeBinomial()})
     STATS_LINEAR_EFFECTS_REGRESSOR = (sm.MixedLM, {})
     STATS_ARIMA_REGRESSOR = (sm.tsa.ARIMA, {})
     STATS_SARIMA_REGRESSOR = (sm.tsa.SARIMAX, {})
     STATS_MULTINOMIAL_LOGISTIC_CLASSIFIER = (sm.MNLogit, {})
-    STATS_ORDINAL_LOGISTIC_CLASSIFIER = (OrderedModel, {'distr': 'logit'})
+    STATS_ORDINAL_LOGISTIC_CLASSIFIER = (OrderedModel, {"distr": "logit"})
     # STATS_TOBIT_REGRESSOR = (sm.Tobit, {})?
-
 
     def get_model(self):
         model_class, params = self.value if isinstance(self.value, tuple) else (self.value, {})
@@ -157,7 +159,10 @@ class ModelGrids(enum.Enum):
     LOGIT_REGRESSION_L2 = {"C": [1.0, 0.1, 0.01, 0.001]}
     LOGIT_REGRESSION_ELASTICNET = {"C": [0.1, 1.0, 10.0], "l1_ratio": [0.1, 0.5, 0.9]}
 
-    MULTINOMIAL = {"C": np.arange(0.1, 10, 0.1).tolist(), "solver": ["lbfgs", "newton-cg", "sag", "saga"]}
+    MULTINOMIAL = {
+        "C": np.arange(0.1, 10, 0.1).tolist(),
+        "solver": ["lbfgs", "newton-cg", "sag", "saga"],
+    }
 
     RANDOM_FOREST_CLASSIFIER = {
         "n_estimators": [10, 50, 100, 200],
@@ -183,15 +188,15 @@ class ModelGrids(enum.Enum):
     }
 
     GRADIENT_BOOSTING_CLASSIFIER = {
-            'n_estimators': [50, 100, 200],
-            'learning_rate': [0.01, 0.1, 0.3],
-            'max_depth': [3, 5, 7]
-        }
+        "n_estimators": [50, 100, 200],
+        "learning_rate": [0.01, 0.1, 0.3],
+        "max_depth": [3, 5, 7],
+    }
 
     SVM_CLASSIFIER = {
-            'estimator__C': [0.1, 1, 10],
-            'estimator__loss': ['hinge', 'squared_hinge'],
-        }
+        "estimator__C": [0.1, 1, 10],
+        "estimator__loss": ["hinge", "squared_hinge"],
+    }
 
     # # Statsmodels below:
     # STATS_OLS_REGRESSOR = {
@@ -287,11 +292,12 @@ model_instance_to_enum = {
     Lasso: ModelGrids.LASSO,
     ElasticNet: ModelGrids.ELASTICNET,
     DecisionTreeRegressor: ModelGrids.DECISION_TREE_REGRESSOR,
-
     RandomForestClassifier: ModelGrids.RANDOM_FOREST_CLASSIFIER,
     ExtraTreesClassifier: ModelGrids.EXTRA_TREES_CLASSIFIER,
     DecisionTreeClassifier: ModelGrids.DECISION_TREE_CLASSIFIER,
-    GradientBoostingClassifier: ModelGrids.GRADIENT_BOOSTING_CLASSIFIER}
+    GradientBoostingClassifier: ModelGrids.GRADIENT_BOOSTING_CLASSIFIER,
+}
+
 
 def get_model_grid(model_instance):
     model_enum = model_instance_to_enum.get(type(model_instance))

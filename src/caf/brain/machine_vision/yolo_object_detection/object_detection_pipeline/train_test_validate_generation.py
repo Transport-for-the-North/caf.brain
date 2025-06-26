@@ -79,7 +79,7 @@ Need to fill out
 
     def create_dict(self):
         """
-        
+
         Returns
         -------
 

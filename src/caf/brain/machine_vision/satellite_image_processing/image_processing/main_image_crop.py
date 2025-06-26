@@ -13,10 +13,8 @@ import rasterio
 from rasterio.windows import Window
 from PIL import Image
 import logging
-
-from caf.brain.machine_vision.satellite_image_processing.image_processing.image_processing_functions import \
-    check_raster_file
-
+from pathlib import Path
+from caf.brain.machine_vision.satellite_image_processing.image_processing.image_processing_functions import check_raster_file
 LOG = logging.getLogger(__name__)
 from caf.brain.machine_vision.satellite_image_processing.image_processing.expand_image_functions import (
     find_surrounding_names,
@@ -28,13 +26,20 @@ def image_crop_main(path_list,
                     image_supporting_data,
                     output,
                     image_folder,
-                    satellite_metadata: pd.DataFrame):
+                    satellite_metadata: pd.DataFrame,
+                    folder_if_loop: Path):
     """
     - must be geo-referenced data
 
     """
-    output_dir = os.path.join(output, 'images_for_labelling')
-    os.makedirs(output_dir, exist_ok=True)
+    if folder_if_loop:
+        base_name = os.path.basename(folder_if_loop)
+        name, _ = os.path.splitext(base_name)
+        output_dir = os.path.join(folder_if_loop, f'{name}_images_for_labelling')
+        os.makedirs(output_dir, exist_ok=True)
+    else:
+        output_dir = os.path.join(output, 'images_for_labelling')
+        os.makedirs(output_dir, exist_ok=True)
 
     count = 0
     invalid_count = 0
@@ -174,6 +179,6 @@ def image_crop_main(path_list,
                 continue
 
     df = pd.DataFrame(invalid_images, columns=['invalid_junctions'])
-    df.to_csv(os.path.join(output, 'failed_image_crops.csv'), index=False)
+    df.to_csv(os.path.join(folder_if_loop, 'failed_image_crops.csv'), index=False)
 
     return

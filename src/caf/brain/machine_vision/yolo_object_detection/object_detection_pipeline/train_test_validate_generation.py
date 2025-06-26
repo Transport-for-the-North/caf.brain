@@ -110,3 +110,22 @@ class BuildImagesTT:
             counter += 1
             if counter % 10 == 0:
                 LOG.info(f"Processed {counter}/{len(dictionary)} items for {folder_name}")
+
+
+def ensure_labels(folder_path):
+    """
+    check that all the images actually have labels
+    go into text files, if empty. remove the image and the text file from the folder (same names)
+    """
+    txt_paths = glob.glob(os.path.join(folder_path, '**/*.txt'), recursive=True)
+    for txt_file in txt_paths:
+        if os.path.getsize(txt_file) == 0:
+            base_name = os.path.splitext(txt_file)[0]
+            jpg_path = base_name + '.jpg'
+
+            if os.path.exists(jpg_path):
+                os.remove(txt_file)
+                os.remove(jpg_path)
+                print(f"Removed: {txt_file} and {jpg_path}")
+            else:
+                print(f"Warning: {jpg_path} not found for {txt_file}")

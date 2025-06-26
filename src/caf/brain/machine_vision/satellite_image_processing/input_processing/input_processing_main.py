@@ -5,11 +5,11 @@
 Created on: 4/10/2025
 Original author: Adil Zaheer
 """
+import os
 import geopandas as gpd
 import pandas as pd
 from pathlib import Path
-from caf.brain.machine_vision.satellite_image_processing.image_processing.image_processing_functions import (directory_iterator,
-                                                                                                             create_satellite_image_metadata)
+from caf.brain.machine_vision.satellite_image_processing.image_processing.image_processing_functions import (directory_iterator, create_satellite_image_metadata)
 from caf.brain.machine_vision.satellite_image_processing.image_processing.main_image_crop import image_crop_main
 from caf.brain.machine_vision.satellite_image_processing.input_processing.input_processing_functions import process_coordinates
 
@@ -20,22 +20,26 @@ def main_input_processing(geo_df: gpd.geodataframe,
                           final_html_info: Path,
                           x_coordinate: str,
                           y_coordinate: str,
-                          output_path: Path):
+                          output_path: Path,
+                          folder_if_loop: Path):
     # todo make a flow for generating training images only
     # todo make one for running the entire model? this would be in a main elsewhere?
     # generating training images info just needs this info below?
-    coordinate_df, unique_box_boundaries = process_coordinates(geo_df,
-                                                               df,
-                                                               image_folder,
-                                                               final_html_info,
-                                                               x_coordinate,
-                                                               y_coordinate,
-                                                               output_path)
+
+    coordinate_df, unique_box_boundaries = process_coordinates(geo_df=geo_df,
+                                                               df=df,
+                                                               image_folder=image_folder,
+                                                               final_html_info=final_html_info,
+                                                               x_coordinate=x_coordinate,
+                                                               y_coordinate=y_coordinate,
+                                                               output_path=output_path,
+                                                               folder_if_loop=folder_if_loop)
 
     path_list_of_your_coordinates = directory_iterator(dir_path=image_folder,
                                                        training_data=coordinate_df,
                                                        image_reference_column='box_boundary',
-                                                       output=output_path)
+                                                       output=output_path,
+                                                       folder_if_loop=folder_if_loop)
 
     metadata = create_satellite_image_metadata(dir_path=image_folder,
                                                output=output_path)
@@ -44,6 +48,7 @@ def main_input_processing(geo_df: gpd.geodataframe,
                     image_supporting_data=coordinate_df,
                     output=output_path,
                     image_folder=image_folder,
-                    satellite_metadata=metadata)
+                    satellite_metadata=metadata,
+                    folder_if_loop=folder_if_loop)
 
     return

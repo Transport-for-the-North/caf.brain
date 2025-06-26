@@ -21,7 +21,8 @@ def process_coordinates(geo_df: gpd.geodataframe,
                         final_html_info: Path,
                         x_coordinate: str,
                         y_coordinate: str,
-                        output_path: Path):
+                        output_path: Path,
+                        folder_if_loop: Path):
     """
     need to provide one of geo_df or df and one of image_folder or final_html_info
     first part generates satellite image information
@@ -32,8 +33,8 @@ def process_coordinates(geo_df: gpd.geodataframe,
     # todo, need to get a list of every satelite image
 
     file_name = "final_coordinate_data.csv"
-    if os.path.exists(os.path.join(output_path, file_name)):
-        final_coordinate_data = pd.read_csv(os.path.join(output_path, file_name))
+    if os.path.exists(os.path.join(folder_if_loop, file_name)):
+        final_coordinate_data = pd.read_csv(os.path.join(folder_if_loop, file_name))
 
         unique_box_boundaries = final_coordinate_data['box_boundary'].unique()
         unique_box_boundaries = pd.DataFrame(unique_box_boundaries, columns=['BNG_tile_names'])
@@ -48,7 +49,7 @@ def process_coordinates(geo_df: gpd.geodataframe,
     else:
         data_dict, final_html = main_process_html(folder_path=image_folder,
                                                   output_path=output_path)
-    # at this point, got html info:
+    # at this point, got html info for every tile we have:
     # box_boundary
     # latitude_wgs84
     # longitude_wgs84
@@ -74,7 +75,7 @@ def process_coordinates(geo_df: gpd.geodataframe,
 
     final_coordinate_data = pd.merge(coordinate_data, final_html, on='box_boundary', how='inner')
 
-    final_coordinate_data.to_csv(os.path.join(output_path, file_name), index=False)
+    final_coordinate_data.to_csv(os.path.join(folder_if_loop, file_name), index=False)
 
     return final_coordinate_data, unique_box_boundaries
 

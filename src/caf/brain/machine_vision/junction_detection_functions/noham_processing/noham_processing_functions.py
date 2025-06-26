@@ -9,8 +9,13 @@ import os
 import pandas as pd
 import geopandas as gpd
 from dbfread import DBF
+from pathlib import Path
+from caf.brain.machine_vision.__inputs__ import NoHAMInputs
 
-def noham_data(geo_path, noham_path, output):
+
+def noham_data(geo_path: Path,
+               noham_path: Path,
+               output: Path) -> pd.DataFrame:
     df_geo = gpd.read_file(geo_path)
     table = DBF(noham_path)
     records = [record for record in table]
@@ -54,3 +59,19 @@ def noham_data(geo_path, noham_path, output):
     noham_data.to_csv(os.path.join(output, 'noham_data.csv'), index=False)
 
     return noham_data
+
+
+def main_(parmas: NoHAMInputs):
+    noham_dat = noham_data(geo_path=parmas.noham_shp_path,
+                           noham_path=params.noham_db_path,
+                           output=parmas.output_path)
+    return noham_dat
+
+# larger db smaller shp?
+if __name__ == "__main__":
+    params = NoHAMInputs(
+        output_path=Path(r"E:\2025 work streams\caf.brAIn\machine vision\MVP work\input_image_processing"),
+        noham_db_path=Path(r"E:\2025 work streams\caf.brAIn\machine vision\MVP work\input_image_processing\input\Base_2018_shapefiles\NoHAM_Base.DBF"),
+        noham_shp_path=Path(r"E:\2025 work streams\caf.brAIn\machine vision\MVP work\input_image_processing\input\Base_2018_shapefiles\NoHAM_Base_node.shp")
+    )
+    main_(params)

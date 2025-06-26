@@ -8,7 +8,8 @@ Original author: Adil Zaheer
 import os
 import sys
 from caf.brain.machine_vision.yolo_object_detection.object_detection_pipeline.prediction_and_evaluation import prediction, extract_results
-from caf.brain.machine_vision.yolo_object_detection.object_detection_pipeline.train_test_validate_generation import BuildImagesTT
+from caf.brain.machine_vision.yolo_object_detection.object_detection_pipeline.train_test_validate_generation import \
+    BuildImagesTT, ensure_labels
 from caf.brain.machine_vision.yolo_object_detection.object_detection_pipeline.build_yolo_config import build_config
 from caf.brain.machine_vision.yolo_object_detection.object_detection_pipeline.model_build_main import main_model_build
 
@@ -29,6 +30,13 @@ def main(params):
         imageprocessor.generate_folders(dictionary=test, folder_name='test')
         imageprocessor.generate_folders(dictionary=validation, folder_name='val')
 
+        train_path = os.path.join(main_output_folder, 'train')
+        test_path = os.path.join(main_output_folder, 'test')
+        val_path = os.path.join(main_output_folder, 'val')
+
+        ensure_labels(folder_path=train_path)
+        ensure_labels(folder_path=test_path)
+        ensure_labels(folder_path=val_path)
 
     build_config(output=main_output_folder, class_names=params.class_names)
 

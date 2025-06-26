@@ -5,9 +5,11 @@
 Created on: 2/18/2025
 Original author: Adil Zaheer
 """
+import glob
 import time
 import os
 import logging
+import pandas as pd
 from caf.brain.machine_vision.junction_detection_functions.noham_processing.noham_processing_main import main_process_noham
 from caf.brain.machine_vision.satellite_image_processing.input_processing.input_processing_functions import process_file
 from caf.brain.machine_vision.satellite_image_processing.input_processing.input_processing_main import main_input_processing
@@ -16,6 +18,32 @@ LOG = logging.getLogger(__name__)
 
 def main(params):
     start_time = time.time()
+
+    if params.individual_junc_types:
+        # generating training images for individual junction types
+        # data came with coordinates, type and node number
+        output_path = os.path.join(params.output_path, 'output')
+        if not os.path.exists(output_path):
+            os.makedirs(output_path, exist_ok=True)
+
+        csv_paths = glob.glob(os.path.join(params.individual_junc_types, '*', '*.csv'))
+        for file in csv_paths:
+            df = pd.read_csv(file)
+
+            base_name = os.path.basename(file)
+            name, _ = os.path.splitext(base_name)
+            output_dir = os.path.join(output_path, name)
+            os.makedirs(output_dir, exist_ok=True)
+
+            main_input_processing(geo_df=None,
+                                  df=df,
+                                  image_folder=params.image_folder_path,
+                                  final_html_info=params.final_html_info,
+                                  x_coordinate=params.x_column,
+                                  y_coordinate=params.y_column,
+                                  output_path=output_path,
+                                  folder_if_loop=output_dir)
+
 
     output_path = os.path.join(params.output_path, 'output')
     if not os.path.exists(output_path):

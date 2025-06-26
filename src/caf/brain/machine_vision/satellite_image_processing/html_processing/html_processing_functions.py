@@ -91,7 +91,7 @@ def coordinate_converter(df):
     df_ = df.copy()
 
     transformer = Transformer.from_crs("EPSG:4326", "EPSG:27700", always_xy=True)
-    mid = (df_['longitude_wgs84'][0], df_['latitude_wgs84'][0])
+    mid = (df_['tile_longitude_wgs84'][0], df_['tile_latitude_wgs84'][0])
 
     mid_bng = transformer.transform(*mid)
     mid_bng = tuple(map(lambda x: isinstance(x, float) and round(x, 2) or x, mid_bng))

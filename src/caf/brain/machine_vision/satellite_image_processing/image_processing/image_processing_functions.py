@@ -44,11 +44,12 @@ def euclidean_distance(df_a, df_b):
 def directory_iterator(dir_path: Path,
                        training_data,
                        image_reference_column: str,
-                       output: Path) -> list[Path]:
+                       output: Path,
+                       folder_if_loop: Path) -> list[Path]:
 
     path_file_name = "satellite_image_paths.csv"
-    if os.path.exists(os.path.join(output, path_file_name)):
-        df = pd.read_csv(os.path.join(output, path_file_name))
+    if os.path.exists(os.path.join(folder_if_loop, path_file_name)):
+        df = pd.read_csv(os.path.join(folder_if_loop, path_file_name))
         path_list = df.iloc[:, 0].tolist()
         return path_list
 
@@ -80,7 +81,7 @@ def directory_iterator(dir_path: Path,
                     LOG.info(f"Processed {counter}/{len(paths)} paths, found {len(path_list)} matches so far")
 
         path_list_df = pd.DataFrame(path_list)
-        path_list_df.to_csv(os.path.join(output, path_file_name), index=False)
+        path_list_df.to_csv(os.path.join(folder_if_loop, path_file_name), index=False)
 
     return path_list
 

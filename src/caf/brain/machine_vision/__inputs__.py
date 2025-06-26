@@ -10,6 +10,13 @@ from typing import Optional
 from caf.toolkit import BaseConfig
 
 
+class NoHAMInputs(BaseConfig):
+    # only process noham data
+    noham_db_path: Optional[Path] = None
+    noham_shp_path: Optional[Path] = None
+    output_path: Optional[Path] = None
+
+
 class GenerateSatelliteImagesInput(BaseConfig):
     # Model outputs
     output_path: Optional[Path] = None
@@ -27,7 +34,7 @@ class GenerateSatelliteImagesInput(BaseConfig):
     # only relevant if noham_path and geo_path are none. The columns easting and northing coordinates for what you're trying to predict
     x_column: Optional[str] = None
     y_column: Optional[str] = None
-
+    individual_junc_types: Optional[Path] = None
 
 class ObjectDetectionInputs(BaseConfig):
     output: Optional[Path] = None

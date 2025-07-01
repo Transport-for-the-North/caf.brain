@@ -1,10 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
-# pylint: disable=import-error,wrong-import-position
-# pylint: enable=import-error,wrong-import-position
 import os
 import time
 import logging
@@ -147,4 +144,4 @@ def main(params: run_file_inputs):
     )
 
     end_time = time.time()
-    LOG.info(f"Total run time: {end_time - start_time:.2f} seconds")
+    LOG.info("Total run time: %.2f seconds", (end_time - start_time))

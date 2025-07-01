@@ -1,26 +1,30 @@
-file_path:
-folder_path: null
-output_path:
-validation_path: null
+paths:
+    file_path:
+    folder_path: null
+    output_path:
+    validation_path: null
 
-target_column:
-custom_index:
-column_name_to_drop_rows: null
-value_in_row: null
+data_classification:
+    target_column:
+    custom_index:
+    categorical_features: null
+    numerical_features:
+    weight_column: null
 
-categorical_features: null
-numerical_features:
-weight_column: null
-classification_prediction: null
-split_by_value: null
-split_size: 0.2
-sample_size_encode: False
-select_encode_values: False
-encode_values_to_drop: null
+transforming_inputs:
+    column_name_to_drop_rows: null
+    value_in_row: null
+    classification_prediction: null
+    split_by_value: null
+    split_size: 0.2
+    sample_size_encode: False
+    select_encode_values: False
+    encode_values_to_drop: null
 
-model_choice:
-is_time_series: False
-full_transformations: True
-cv:
-skip_feature_selection: False
-intensive_feature_selection: True
+modelling:
+    model_choice:
+    is_time_series: False
+    full_transformations: True
+    cv:
+    skip_feature_selection: False
+    intensive_feature_selection: True

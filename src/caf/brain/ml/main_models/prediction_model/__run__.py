@@ -18,7 +18,7 @@ def model_setup():
     for the caf.brAIn prediction model config run.
     """
 
-    with open("prediction_config.yaml", "r", encoding='UTF-8') as file:
+    with open("empty_config.yaml", "r", encoding='UTF-8') as file:
         config_data = yaml.safe_load(file)
 
     params = PredictionModelInputs(**config_data)

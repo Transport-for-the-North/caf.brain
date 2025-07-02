@@ -11,10 +11,12 @@ from caf.brain.ml.feature_selection.feature_selection_main import main_feature_s
 from caf.brain.ml.hyperparameter_optimisation.hyper_optim_main import (
     main_hyperparameter_optimisation,
 )
+from caf.brain.ml.model_selection.model_selection_functions import initialise_model
 from caf.brain.ml.model_selection.model_selection_main import main_model_selection
 from caf.brain.ml.prediction.prediction_main import main_prediction
 from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import PredictionModelInputs
 from caf.brain.ml.process_data_functions.process_data_main import main_input_data
+from caf.brain.ml.process_data_functions.split_data_into_ttv import simple_train_test_split
 from caf.brain.ml.statsmodel_pipeline.statsmodel_main import main_stats_model
 LOG = logging.getLogger(__name__)
 
@@ -68,7 +70,7 @@ def main(params: PredictionModelInputs):
 
     is_statsmodel = any(
         base.__module__.startswith("statsmodels")
-        for base in params.model_choice.__class__.__mro__
+        for base in params.modelling.model_choice.__class__.__mro__
     )
     if is_statsmodel:
         main_stats_model(
@@ -78,7 +80,7 @@ def main(params: PredictionModelInputs):
             weight_column=params.data_classification.weight_column,
         )
 
-    (model_initialised, x_train_model_fit, residuals, x_test, x_train, mse) = (
+    selected_model = (
         main_model_selection(
             train=train_scaled,
             target_column=params.data_classification.target_column,
@@ -89,9 +91,25 @@ def main(params: PredictionModelInputs):
         )
     )
 
+    x_train, x_test, y_train, y_test, x_train_weight = simple_train_test_split(
+        df=train_scaled,
+        target_column=params.data_classification.target_column,
+        weight_column=params.data_classification.weight_column)
+
+    x_train_model_fit, residuals, mse = initialise_model(
+        x_train=x_train,
+        x_test=x_test,
+        y_train=y_train,
+        y_test=y_test,
+        x_train_weight=x_train_weight,
+        output_folder=output_path,
+        model_initialised=selected_model,
+        classification_prediction=params.transforming_inputs.classification_prediction,
+    )
+
     train_transformed, test_transformed = main_evaluate_input_data(
         model_fit=x_train_model_fit,
-        model_initialised=model_initialised,
+        model_initialised=selected_model,
         residuals=residuals,
         x_test=x_test,
         train_scaled=train_scaled,
@@ -114,7 +132,7 @@ def main(params: PredictionModelInputs):
         test=test_transformed,
         target_column=params.data_classification.target_column,
         cv=params.modelling.cv,
-        regression_method=model_initialised,
+        regression_method=selected_model,
         weight_column=params.data_classification.weight_column,
         classification_prediction=params.transforming_inputs.classification_prediction,
         output=output_path,
@@ -126,7 +144,7 @@ def main(params: PredictionModelInputs):
     best_model = main_hyperparameter_optimisation(
         train_final=train_final,
         target_column=params.target_column,
-        model_instance=model_initialised,
+        model_instance=selected_model,
         model_name=params.model_choice,
         classification_prediction=params.classification_prediction,
         cv=params.cv,

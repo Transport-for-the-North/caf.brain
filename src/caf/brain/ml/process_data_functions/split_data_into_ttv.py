@@ -9,10 +9,10 @@ import os.path
 from pathlib import Path
 from typing import List
 import pandas as pd
+from sklearn.model_selection import train_test_split
 from caf.brain.ml.process_data_functions.process_input_data_functions import (
     InitialDataProcessing,
 )
-from sklearn.model_selection import train_test_split
 
 
 def split_data(
@@ -220,3 +220,33 @@ def split_by_column_value(
             validate = validate.set_index(index_column)
 
     return train, test, validate
+
+
+def simple_train_test_split(df: pd.DataFrame,
+                            target_column: str,
+                            weight_column: str):
+    """
+    Split data into train test split for model building purposes
+
+    Parameters
+    ----------
+    df: Input pandas dataframe
+    target_column: Y (dependent) variable in the dataframe (column)
+    weight_column: Weight column in the dataframe
+
+    Returns
+    -------
+    Dataframes containing the input data split into train and test as well as a
+    Numpy ndarray of weight values.
+    """
+    x = df.drop(columns=[target_column])
+    y = df[target_column]
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.35, random_state=42)
+
+    x_train_weight = None
+    if weight_column in df.columns:
+        x_train_weight = x_train[weight_column]
+        x_train = x_train.drop(columns=weight_column)
+        x_test = x_test.drop(columns=weight_column)
+
+    return x_train, x_test, y_train, y_test, x_train_weight

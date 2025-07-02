@@ -1,67 +1,68 @@
-# -*- coding: utf-8 -*-
 """
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
-# pylint: disable=import-error,wrong-import-position
-# pylint: enable=import-error,wrong-import-position
 import os
 from pathlib import Path
 from typing import List
+import logging
 import joblib
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, mean_squared_error
-from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import Models
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import cross_val_score
 from scipy import stats
-import logging
-
+from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import Models
 LOG = logging.getLogger(__name__)
 
 
 def initialise_model(
-    train: pd.DataFrame,
-    target_column: str,
+    x_train: pd.DataFrame,
+    x_test: pd.DataFrame,
+    y_train: pd.DataFrame,
+    y_test: pd.DataFrame,
     output_folder: Path,
-    weight_column: str,
     model_initialised,
     classification_prediction: tuple[int, ...],
+    x_train_weight: pd.DataFrame = None
 ):
     """
     Fits the initialised model with machine learning prediction convention.
     This gives a first look into how well the model will preform prior to
     entering the machine learning pipeline.
 
-    :param train: processed input data split into train subset.
-    :param target_column: String column name of value to predict.
-    :param output_folder: Path to output location.
-    :param weight_column: Optional string column value to be used as weight.
-    :param model_initialised: Initialised SciKitLearn model.
-    :param classification_prediction: List of integers that correspond to the
-                                      target column. The value(s) to predict
-                                      in a classification problem.
-    :return:
-        model_fit: Fitted model on train_test_split test data.
-        residuals: Truth values form the train_test_split against the predictions.
-        x_train: Series of train data to be used as train.
-        x_test: Series of test data to be used as unseen test data.
-        y_train: Series of target column inside train to be used as train.
-        y_test: Series of target column inside train to be used as validation for
-                predictions.
-        mse: Mean squared error of predictions.
-    """
-    x = train.drop(columns=[target_column])
-    y = train[target_column]
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.35, random_state=42)
+    Parameters
+    ----------
+    x_train: pd.DataFrame of x train values from SciKit-Learns
+             train_test_split (simple_train_test_split can be used to
+             generate this)
+    x_test:  pd.DataFrame of x test values from SciKit-Learns
+             train_test_split (simple_train_test_split can be used to
+             generate this)
+    y_train: pd.DataFrame of y train values from SciKit-Learns
+             train_test_split (simple_train_test_split can be used to
+             generate this)
+    y_test:  pd.DataFrame of y test values from SciKit-Learns
+             train_test_split (simple_train_test_split can be used to
+             generate this)
+    output_folder: Path to output location.
+    model_initialised: Initialised SciKitLearn model.
+    classification_prediction: List of integers that correspond to the
+                               target column. The value(s) to predict
+                               in a classification problem.
+    x_train_weight:  Numpy ndarray of weight values that correspond to
+                     x_train generated in simple_train_test_split
 
+    Returns
+    -------
+    model_fit: Fitted model on train_test_split test data.
+    residuals: Truth values form the train_test_split against the predictions.
+    mse: Mean squared error of predictions.
+    """
     weight = None
-    if weight_column in train.columns:
-        weight_df = x_train[weight_column]
-        weight = weight_df.values.flatten()
-        x_train = x_train.drop(columns=weight_column)
-        x_test = x_test.drop(columns=weight_column)
+    if x_train_weight is not None:
+        weight = x_train_weight.values.flatten()
 
     model_filename = os.path.join(output_folder, "initial_fitted_model.pkl")
     if os.path.exists(model_filename):
@@ -92,7 +93,7 @@ def initialise_model(
             os.path.join(output_folder, "initial_model_coefficients.csv"), index=False
         )
 
-    return model_fit, residuals, x_train, x_test, mse
+    return model_fit, residuals, mse
 
 
 def select_model(
@@ -300,6 +301,9 @@ def calculate_model_coeff(
     if not hasattr(model, "coef_"):
         return None, None
 
+    if len(model.coef_.shape) == 2:  # Multinomial
+        return None, None
+
     n = x_train.shape[0]
     p = x_train.shape[1]
     dof = n - p - 1
@@ -435,10 +439,10 @@ def calculate_final_coefficients(
     p = test_data.shape[1]
     dof = n - p - 1
 
-    X_with_intercept = (
+    x_with_intercept = (
         np.column_stack([np.ones(n), test_data]) if hasattr(model, "intercept_") else test_data
     )
-    covariance_matrix = np.linalg.pinv(X_with_intercept.T.dot(X_with_intercept)) * mse
+    covariance_matrix = np.linalg.pinv(x_with_intercept.T.dot(x_with_intercept)) * mse
     std_errors = np.sqrt(np.diag(covariance_matrix))
     t_values = coefficients / std_errors
     p_values = 2 * (1 - stats.t.cdf(abs(t_values), dof))

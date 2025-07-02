@@ -2,6 +2,7 @@
 Created on: 12/16/2024
 Original author: Adil Zaheer
 """
+
 import enum
 from pathlib import Path
 from typing import Optional, List, Union, Any
@@ -52,6 +53,7 @@ class PredictionModelInputs(BaseConfig):
         categorical_features: Optional[List[str]] = None
         numerical_features: Optional[List[str]] = None
         weight_column: Optional[str] = None
+        is_time_series: Optional[bool] = False
 
     class TransformingInputDataInputs(BaseConfig):
         """
@@ -74,7 +76,6 @@ class PredictionModelInputs(BaseConfig):
         """
 
         model_choice: Optional[List[Any]] = None
-        is_time_series: Optional[bool] = False
         full_transformations: Optional[bool] = False
         cv: Optional[str] = None
         skip_feature_selection: Optional[bool] = False
@@ -94,89 +95,89 @@ class Models(enum.Enum):
     LOGIT_REGRESSION_L1 = (
         LogisticRegression,
         {"penalty": "l1", "solver": "liblinear"},
-    )
+    )  # type: ignore
     LOGIT_REGRESSION_L2 = (
         LogisticRegression,
         {"penalty": "l2"},
-    )
+    )  # type: ignore
     LOGIT_REGRESSION_ELASTICNET = (
         LogisticRegression,
         {"penalty": "elasticnet", "solver": "saga", "l1_ratio": 0.5},
-    )
+    )  # type: ignore
     MULTINOMIAL = (
         LogisticRegression,
         {"multi_class": "multinomial", "solver": "lbfgs"},
-    )
+    )  # type: ignore
     RANDOM_FOREST_REGRESSOR = (
         RandomForestRegressor,
         {},
-    )
+    )  # type: ignore
     EXTRA_TREES_REGRESSOR = (
         ExtraTreesRegressor,
         {},
-    )
+    )  # type: ignore
     GRADIENT_BOOSTING_REGRESSOR = (
         GradientBoostingRegressor,
         {},
-    )
+    )  # type: ignore
     GRADIENT_BOOSTING_CLASS = (
         GradientBoostingClassifier,
         {},
-    )
+    )  # type: ignore
     ADABOOST_REGRESSOR = (
         AdaBoostRegressor,
         {},
-    )
-    BAGGING_REGRESSOR = (BaggingRegressor, {})
-    SVR = (SVR, {})
-    KNN = (KNeighborsRegressor, {})
-    RIDGE = (Ridge, {})
-    LASSO = (Lasso, {})
-    ELASTICNET = (ElasticNet, {})
-    LINEAR_REGRESSION = (LinearRegression, {})
+    )  # type: ignore
+    BAGGING_REGRESSOR = (BaggingRegressor, {})  # type: ignore
+    SVR = (SVR, {})  # type: ignore
+    KNN = (KNeighborsRegressor, {})  # type: ignore
+    RIDGE = (Ridge, {})  # type: ignore
+    LASSO = (Lasso, {})  # type: ignore
+    ELASTICNET = (ElasticNet, {})  # type: ignore
+    LINEAR_REGRESSION = (LinearRegression, {})  # type: ignore
     DECISION_TREE_REGRESSOR = (
         DecisionTreeRegressor,
         {},
-    )
+    )  # type: ignore
     RANDOM_FOREST_CLASSIFIER = (
         RandomForestClassifier,
         {},
-    )
+    )  # type: ignore
     EXTRA_TREES_CLASSIFIER = (
         ExtraTreesClassifier,
         {},
-    )
+    )  # type: ignore
     DECISION_TREE_CLASSIFIER = (
         DecisionTreeClassifier,
         {},
-    )
+    )  # type: ignore
     SVM_CLASSIFIER = (
         OneVsRestClassifier,
         {"estimator": LinearSVC()},
-    )
-    STATS_OLS_REGRESSOR = (sm.OLS, {})
-    STATS_MLR_REGRESSOR = (sm.RLM, {})
-    STATS_LOGISTIC_CLASSIFIER = (sm.Logit, {})
-    STATS_PROBIT_CLASSIFIER = (sm.Probit, {})
+    )  # type: ignore
+    STATS_OLS_REGRESSOR = (sm.OLS, {})  # type: ignore
+    STATS_MLR_REGRESSOR = (sm.RLM, {})  # type: ignore
+    STATS_LOGISTIC_CLASSIFIER = (sm.Logit, {})  # type: ignore
+    STATS_PROBIT_CLASSIFIER = (sm.Probit, {})  # type: ignore
     STATS_POISSON_REGRESSOR = (
         sm.GLM,
         {"family": sm.families.Poisson()},
-    )
+    )  # type: ignore
     STATS_NEGATIVE_BINOMIAL_REGRESSOR = (
         sm.GLM,
         {"family": sm.families.NegativeBinomial()},
-    )
-    STATS_LINEAR_EFFECTS_REGRESSOR = (sm.MixedLM, {})
-    STATS_ARIMA_REGRESSOR = (sm.tsa.ARIMA, {})
-    STATS_SARIMA_REGRESSOR = (sm.tsa.SARIMAX, {})
+    )  # type: ignore
+    STATS_LINEAR_EFFECTS_REGRESSOR = (sm.MixedLM, {})  # type: ignore
+    STATS_ARIMA_REGRESSOR = (sm.tsa.ARIMA, {})  # type: ignore
+    STATS_SARIMA_REGRESSOR = (sm.tsa.SARIMAX, {})  # type: ignore
     STATS_MULTINOMIAL_LOGISTIC_CLASSIFIER = (
         sm.MNLogit,
         {},
-    )
+    )  # type: ignore
     STATS_ORDINAL_LOGISTIC_CLASSIFIER = (
         OrderedModel,
         {"distr": "logit"},
-    )
+    )  # type: ignore
     # STATS_TOBIT_REGRESSOR = (sm.Tobit, {})?
 
     def get_model(self):

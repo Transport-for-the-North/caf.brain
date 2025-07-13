@@ -32,7 +32,7 @@ transforming_inputs:
 
 modelling:
     model_choice:
-        - MULTINOMIAL
+        - LOGIT_REGRESSION_L1
     full_transformations: True
     cv: null
     skip_feature_selection: False

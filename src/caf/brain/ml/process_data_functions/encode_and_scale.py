@@ -59,6 +59,10 @@ def preprocess_numerical_data(
     :param output_folder: Path to output folder.
     :return: Dataframe of only the scaled numerical data set to the input
              datas index. Also, the numerical pipeline information.
+
+    Returns
+    -------
+    object
     """
     if is_test_data:
         LOG.info("Processing test data - attempting to apply training transformations")

@@ -17,13 +17,13 @@ LOG = logging.getLogger(__name__)
 
 
 def main_model_selection(
-    train: pd.DataFrame,
-    target_column: str,
-    weight_column: str,
-    output: Path,
-    model,
-    classification_prediction: tuple[int, ...],
-):
+        model: object,
+        train: pd.DataFrame,
+        target_column: str,
+        weight_column: str,
+        output: Path,
+        classification_prediction: tuple[int, ...],
+) -> object:
     """
     Main function for selecting model algorithm and finding relevant algorithm
     attributes (if applicable).

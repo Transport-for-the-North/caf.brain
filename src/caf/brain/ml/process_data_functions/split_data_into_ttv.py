@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import List
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import PredictionModelInputs
 from caf.brain.ml.process_data_functions.process_input_data_functions import (
     InitialDataProcessing,
 )
@@ -17,57 +18,41 @@ from caf.brain.ml.process_data_functions.process_input_data_functions import (
 
 def split_data(
     processed_dataframes: dict,
-    index_columns: List[str],
-    weight_column: str,
-    split_by_value: str,
-    target_column: str,
-    validation_path: Path,
-    output_path: Path,
-    split_size: int,
-    categorical_features: List[str],
+    paths: PredictionModelInputs.Paths,
+    data_classification: PredictionModelInputs.DataClassificationInputs,
+    transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
+    output_path
 ) -> pd.DataFrame:
     """
     Function to split data into training and test if not already done by the
     user.
 
-    :param processed_dataframes: input dataframes inside a dictionary.
-    :param index_columns: list of string column names to be used as an index.
-                          Must be one value e.g. year if splitting data
-                          into train and test via this column. Corresponds to
-                          split_by_value in this case.
-    :param weight_column: Optional string column value to be used as weight.
-    :param split_by_value: Optional string that links to custom_index. The
-                           value in the index column to split the data into
-                           training and test.
-    :param target_column: String column name of value to predict.
-    :param validation_path: Optional path to validation data if it exists.
-                            This would need to correspond to the test data
-                            created.
-    :param output_path: Path to output location.
-    :param split_size: Optional float e.g. 0.2. This would be the ratio to
-                       randomly split data into train and test. 0.2 is used
-                       if left as None.
-    :param categorical_features: List of string column names that are
-                                 categorical variables.
+    Parameters
+    ----------
+    processed_dataframes: input dataframes inside a dictionary
+    paths
+    data_classification
+    transforming_inputs
+    output_path
+    Returns
+    -------
+    train, test and validate dataframes.
 
-    :return:
-        train, test and validate dataframes.
     """
-
     if isinstance(processed_dataframes, dict):
         df = pd.DataFrame.from_dict(processed_dataframes)
     else:
         df = processed_dataframes
 
-    if split_by_value is not None:
+    if transforming_inputs.split_by_value is not None:
 
         train, test, validate = split_by_column_value(
             df=df,
-            index_columns=index_columns,
-            split_by_value=split_by_value,
-            weight_column=weight_column,
-            target_column=target_column,
-            validation_path=validation_path,
+            index_columns=data_classification.custom_index,
+            split_by_value=transforming_inputs.split_by_value,
+            weight_column=data_classification.weight_column,
+            target_column=data_classification.target_column,
+            validation_path=paths.validation_path,
             output_path=output_path,
         )
 
@@ -76,12 +61,12 @@ def split_data(
     else:
         train, test, validate = stratified_split_with_categories(
             df=df,
-            categorical_features=categorical_features,
-            target_column=target_column,
-            weight_column=weight_column,
-            split_size=split_size,
-            validation_path=validation_path,
-            index_columns=index_columns,
+            categorical_features=data_classification.categorical_features,
+            target_column=data_classification.target_column,
+            weight_column=data_classification.weight_column,
+            split_size=transforming_inputs.split_size,
+            validation_path=paths.validation_path,
+            index_columns=data_classification.custom_index,
             output_path=output_path,
         )
         return train, test, validate

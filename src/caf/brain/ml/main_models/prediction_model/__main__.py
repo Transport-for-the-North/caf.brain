@@ -39,22 +39,9 @@ def main(params: PredictionModelInputs,
 
     data_dict, drop_vals, numerical_pipeline = main_input_data(
         output_path=output_path,
-        file_path=params.paths.file_path,
-        folder_path=params.paths.folder_path,
-        target_column=params.data_classification.target_column,
-        custom_index=params.data_classification.custom_index,
-        column_name_to_drop_rows=params.transforming_inputs.column_name_to_drop_rows,
-        value_in_row=params.transforming_inputs.value_in_row,
-        weight_column=params.data_classification.weight_column,
-        categorical_features=params.data_classification.categorical_features,
-        numerical_features=params.data_classification.numerical_features,
-        classification_prediction=params.transforming_inputs.classification_prediction,
-        split_by_value=params.transforming_inputs.split_by_value,
-        validation_path=params.paths.validation_path,
-        split_size=params.transforming_inputs.split_size,
-        sample_size_encode=params.transforming_inputs.sample_size_encode,
-        select_encode_values=params.transforming_inputs.select_encode_values,
-        encode_values_to_drop=params.transforming_inputs.encode_values_to_drop,
+        paths=params.paths,
+        data_classification=params.data_classification ,
+        transforming_inputs=params.transforming_inputs,
     )
 
     train_scaled = pd.DataFrame.from_dict(data_dict["train_scaled"])

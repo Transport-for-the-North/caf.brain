@@ -1,69 +1,100 @@
-# -*- coding: utf-8 -*-
 """
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
-# pylint: disable=import-error,wrong-import-position
-# pylint: enable=import-error,wrong-import-position
+
 from pathlib import Path
-import pandas as pd
-from caf.brain.ml.model_selection.model_selection_functions import (
-    select_model,
-    initialise_model,
-)
+import os
 import logging
+import pandas as pd
+from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import (
+    PredictionModelInputs,
+)
+from caf.brain.ml.model_selection.model_selection_functions import select_model
+from caf.brain.ml.process_data_functions.process_data_main import main_input_data
 
 LOG = logging.getLogger(__name__)
 
 
 def main_model_selection(
-        model: object,
-        train: pd.DataFrame,
-        target_column: str,
-        weight_column: str,
-        output: Path,
-        classification_prediction: tuple[int, ...],
+    data_classification: PredictionModelInputs.DataClassificationInputs,
+    transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
+    modelling: PredictionModelInputs.ModellingInputs,
+    paths: PredictionModelInputs.Paths = None,
+    train: pd.DataFrame = None,
+    output: Path = None,
 ) -> object:
     """
-    Main function for selecting model algorithm and finding relevant algorithm
-    attributes (if applicable).
+    Function to automatically score and rank algorithms from the Models
+    class which can be used in machine learning modelling.
 
-    :param train: processed input data split into train subset.
-    :param target_column: String column name of value to predict.
-    :param weight_column: Optional string column value to be used as weight.
-    :param output: Path to output location.
-    :param model: List or one algorithm to use as the base of the model.
-                  Available algorithms can be seen in prediction_model_inputs.py
-                  or __info__.py.
-    :param classification_prediction: List of integers that correspond to the
-                                      target column. The value(s) to predict
-                                      in a classification problem.
+    Parameters
+    ----------
+    data_classification: Data classification inputs from the PredictionModelInputs
+                         class. These inputs help define and outline the
+                         structure of the input data. See
+                         caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+                         for available options.
+    transforming_inputs: Transforming inputs from the PredictionModelInputs
+                         class. These inputs dictate how the data is transformed
+                         for machine learning modelling. See
+                         caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+                         for available options.
+    modelling: Modelling inputs from the PredictionModelInputs
+               class. These inputs control the machine learning modelling
+               pipeline and functions. See
+               caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+               for available options.
+    paths: Path inputs from the PredictionModelInputs class. These inputs
+           define paths to external files. See
+           caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+           for available options.
+    output: Path to output location.
+    train: Processed input data split into train subset.
 
-    :return:
-        model_initialised: Initialised model algorithm from Models enum class.
-        model_fit: Model fit on training data.
-        residuals: Truth - predictions (based on training data).
-        x_test, x_train, y_train: Training data split through train_test_split
-                                  SciKitLearn function.
-        mse: Mean squared error or None. Dependency on if the algorithm selected
-             has coefficient values.
-
+    Returns
+    -------
+    Selected_model: The best performing SciKitLearn model based on the user
+                    provided list. This model is not initialised and ready
+                    for further use.
     """
 
-    if not isinstance(model, list):
-        model = [model]
+    if output is None:
+        output = os.path.join(paths.output_path, "output")
+        if not os.path.exists(output):
+            os.makedirs(output)
+
+    if train is None:
+        LOG.info(
+            "Train is none so data is being read in from PredictionModelInputs.Paths.file_path"
+        )
+
+        data_dict, _, _ = main_input_data(
+            output_path=output,
+            paths=paths,
+            data_classification=data_classification,
+            transforming_inputs=transforming_inputs,
+        )
+        LOG.info("Data successfully read in, processed and validated")
+        train = pd.DataFrame.from_dict(data_dict["train_scaled"])
+
+    if not isinstance(modelling.model_choice, list):
+        model = [modelling.model_choice]
+    else:
+        model = modelling.model_choice
 
     if len(model) == 1:
         selected_model = model[0].get_model()
 
     elif len(model) > 1:
+        LOG.info("Beginning model evaluation.")
         selected_model = select_model(
             train=train,
-            target_column=target_column,
-            weight_column=weight_column,
+            target_column=data_classification.target_column,
+            weight_column=data_classification.weight_column,
             models_to_test=model,
+            classification_prediction=transforming_inputs.classification_prediction,
             output_folder=output,
-            classification_prediction=classification_prediction,
         )
     else:
         LOG.error(

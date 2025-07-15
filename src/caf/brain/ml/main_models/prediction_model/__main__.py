@@ -68,16 +68,12 @@ def main(params: PredictionModelInputs,
             weight_column=params.data_classification.weight_column,
         )
 
-    selected_model = (
-        main_model_selection(
-            train=train_scaled,
-            target_column=params.data_classification.target_column,
-            weight_column=params.data_classification.weight_column,
-            output=output_path,
-            model=params.modelling.model_choice,
-            classification_prediction=params.transforming_inputs.classification_prediction,
-        )
-    )
+    selected_model = main_model_selection(paths=params.paths,
+                                          data_classification=params.data_classification,
+                                          transforming_inputs=params.transforming_inputs,
+                                          modelling=params.modelling,
+                                          train=train_scaled,
+                                          output=output_path)
 
     x_train, x_test, y_train, y_test, x_train_weight = simple_train_test_split(
         df=train_scaled,

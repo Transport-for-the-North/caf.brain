@@ -2,6 +2,7 @@
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
+
 import os
 from pathlib import Path
 from typing import List
@@ -14,6 +15,7 @@ from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import cross_val_score
 from scipy import stats
 from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import Models
+
 LOG = logging.getLogger(__name__)
 
 
@@ -25,7 +27,7 @@ def initialise_model(
     output_folder: Path,
     model_initialised,
     classification_prediction: tuple[int, ...],
-    x_train_weight: pd.DataFrame = None
+    x_train_weight: pd.DataFrame = None,
 ):
     """
     Fits the initialised model with machine learning prediction convention.
@@ -98,28 +100,32 @@ def initialise_model(
 
 def select_model(
     train: pd.DataFrame,
+    output_folder: Path,
     target_column: str,
     weight_column: str,
-    models_to_test: List[Models],
-    output_folder: Path,
+    models_to_test: list[Models],
     classification_prediction: tuple[int, ...],
 ):
     """
     Function to quickly assess the best model for the data based on the list of
     provided models.
 
-    :param train: processed input data split into train subset.
-    :param target_column: sting column name of value to predict.
-    :param weight_column: Optional string column value to be used as weight.
-    :param models_to_test: List or one algorithm to use as the base of the model.
-                           Available algorithms can be seen in
-                           prediction_model_inputs.py or __info__.py.
-    :param output_folder: Path to output location.
-    :param classification_prediction: List of integers that correspond to the
-                                      target column. The value(s) to predict
-                                      in a classification problem.
+    Parameters
+    ----------
+    train: Processed input data split into train subset.
+    output_folder: Path to output location.
+    target_column: Sting column name of value to predict.
+    weight_column: Optional string column value to be used as weight.
+    models_to_test: List or one algorithm to use as the base of the model.
+                    Available algorithms can be seen in
+                    prediction_model_inputs.py or __info__.py.
+    classification_prediction: List of integers that correspond to the
+                               target column. The value(s) to predict
+                               in a classification problem.
 
-    :return: Best performing model initialised.
+    Returns
+    -------
+    best_model: Best performing model initialised.
     """
     weight = None
     y = train[target_column]
@@ -195,7 +201,7 @@ def score_regression(
             cv=3,
             scoring="r2",
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
         scores_mse = -cross_val_score(
@@ -205,7 +211,7 @@ def score_regression(
             cv=3,
             scoring="neg_mean_squared_error",
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
     else:
@@ -238,15 +244,24 @@ def score_classification(
         scores_f1: Series of F1 scores.
         scores_auc: Series of AUC scores.
     """
+
+    y_ = y.squeeze()
+    if y_.nunique() > 2:
+        f1 = "f1_weighted"
+        roc_auc = "roc_auc_ovr_weighted"
+    else:
+        f1 = "f1"
+        roc_auc = "roc_auc"
+
     if weight is not None:
         scores_f1 = cross_val_score(
             model_instance,
             x,
             y,
             cv=3,
-            scoring="f1",
+            scoring=f1,
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
         scores_auc = -cross_val_score(
@@ -254,17 +269,17 @@ def score_classification(
             x,
             y,
             cv=3,
-            scoring="roc_auc",
+            scoring=roc_auc,
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
     else:
         scores_f1 = cross_val_score(
-            model_instance, x, y, cv=3, scoring="f1", n_jobs=-1, verbose=1
+            model_instance, x, y, cv=3, scoring=f1, n_jobs=-1, verbose=1
         )
         scores_auc = -cross_val_score(
-            model_instance, x, y, cv=3, scoring="roc_auc", n_jobs=-1, verbose=1
+            model_instance, x, y, cv=3, scoring=roc_auc, n_jobs=-1, verbose=1
         )
 
     return scores_f1, scores_auc

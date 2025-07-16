@@ -109,17 +109,13 @@ def main(params: PredictionModelInputs,
         numerical_pipeline=numerical_pipeline)
 
     train_final, test_final, cols_dropped_by_feat_select = main_feature_selection(
+        paths=params.paths,
+        data_classification=params.data_classification,
+        transforming_inputs=params.transforming_inputs,
+        modelling=params.modelling,
         train=train_transformed,
         test=test_transformed,
-        target_column=params.data_classification.target_column,
-        cv=params.modelling.cv,
-        regression_method=selected_model,
-        weight_column=params.data_classification.weight_column,
-        classification_prediction=params.transforming_inputs.classification_prediction,
-        output=output_path,
-        skip_feature_selection=params.modelling.skip_feature_selection,
-        intensive_feature_selection=params.modelling.intensive_feature_selection,
-        is_time_series=params.data_classification.is_time_series,
+        output=output_path
     )
 
     best_model = main_hyperparameter_optimisation(

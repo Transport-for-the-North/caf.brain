@@ -7,7 +7,7 @@ Original author: Adil Zaheer
 # pylint: enable=import-error,wrong-import-position
 from pathlib import Path
 import pandas as pd
-from caf.brain.ml.prediction.prediction_functions import prediction
+from caf.brain.ml.functions_and_classes.prediction.prediction_functions import prediction
 
 
 def main_prediction(

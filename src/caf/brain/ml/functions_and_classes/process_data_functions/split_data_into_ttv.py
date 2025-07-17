@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import List
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import PredictionModelInputs
-from caf.brain.ml.process_data_functions.process_input_data_functions import (
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml.functions_and_classes.process_data_functions.process_input_data_functions import (
     InitialDataProcessing,
 )
 

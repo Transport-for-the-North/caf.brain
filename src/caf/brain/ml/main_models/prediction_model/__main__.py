@@ -6,36 +6,51 @@ Original author: Adil Zaheer
 import os
 import time
 import logging
+from pathlib import Path
 import pandas as pd
-from caf.brain.ml.data_analysis.data_analysis_main import main_evaluate_input_data
-from caf.brain.ml.feature_selection.feature_selection_main import main_feature_selection
-from caf.brain.ml.hyperparameter_optimisation.hyper_optim_main import (
+from caf.brain.ml.functions_and_classes.data_analysis.data_analysis_main import (
+    main_evaluate_input_data,
+)
+from caf.brain.ml.functions_and_classes.feature_selection.feature_selection_main import (
+    main_feature_selection,
+)
+from caf.brain.ml.functions_and_classes.hyperparameter_optimisation.hyper_optim_main import (
     main_hyperparameter_optimisation,
 )
-from caf.brain.ml.model_selection.model_selection_functions import initialise_model
-from caf.brain.ml.model_selection.model_selection_main import main_model_selection
-from caf.brain.ml.prediction.prediction_main import main_prediction
-from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import (
+from caf.brain.ml.functions_and_classes.model_selection.model_selection_functions import (
+    initialise_model,
+)
+from caf.brain.ml.functions_and_classes.model_selection.model_selection_main import (
+    main_model_selection,
+)
+from caf.brain.ml.functions_and_classes.prediction.prediction_main import main_prediction
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     PredictionModelInputs,
 )
-from caf.brain.ml.process_data_functions.process_data_main import main_input_data
-from caf.brain.ml.process_data_functions.split_data_into_ttv import simple_train_test_split
-from caf.brain.ml.statsmodel_pipeline.statsmodel_main import main_stats_model
+from caf.brain.ml.functions_and_classes.process_data_functions.process_data_main import (
+    main_input_data,
+)
+from caf.brain.ml.functions_and_classes.process_data_functions.split_data_into_ttv import (
+    simple_train_test_split,
+)
+from caf.brain.ml.main_models.statsmodel_pipeline.statsmodel_main import main_stats_model
 
 LOG = logging.getLogger(__name__)
 
 
-def main(params: PredictionModelInputs, output_path):
+def main(params: PredictionModelInputs, output_path: Path) -> None:
     """
-    Main function for caf.brAIn prediction model.
+    The main function for the caf.brAIn prediction model.
+    The prediction model utilises machine learning libraries in order to
+    generate predictions. It's designed to streamline the process and remove
+    any barrier to entry thereby making machine learning modelling more
+    accessible.
 
     Parameters
     ----------
     params: config file inputs
-    output_path
-
-    Returns
-    -------
+    output_path: path to output file location. Should be generated during
+                 model setup if not passed directly.
 
     """
     start_time = time.time()

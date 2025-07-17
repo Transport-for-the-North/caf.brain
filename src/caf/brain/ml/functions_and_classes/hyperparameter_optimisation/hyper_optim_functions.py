@@ -20,11 +20,11 @@ from sklearn.ensemble import (
 )
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
-from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import (
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     ModelGrids,
     get_model_grid,
 )
-from caf.brain.ml.feature_selection.feature_selection_functions import get_cv_class
+from caf.brain.ml.functions_and_classes.feature_selection import get_cv_class
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -48,8 +48,7 @@ def select_param(
     :param target_column: String column name of value to predict.
     :param model_instance: Initialised model algorithm from Models enum class.
     :param model_name: List or one algorithm to use as the base of the model.
-                       Available algorithms can be seen in prediction_model_inputs.py
-                       or __info__.py.
+                       Available algorithms can be seen in ml_inputs.py.
     :param classification_prediction: List of integers that correspond to the
                                       target column. The value(s) to predict
                                       in a classification problem.

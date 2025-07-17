@@ -5,7 +5,6 @@ Original author: Adil Zaheer
 
 import os
 from pathlib import Path
-from typing import List
 import logging
 import joblib
 import numpy as np
@@ -14,7 +13,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import cross_val_score
 from scipy import stats
-from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import Models
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import Models
 
 LOG = logging.getLogger(__name__)
 
@@ -118,7 +117,7 @@ def select_model(
     weight_column: Optional string column value to be used as weight.
     models_to_test: List or one algorithm to use as the base of the model.
                     Available algorithms can be seen in
-                    prediction_model_inputs.py or __info__.py.
+                    ml_inputs.py or __info__.py.
     classification_prediction: List of integers that correspond to the
                                target column. The value(s) to predict
                                in a classification problem.

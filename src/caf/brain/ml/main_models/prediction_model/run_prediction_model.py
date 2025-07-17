@@ -6,8 +6,7 @@ import os
 import yaml
 from caf.toolkit import LogHelper, ToolDetails
 from caf.brain.ml.main_models.prediction_model.__main__ import main
-from caf.brain.ml.main_models.prediction_model.__testing_doc__ import main_test
-from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import (
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     PredictionModelInputs,
     Models,
 )
@@ -37,7 +36,7 @@ def model_setup():
     details = ToolDetails("caf.brAIn Prediction Model", "1.0.0")
 
     with LogHelper("caf.brain", details, console=True, log_file=path):
-        main_test(params, output_path)
+        main(params, output_path)
 
 
 if __name__ == "__main__":

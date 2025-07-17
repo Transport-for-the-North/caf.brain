@@ -12,7 +12,7 @@ import pandas as pd
 from sklearn.metrics import accuracy_score
 from sklearn.svm import LinearSVC
 from sklearn.metrics import r2_score, mean_squared_error
-from caf.brain.ml.model_selection.model_selection_functions import calculate_final_coefficients
+from caf.brain.ml.functions_and_classes.model_selection import calculate_final_coefficients
 import logging
 
 LOG = logging.getLogger(__name__)

@@ -130,6 +130,7 @@ def main(params: PredictionModelInputs, output_path):
         data_classification=params.data_classification,
         transforming_inputs=params.transforming_inputs,
         modelling=params.modelling,
+        train=train_final,
         model_instance=selected_model,
         output_folder=output_path,
     )

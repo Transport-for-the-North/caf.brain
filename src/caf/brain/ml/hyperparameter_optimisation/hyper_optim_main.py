@@ -2,11 +2,19 @@
 Created on: 1/21/2025
 Original author: Adil Zaheer
 """
-from caf.brain.ml.hyperparameter_optimisation.hyper_optim_functions import select_param
-from pathlib import Path
-import pandas as pd
 
-from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import PredictionModelInputs
+import os
+from pathlib import Path
+import logging
+import pandas as pd
+from caf.brain.ml.hyperparameter_optimisation.hyper_optim_functions import select_param
+from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import (
+    PredictionModelInputs,
+)
+from caf.brain.ml.model_selection.model_selection_main import main_model_selection
+from caf.brain.ml.process_data_functions.process_data_main import main_input_data
+
+LOG = logging.getLogger(__name__)
 
 
 def main_hyperparameter_optimisation(
@@ -14,7 +22,7 @@ def main_hyperparameter_optimisation(
     data_classification: PredictionModelInputs.DataClassificationInputs,
     transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
     modelling: PredictionModelInputs.ModellingInputs,
-    train_final: pd.DataFrame = None,
+    train: pd.DataFrame = None,
     model_instance=None,
     output_folder: Path = None,
 ):
@@ -42,7 +50,7 @@ def main_hyperparameter_optimisation(
                pipeline and functions. See
                caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
                for available options.
-    train_final: Dataframe of final training data post feature selection.
+    train: Dataframe of final training data post feature selection.
     model_instance: Initialised model algorithm from Models enum class.
     output_folder: Path to output location.
 
@@ -50,9 +58,42 @@ def main_hyperparameter_optimisation(
     -------
     best_model: Fitted final model for prediction on unseen (test) data.
     """
+    if output_folder is None:
+        output_folder = os.path.join(paths.output_path, "output")
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder)
 
+    if train is None:
+        LOG.info(
+            "Train does not exist so is being generated with the main_input_data \
+                  function based on user provided inputs"
+        )
+        data_dict, _, _ = main_input_data(
+            output_path=output_folder,
+            paths=paths,
+            data_classification=data_classification,
+            transforming_inputs=transforming_inputs,
+        )
+
+        train = pd.DataFrame.from_dict(data_dict["train_scaled"])
+
+    if model_instance is None:
+        LOG.info(
+            "Model instance is None so main_model_selection is being called to \
+                  obtain the initialised model"
+        )
+        model_instance = main_model_selection(
+            paths=paths,
+            data_classification=data_classification,
+            transforming_inputs=transforming_inputs,
+            modelling=modelling,
+            train=train,
+            output=output_folder,
+        )
+
+    LOG.info("Hyperparameter optimisation underway")
     best_model = select_param(
-        train_final=train_final,
+        train_final=train,
         target_column=data_classification.target_column,
         model_instance=model_instance,
         model_name=modelling.model_choice,
@@ -62,5 +103,4 @@ def main_hyperparameter_optimisation(
         output_folder=output_folder,
         is_time_series=data_classification.is_time_series,
     )
-    # todo return not just the best model but also the best grid as a dictionary for people to use?
     return best_model

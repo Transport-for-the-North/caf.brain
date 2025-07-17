@@ -168,7 +168,7 @@ def select_param(
 
     model_filename = os.path.join(output_folder, "final_model.pkl")
     joblib.dump(best_model, model_filename)
-
+    LOG.info("Best model saved here: %s", model_filename)
     # coeffs
     if hasattr(best_model, "coef_"):
         coefficients = best_model.coef_

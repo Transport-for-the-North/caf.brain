@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 """
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
-# pylint: disable=import-error,wrong-import-position
-# pylint: enable=import-error,wrong-import-position
+
+import logging
 import gc
 import os
 from pathlib import Path
@@ -24,8 +23,9 @@ from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     ModelGrids,
     get_model_grid,
 )
-from caf.brain.ml.functions_and_classes.feature_selection import get_cv_class
-import logging
+from caf.brain.ml.functions_and_classes.feature_selection.feature_selection_functions import (
+    get_cv_class,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -44,27 +44,30 @@ def select_param(
     """
     Hyperparameter optimisation based on the ModelGrids Enum class.
 
-    :param train_final: Dataframe of final training data post feature selection.
-    :param target_column: String column name of value to predict.
-    :param model_instance: Initialised model algorithm from Models enum class.
-    :param model_name: List or one algorithm to use as the base of the model.
-                       Available algorithms can be seen in ml_inputs.py.
-    :param classification_prediction: List of integers that correspond to the
-                                      target column. The value(s) to predict
-                                      in a classification problem.
-    :param cv: Cross validation method passed as a string. Any popular
-               SciKitlearn methods are suitable with KFold being default if
-               left as None.
-    :param weight_column: Optional string column value to be used as weight.
-    :param output_folder: Path to output location.
-    :param is_time_series: If true then data must be time series. Time series
-                           based characteristics are taken into consideration
-                           during function execution.
+    Parameters
+    ----------
+    train_final: Dataframe of final training data post feature selection.
+    target_column: String column name of value to predict.
+    model_instance: Initialised model algorithm from Models enum class.
+    model_name: List or one algorithm to use as the base of the model.
+                Available algorithms can be seen in ml_inputs.py.
+    classification_prediction: List of integers that correspond to the
+                               target column. The value(s) to predict
+                               in a classification problem.
+    cv: Cross validation method passed as a string. Any popular
+        SciKitlearn methods are suitable with KFold being default if
+        left as None.
+    weight_column: Optional string column value to be used as weight.
+    output_folder: Path to output location.
+    is_time_series: If true then data must be time series. Time series
+                    based characteristics are taken into consideration
+                    during function execution.
 
-    :return:
-        best_model: Fitted final model for prediction on unseen (test) data.
+    Returns
+    -------
+    best_model: Fitted final model for prediction on unseen (test) data.
+
     """
-
     x = train_final.drop(columns=[target_column] + ([weight_column] if weight_column else []))
     y = train_final[target_column]
     weight = train_final[weight_column].values.flatten() if weight_column else None
@@ -199,23 +202,25 @@ def rand_search(
     """
     Helper function to conduct randomised search of hyperparameters.
 
-    :param model_instance: Initialised model algorithm from Models enum class.
-    :param param_grid: Instance of Enum class ModelGrids. Grid of
-                       hyperparameters
-    :param cv: Cross validation method passed as a string. Any popular
-               SciKitlearn methods are suitable with KFold being default if
-               left as None.
-    :param scoring: Scoring method used when evaluating hyperparameters.
-    :param n_jobs: Integer to represent number of cores used to evaluate
-                   hyperparameters.
-    :param weight: Weight values in series form.
-    :param x: Training data split into explanatory variables only.
-    :param y: Training data split only into the target variable.
+    Parameters
+    ----------
+    model_instance: Initialised model algorithm from Models enum class.
+    param_grid: Instance of Enum class ModelGrids. Grid of hyperparameters.
+    cv: Cross validation method passed as a string. Any popular
+        SciKitlearn methods are suitable with KFold being default if
+        left as None.
+    scoring: Scoring method used when evaluating hyperparameters.
+    n_jobs: Integer to represent number of cores used to evaluate hyperparameters.
+    weight: Weight values in series form.
+    x: Training data split into explanatory variables only.
+    y: Training data split only into the target variable.
 
-    :return:
-        best_params: best hyperparameters found.
+    Returns
+    -------
+    best_params: best hyperparameters found.
+
     """
-    rand_search = RandomizedSearchCV(
+    random_search = RandomizedSearchCV(
         model_instance,
         param_grid,
         cv=cv,
@@ -227,10 +232,10 @@ def rand_search(
         pre_dispatch="1*n_jobs",
     )
     gc.collect()
-    rand_search.fit(x, y, sample_weight=weight)
-    best_params = rand_search.best_params_
-    LOG.info(f"Best parameters for model are: {best_params}")
-    LOG.info(f"CV results: {rand_search.cv_results_}")
+    random_search.fit(x, y, sample_weight=weight)
+    best_params = random_search.best_params_
+    LOG.info("Best parameters for model are: %s", best_params)
+    LOG.info("CV results: %s", random_search.cv_results_)
     return best_params
 
 
@@ -247,21 +252,22 @@ def perform_grid_search(
     """
     Helper function to conduct grid search of hyperparameters.
 
-    :param model_instance: Initialised model algorithm from Models enum class.
-    :param param_grid: Instance of Enum class ModelGrids. Grid of
-                       hyperparameters
-    :param cv: Cross validation method passed as a string. Any popular
-               SciKitlearn methods are suitable with KFold being default if
-               left as None.
-    :param scoring: Scoring method used when evaluating hyperparameters.
-    :param n_jobs: Integer to represent number of cores used to evaluate
-                   hyperparameters.
-    :param weight: Weight values in series form.
-    :param x: Training data split into explanatory variables only.
-    :param y: Training data split only into the target variable.
+    Parameters
+    ----------
+    model_instance: Initialised model algorithm from Models enum class.
+    param_grid: Instance of Enum class ModelGrids. Grid of hyperparameters
+    cv: Cross validation method passed as a string. Any popular
+        SciKitlearn methods are suitable with KFold being default if
+        left as None.
+    scoring: Scoring method used when evaluating hyperparameters.
+    n_jobs: Integer to represent number of cores used to evaluate hyperparameters.
+    weight: Weight values in series form.
+    x: Training data split into explanatory variables only.
+    y: Training data split only into the target variable.
 
-    :return:
-        best_params: best hyperparameters found.
+    Returns
+    -------
+    best_params: best hyperparameters found.
     """
     grid_search = GridSearchCV(
         model_instance,
@@ -276,6 +282,6 @@ def perform_grid_search(
     gc.collect()
     grid_search.fit(x, y, sample_weight=weight)
     best_params = grid_search.best_params_
-    LOG.info(f"Best parameters for model are: {best_params}")
-    LOG.info(f"CV results: {grid_search.cv_results_}")
+    LOG.info("Best parameters for model are: %s", best_params)
+    LOG.info("CV results: %s", grid_search.cv_results_)
     return best_params

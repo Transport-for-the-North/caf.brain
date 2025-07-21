@@ -1,19 +1,19 @@
-# -*- coding: utf-8 -*-
 """
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
-# pylint: disable=import-error,wrong-import-position
-# pylint: enable=import-error,wrong-import-position
+
 import os
+import logging
 from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score
 from sklearn.svm import LinearSVC
 from sklearn.metrics import r2_score, mean_squared_error
-from caf.brain.ml.functions_and_classes.model_selection import calculate_final_coefficients
-import logging
+from caf.brain.ml.functions_and_classes.model_selection.model_selection_functions import (
+    calculate_final_coefficients,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -34,24 +34,27 @@ def prediction(
     Final prediction function which calls final coefficient generation if
     applicable.
 
-    :param model: Fitted final model for prediction on unseen (test) data.
-    :param test: Dataframe of final test data post feature selection.
-    :param target_column: String column name of value to predict.
-    :param output_folder: Path to output location.
-    :param validation: Validation data if available.
-    :param weight_column: Optional string column value to be used as weight.
-    :param classification_prediction: List of integers that correspond to the
-                                      target column. The value(s) to predict
-                                      in a classification problem.
-    :param mse: Mean squared error or None. Dependency on if the algorithm selected
-                has coefficient values.
-    :param drop_vals: Values dropped during encoding of categorical variables.
-    :param cols_dropped_by_feat_select: These are the columns removed due to
-                                        feature selection.
+    Parameters
+    ----------
+    model: Fitted final model for prediction on unseen (test) data.
+    test: Dataframe of final test data post feature selection.
+    target_column: String column name of value to predict.
+    output_folder: Path to output location.
+    validation: Validation data if available.
+    weight_column: Optional string column value to be used as weight.
+    classification_prediction: List of integers that correspond to the
+                               target column. The value(s) to predict
+                               in a classification problem.
+    mse: Mean squared error or None. Dependency on if the algorithm selected
+         has coefficient values.
+    drop_vals: Values dropped during encoding of categorical variables.
+    cols_dropped_by_feat_select: These are the columns removed due to feature
+                                 selection.
 
-    :return:
-        predictions: Predicted values based on the test data and set to the same
-                     index.
+    Returns
+    -------
+    predictions: Predicted values based on the test data and set to the same
+                 index.
     """
     if target_column in test.columns:
         test = test.drop(columns=target_column)
@@ -73,7 +76,7 @@ def prediction(
                 y_true = validation[target_column].values
                 accuracy = accuracy_score(y_true, pred_classes, sample_weight=weight)
 
-            LOG.info(f"Accuracy: {accuracy}")
+            LOG.info("Accuracy: %s", accuracy)
             accuracy_df = pd.DataFrame({"accuracy": [accuracy]})
             accuracy_df.to_csv(os.path.join(output_folder, "model_performance.csv"))
             predictions = pred_classes
@@ -91,8 +94,8 @@ def prediction(
             mse = mean_squared_error(
                 validation[target_column], predictions, sample_weight=weight
             )
-            LOG.info(f"r2: {r2}")
-            LOG.info(f"mse: {mse}")
+            LOG.info("r2: %s", r2)
+            LOG.info("mse: %s", mse)
             metrics_df = pd.DataFrame({"r2": [r2], "mse": [mse]})
             metrics_df.to_csv(os.path.join(output_folder, "model_performance.csv"))
 

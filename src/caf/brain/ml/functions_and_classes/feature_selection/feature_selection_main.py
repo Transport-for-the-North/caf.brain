@@ -15,7 +15,9 @@ from caf.brain.ml.functions_and_classes.feature_selection.feature_selection_func
 from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     PredictionModelInputs,
 )
-from caf.brain.ml.functions_and_classes.process_data_functions.process_data_main import main_input_data
+from caf.brain.ml.functions_and_classes.process_data_functions.process_data_main import (
+    main_input_data,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -31,7 +33,7 @@ def main_feature_selection(
     output: Path = None,
 ):
     """
-    Feature selection function
+    Feature selection function.
 
     Parameters
     ----------

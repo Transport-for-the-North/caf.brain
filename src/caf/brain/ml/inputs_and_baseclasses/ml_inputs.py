@@ -155,29 +155,29 @@ class Models(enum.Enum):
         OneVsRestClassifier,
         {"estimator": LinearSVC()},
     )  # type: ignore
-    STATS_OLS_REGRESSOR = (sm.OLS, {})  # type: ignore
-    STATS_MLR_REGRESSOR = (sm.RLM, {})  # type: ignore
-    STATS_LOGISTIC_CLASSIFIER = (sm.Logit, {})  # type: ignore
-    STATS_PROBIT_CLASSIFIER = (sm.Probit, {})  # type: ignore
-    STATS_POISSON_REGRESSOR = (
-        sm.GLM,
-        {"family": sm.families.Poisson()},
-    )  # type: ignore
-    STATS_NEGATIVE_BINOMIAL_REGRESSOR = (
-        sm.GLM,
-        {"family": sm.families.NegativeBinomial()},
-    )  # type: ignore
-    STATS_LINEAR_EFFECTS_REGRESSOR = (sm.MixedLM, {})  # type: ignore
-    STATS_ARIMA_REGRESSOR = (sm.tsa.ARIMA, {})  # type: ignore
-    STATS_SARIMA_REGRESSOR = (sm.tsa.SARIMAX, {})  # type: ignore
-    STATS_MULTINOMIAL_LOGISTIC_CLASSIFIER = (
-        sm.MNLogit,
-        {},
-    )  # type: ignore
-    STATS_ORDINAL_LOGISTIC_CLASSIFIER = (
-        OrderedModel,
-        {"distr": "logit"},
-    )  # type: ignore
+    # STATS_OLS_REGRESSOR = (sm.OLS, {})  # type: ignore
+    # STATS_MLR_REGRESSOR = (sm.RLM, {})  # type: ignore
+    # STATS_LOGISTIC_CLASSIFIER = (sm.Logit, {})  # type: ignore
+    # STATS_PROBIT_CLASSIFIER = (sm.Probit, {})  # type: ignore
+    # STATS_POISSON_REGRESSOR = (
+    #     sm.GLM,
+    #     {"family": sm.families.Poisson()},
+    # )  # type: ignore
+    # STATS_NEGATIVE_BINOMIAL_REGRESSOR = (
+    #     sm.GLM,
+    #     {"family": sm.families.NegativeBinomial()},
+    # )  # type: ignore
+    # STATS_LINEAR_EFFECTS_REGRESSOR = (sm.MixedLM, {})  # type: ignore
+    # STATS_ARIMA_REGRESSOR = (sm.tsa.ARIMA, {})  # type: ignore
+    # STATS_SARIMA_REGRESSOR = (sm.tsa.SARIMAX, {})  # type: ignore
+    # STATS_MULTINOMIAL_LOGISTIC_CLASSIFIER = (
+    #     sm.MNLogit,
+    #     {},
+    # )  # type: ignore
+    # STATS_ORDINAL_LOGISTIC_CLASSIFIER = (
+    #     OrderedModel,
+    #     {"distr": "logit"},
+    # )  # type: ignore
     # STATS_TOBIT_REGRESSOR = (sm.Tobit, {})?
 
     def get_model(self):

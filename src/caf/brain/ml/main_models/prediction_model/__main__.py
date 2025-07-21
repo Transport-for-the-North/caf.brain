@@ -33,7 +33,6 @@ from caf.brain.ml.functions_and_classes.process_data_functions.process_data_main
 from caf.brain.ml.functions_and_classes.process_data_functions.split_data_into_ttv import (
     simple_train_test_split,
 )
-from caf.brain.ml.main_models.statsmodel_pipeline.statsmodel_main import main_stats_model
 
 LOG = logging.getLogger(__name__)
 
@@ -74,17 +73,16 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
     if data_dict["validate"] is not None and len(data_dict["validate"]) > 0:
         validate = pd.DataFrame.from_dict(data_dict["validate"])
 
-    is_statsmodel = any(
-        base.__module__.startswith("statsmodels")
-        for base in params.modelling.model_choice.__class__.__mro__
-    )
-    if is_statsmodel:
-        main_stats_model(
-            model_choice=params.modelling.model_choice,
-            train=train_scaled,
-            target_column=params.data_classification.target_column,
-            weight_column=params.data_classification.weight_column,
-        )
+    # is_statsmodel = any(
+    #     base.__module__.startswith("statsmodels")
+    #     for base in params.modelling.model_choice.__class__.__mro__
+    # )
+    # if is_statsmodel:
+    #     main_stats_model(
+    #         model_choice=params.modelling.model_choice,
+    #         train=train_scaled,
+    #         target_column=params.data_classification.target_column,
+    #         weight_column=params.data_classification.weight_column)
 
     selected_model = main_model_selection(
         paths=params.paths,

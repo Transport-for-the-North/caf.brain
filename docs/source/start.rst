@@ -5,11 +5,11 @@ Quick Start
     Write brief description about the possible ways for using the tool e.g. CLI, GUI and
     importing in Python.
 
-*CAF.brAIn is provided as a Python package and a command-line utility.
+*CAF.brain is provided as a Python package and a command-line utility.
 The command-line utility aims to make some of the commonly used functionality 
 available without needing to use Python code, see :ref:`usage` for details.*
 
-CAF.brAIn can be installed from pip, conda-forge or **pipx
+CAF.brain can be installed from pip, conda-forge or **pipx
 (when using as a command-line utility).**
 
 Pip
@@ -26,7 +26,7 @@ Pipx
 ----
 
 .. todo::
-    Does CAF.brAIn support being installed with
+    Does CAF.brain support being installed with
     `Pipx <https://pipx.pypa.io/stable/>`__?
 
 
@@ -34,7 +34,7 @@ Usage
 -----
 
 .. todo::
-    Does CAF.brAIn have a CLI or GUI?
+    Does CAF.brain have a CLI or GUI?
 
 More details can be found in :ref:`tool usage`.
 
@@ -42,9 +42,9 @@ Python
 ^^^^^^
 
 .. todo::
-    Does CAF.brAIn have a suggested alias?
+    Does CAF.brain have a suggested alias?
 
-When using CAF.brAIn functionality within Python:
+When using CAF.brain functionality within Python:
 
 .. code:: python
 

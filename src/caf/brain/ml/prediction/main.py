@@ -30,24 +30,33 @@ def main_prediction(
     """
     Main prediction function.
 
-    :param model: Fitted final model for prediction on unseen (test) data.
-    :param test: Dataframe of final test data post feature selection.
-    :param target_column: String column name of value to predict.
-    :param output_folder: Path to output location.
-    :param validation: Validation data if available.
-    :param weight_column: Optional string column value to be used as weight.
-    :param classification_prediction: List of integers that correspond to the
-                                      target column. The value(s) to predict
-                                      in a classification problem.
-    :param mse: Mean squared error or None. Dependency on if the algorithm selected
-                has coefficient values.
-    :param drop_vals: Values dropped during encoding of categorical variables.
-    :param cols_dropped_by_feat_select: These are the columns removed due to
-                                        feature selection.
+    Parameters
+    ----------
+    model : object
+        Fitted final model for prediction on unseen (test) data.
+    test : pandas.DataFrame
+        Final test data after feature selection.
+    target_column : str
+        Name of the column to predict.
+    output_folder : pathlib.Path
+        Path to output location.
+    validation : pandas.DataFrame or None
+        Validation data, if available.
+    weight_column : str
+        Optional column name to be used as sample weights.
+    classification_prediction : tuple of int or None
+        Target values to predict in a classification problem.
+    mse : float or None
+        Mean squared error, or None if the algorithm selected does not provide coefficients.
+    drop_vals : pandas.DataFrame or None
+        Values dropped during encoding of categorical variables.
+    cols_dropped_by_feat_select : pandas.DataFrame or None
+        Columns removed due to feature selection.
 
-    :return:
-        y_pred: Predicted values based on the test data and set to the same
-                index.
+    Returns
+    -------
+    None
+        Saves predictions and coefficients to disk.
     """
 
     prediction(

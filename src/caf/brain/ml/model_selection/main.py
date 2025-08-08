@@ -31,29 +31,43 @@ def main_model_selection(
     classification_prediction: tuple[int, ...],
 ):
     """
-    Main function for selecting model algorithm and finding relevant algorithm
-    attributes (if applicable).
+    Main function for selecting a model algorithm and extracting relevant attributes.
 
-    :param train: processed input data split into train subset.
-    :param target_column: String column name of value to predict.
-    :param weight_column: Optional string column value to be used as weight.
-    :param output: Path to output location.
-    :param model: List or one algorithm to use as the base of the model.
-                  Available algorithms can be seen in prediction_model_inputs.py
-                  or __info__.py.
-    :param classification_prediction: List of integers that correspond to the
-                                      target column. The value(s) to predict
-                                      in a classification problem.
+    Parameters
+    ----------
+    train : pandas.DataFrame
+        Processed input data split into the training subset.
+    target_column : str
+        Name of the column to predict.
+    weight_column : str
+        Optional column name to be used as sample weights.
+    output : pathlib.Path
+        Path to the output location.
+    model : list or object
+        List or single algorithm to use as the base of the model. Available algorithms
+        can be seen in `prediction_model_inputs.py` or `__info__.py`.
+    classification_prediction : tuple of int
+        Target values to predict in a classification problem.
 
-    :return:
-        model_initialised: Initialised model algorithm from Models enum class.
-        model_fit: Model fit on training data.
-        residuals: Truth - predictions (based on training data).
-        x_test, x_train, y_train: Training data split through train_test_split
-                                  SciKitLearn function.
-        mse: Mean squared error or None. Dependency on if the algorithm selected
-             has coefficient values.
+    Returns
+    -------
+    model_initialised : object
+        Initialised model algorithm from the Models enum class.
+    model_fit : object
+        Model fit on training data.
+    residuals : pandas.Series
+        Difference between true and predicted values (based on training data).
+    x_test : pandas.DataFrame
+        Test features from train/test split.
+    x_train : pandas.DataFrame
+        Training features from train/test split.
+    mse : float or None
+        Mean squared error, or None if the algorithm does not provide coefficients.
 
+    Raises
+    ------
+    ValueError
+        If the model is not provided or is incorrectly specified.
     """
 
     if not isinstance(model, list):

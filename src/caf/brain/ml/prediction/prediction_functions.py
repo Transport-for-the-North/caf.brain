@@ -3,17 +3,24 @@
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
+# Built-Ins
+import logging
+
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 import os
 from pathlib import Path
+
+# Third Party
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 from sklearn.svm import LinearSVC
-from sklearn.metrics import r2_score, mean_squared_error
-from caf.brain.ml.model_selection.model_selection_functions import calculate_final_coefficients
-import logging
+
+# Local Imports
+from caf.brain.ml.model_selection.model_selection_functions import (
+    calculate_final_coefficients,
+)
 
 LOG = logging.getLogger(__name__)
 

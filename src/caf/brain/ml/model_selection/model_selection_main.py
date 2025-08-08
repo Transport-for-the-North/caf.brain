@@ -3,15 +3,21 @@
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
+# Built-Ins
+import logging
+
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 from pathlib import Path
+
+# Third Party
 import pandas as pd
+
+# Local Imports
 from caf.brain.ml.model_selection.model_selection_functions import (
-    select_model,
     initialise_model,
+    select_model,
 )
-import logging
 
 LOG = logging.getLogger(__name__)
 

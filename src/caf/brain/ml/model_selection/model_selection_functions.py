@@ -3,20 +3,26 @@
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
+# Built-Ins
+import logging
+
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 import os
 from pathlib import Path
 from typing import List
+
+# Third Party
 import joblib
 import numpy as np
 import pandas as pd
+from scipy import stats
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, mean_squared_error
+from sklearn.model_selection import cross_val_score, train_test_split
+
+# Local Imports
 from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import Models
-from sklearn.model_selection import train_test_split, cross_val_score
-from scipy import stats
-import logging
 
 LOG = logging.getLogger(__name__)
 

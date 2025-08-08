@@ -1,15 +1,15 @@
-.. CAF.brAIn documentation master file.
+.. CAF.brain documentation master file.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive. See the
    `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
    documentation for details.
 
-Welcome to CAF.brAIn's documentation!
+Welcome to CAF.brain's documentation!
 ===========================================================
 
-Common Analytical Framework package of Machine and Deep Learning tools.
+Package description
 
-CAF.brAIn source code is available on `GitHub <https://github.com/transport-for-the-north/caf.brain>`_.
+CAF.brain source code is available on `GitHub <https://github.com/transport-for-the-north/caf.brain>`_.
 
 
 Common Analytical Framework

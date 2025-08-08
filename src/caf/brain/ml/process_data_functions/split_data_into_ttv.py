@@ -3,13 +3,18 @@
 Created on: 1/15/2025
 Original author: Adil Zaheer
 """
+# Built-Ins
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 import os.path
 from pathlib import Path
 from typing import List
+
+# Third Party
 import pandas as pd
 from sklearn.model_selection import train_test_split
+
+# Local Imports
 from caf.brain.ml.process_data_functions.process_input_data_functions import (
     InitialDataProcessing,
 )
@@ -222,9 +227,7 @@ def split_by_column_value(
     return train, test, validate
 
 
-def simple_train_test_split(df: pd.DataFrame,
-                            target_column: str,
-                            weight_column: str):
+def simple_train_test_split(df: pd.DataFrame, target_column: str, weight_column: str):
     """
     Split data into train test split for model building purposes
 

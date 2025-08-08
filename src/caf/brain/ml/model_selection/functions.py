@@ -2,9 +2,9 @@
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
+
 # Built-Ins
 import logging
-
 import os
 from pathlib import Path
 from typing import List
@@ -32,7 +32,7 @@ def initialise_model(
     output_folder: Path,
     model_initialised,
     classification_prediction: tuple[int, ...],
-    x_train_weight: pd.DataFrame = None
+    x_train_weight: pd.DataFrame = None,
 ):
     """
     Fit the initialised model and evaluate its initial performance.

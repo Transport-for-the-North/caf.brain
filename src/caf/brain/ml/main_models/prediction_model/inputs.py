@@ -3,29 +3,37 @@ Created on: 12/16/2024
 Original author: Adil Zaheer
 """
 
+# Built-Ins
 import enum
 from pathlib import Path
-from typing import Optional, List, Union, Any
+from typing import Any, List, Optional, Union
+
+# Third Party
 import numpy as np
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.linear_model import LogisticRegression, Ridge, Lasso, ElasticNet, LinearRegression
-from sklearn.svm import SVR
-from sklearn.svm import LinearSVC
-from sklearn.multiclass import OneVsRestClassifier
+import statsmodels.api as sm
+from caf.toolkit import BaseConfig
 from sklearn.ensemble import (
+    AdaBoostRegressor,
+    BaggingRegressor,
+    ExtraTreesClassifier,
+    ExtraTreesRegressor,
     GradientBoostingClassifier,
     GradientBoostingRegressor,
     RandomForestClassifier,
     RandomForestRegressor,
-    ExtraTreesRegressor,
-    ExtraTreesClassifier,
-    AdaBoostRegressor,
-    BaggingRegressor,
 )
-import statsmodels.api as sm
+from sklearn.linear_model import (
+    ElasticNet,
+    Lasso,
+    LinearRegression,
+    LogisticRegression,
+    Ridge,
+)
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.svm import SVR, LinearSVC
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from statsmodels.miscmodels.ordinal_model import OrderedModel
-from caf.toolkit import BaseConfig
 
 
 class PredictionModelInputs(BaseConfig):

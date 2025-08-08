@@ -18,7 +18,7 @@ from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 from sklearn.svm import LinearSVC
 
 # Local Imports
-from caf.brain.ml.model_selection.model_selection_functions import (
+from caf.brain.ml.model_selection.functions import (
     calculate_final_coefficients,
 )
 

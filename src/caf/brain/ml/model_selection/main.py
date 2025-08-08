@@ -14,7 +14,7 @@ from pathlib import Path
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml.model_selection.model_selection_functions import (
+from caf.brain.ml.model_selection.functions import (
     initialise_model,
     select_model,
 )

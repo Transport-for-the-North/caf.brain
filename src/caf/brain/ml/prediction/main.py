@@ -12,7 +12,7 @@ from pathlib import Path
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml.prediction.prediction_functions import prediction
+from caf.brain.ml.prediction.functions import prediction
 
 
 def main_prediction(

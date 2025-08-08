@@ -32,31 +32,42 @@ def split_data(
     categorical_features: List[str],
 ) -> pd.DataFrame:
     """
-    Function to split data into training and test if not already done by the
-    user.
+    Split data into training, test, and validation sets.
 
-    :param processed_dataframes: input dataframes inside a dictionary.
-    :param index_columns: list of string column names to be used as an index.
-                          Must be one value e.g. year if splitting data
-                          into train and test via this column. Corresponds to
-                          split_by_value in this case.
-    :param weight_column: Optional string column value to be used as weight.
-    :param split_by_value: Optional string that links to custom_index. The
-                           value in the index column to split the data into
-                           training and test.
-    :param target_column: String column name of value to predict.
-    :param validation_path: Optional path to validation data if it exists.
-                            This would need to correspond to the test data
-                            created.
-    :param output_path: Path to output location.
-    :param split_size: Optional float e.g. 0.2. This would be the ratio to
-                       randomly split data into train and test. 0.2 is used
-                       if left as None.
-    :param categorical_features: List of string column names that are
-                                 categorical variables.
+    Parameters
+    ----------
+    processed_dataframes : dict
+        Input dataframes inside a dictionary.
+    index_columns : list of str
+        List of column names to be used as an index. Must be one value (e.g. year)
+        if splitting data into train and test via this column. Corresponds to
+        split_by_value in this case.
+    weight_column : str
+        Optional column name to be used as sample weights.
+    split_by_value : str
+        Optional string that links to custom_index. The value in the index column
+        to split the data into training and test.
+    target_column : str
+        Name of the column to predict.
+    validation_path : pathlib.Path
+        Optional path to validation data if it exists. This should correspond to
+        the test data created.
+    output_path : pathlib.Path
+        Path to output location.
+    split_size : float
+        Ratio to randomly split data into train and test (e.g. 0.2). 0.2 is used
+        if left as None.
+    categorical_features : list of str
+        List of column names that are categorical variables.
 
-    :return:
-        train, test and validate dataframes.
+    Returns
+    -------
+    train : pandas.DataFrame
+        Training dataframe.
+    test : pandas.DataFrame
+        Test dataframe.
+    validate : pandas.DataFrame or None
+        Validation dataframe, if available.
     """
 
     if isinstance(processed_dataframes, dict):
@@ -103,26 +114,38 @@ def stratified_split_with_categories(
     output_path: Path,
 ) -> pd.DataFrame:
     """
-    Function to split data into train, test and validate by using a value
-    provided by the user. The value is the ratio in which to split the data
-    randomly into train and test. The function ensures that all categories are
-    represented at least once in both train and test. If split_size is None
-    then 0.2 is used by default.
+    Split data into train, test, and validate sets using stratification.
 
-    :param df: input dataframe.
-    :param categorical_features: List of string column names that are
-                                 categorical variables.
-    :param target_column: sting column name of value to predict.
-    :param weight_column: Optional string column value to be used as weight.
-    :param split_size: Optional float e.g. 0.2. This would be the ratio to
-                       randomly split data into train and test. 0.2 is used
-                       if left as None.
-    :param validation_path: Optional path to validation data if it exists.
-                            This would need to correspond to the test data
-                            created.
-    :param index_columns: list of string column names to be used as an index.
-    :param output_path: Path to output location.
-    :return: Train, test and validate dataframes.
+    Ensures all categories are represented at least once in both train and test.
+    If split_size is None, 0.2 is used by default.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input dataframe.
+    categorical_features : list of str
+        List of column names that are categorical variables.
+    target_column : str
+        Name of the column to predict.
+    weight_column : str
+        Optional column name to be used as sample weights.
+    split_size : float
+        Ratio to randomly split data into train and test (e.g. 0.2).
+    validation_path : pathlib.Path
+        Optional path to validation data if it exists.
+    index_columns : list of str
+        List of column names to be used as an index.
+    output_path : pathlib.Path
+        Path to output location.
+
+    Returns
+    -------
+    train : pandas.DataFrame
+        Training dataframe.
+    test : pandas.DataFrame
+        Test dataframe.
+    validate : pandas.DataFrame or None
+        Validation dataframe, if available.
     """
 
     strat = pd.cut(df.iloc[:, 0], 4)
@@ -175,27 +198,39 @@ def split_by_column_value(
     output_path: Path,
 ) -> pd.DataFrame:
     """
-    Function to split data into train, test and validate by using a value
-    provided by the user. The value must correspond to the index column
-    used. The index column must only be one column specified, multi-index is
-    not applicable. E.g. index_columns: year, split_by_value '2019'. This would
-    mean everything pre-2019 is training and everything post 2019 is test.
+    Split data into train, test, and validate sets by a specific column value.
 
-    :param df: input dataframe.
-    :param index_columns: list of string column names to be used as an index.
-                          Must be one value e.g. year if splitting data
-                          into train and test via this column. Corresponds to
-                          split_by_value in this case.
-    :param split_by_value: Optional string that links to custom_index. The
-                           value in the index column to split the data into
-                           training and test.
-    :param weight_column: Optional string column value to be used as weight.
-    :param target_column: sting column name of value to predict.
-    :param validation_path: Optional path to validation data if it exists.
-                            This would need to correspond to the test data
-                            created.
-    :param output_path: Path to output location.
-    :return: train, test and validate dataframes.
+    The value must correspond to the index column used. The index column must only
+    be one column specified (no multi-index). For example, index_columns: year,
+    split_by_value: '2019' means everything pre-2019 is training and everything
+    post-2019 is test.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input dataframe.
+    index_columns : list of str
+        List of column names to be used as an index. Must be one value (e.g. year)
+        if splitting data into train and test via this column.
+    split_by_value : str
+        Value in the index column to split the data into training and test.
+    weight_column : str
+        Optional column name to be used as sample weights.
+    target_column : str
+        Name of the column to predict.
+    validation_path : pathlib.Path
+        Optional path to validation data if it exists.
+    output_path : pathlib.Path
+        Path to output location.
+
+    Returns
+    -------
+    train : pandas.DataFrame
+        Training dataframe.
+    test : pandas.DataFrame
+        Test dataframe.
+    validate : pandas.DataFrame or None
+        Validation dataframe, if available.
     """
     if not index_columns or len(index_columns) != 1:
         raise ValueError("index_columns must contain exactly one column name for splitting")
@@ -229,18 +264,29 @@ def split_by_column_value(
 
 def simple_train_test_split(df: pd.DataFrame, target_column: str, weight_column: str):
     """
-    Split data into train test split for model building purposes
+    Split data into train and test sets for model building.
 
     Parameters
     ----------
-    df: Input pandas dataframe
-    target_column: Y (dependent) variable in the dataframe (column)
-    weight_column: Weight column in the dataframe
+    df : pandas.DataFrame
+        Input dataframe.
+    target_column : str
+        Name of the dependent (target) variable in the dataframe.
+    weight_column : str
+        Name of the weight column in the dataframe.
 
     Returns
     -------
-    Dataframes containing the input data split into train and test as well as a
-    Numpy ndarray of weight values.
+    x_train : pandas.DataFrame
+        Training features.
+    x_test : pandas.DataFrame
+        Test features.
+    y_train : pandas.Series
+        Training target values.
+    y_test : pandas.Series
+        Test target values.
+    x_train_weight : pandas.Series or None
+        Weight values for the training set, if available.
     """
     x = df.drop(columns=[target_column])
     y = df[target_column]

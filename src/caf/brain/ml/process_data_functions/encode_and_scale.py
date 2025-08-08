@@ -1,8 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on: 6/11/2024
-Original author: Adil Zaheer
-"""
 # Built-Ins
 import logging
 import os
@@ -31,38 +26,31 @@ def preprocess_numerical_data(
     output_folder=None,
 ) -> pd.DataFrame:
     """
-    Scales data via SciKitLearns standard scalar. Separates logic for train and
-    test but ensures that the same transformations applied to train are applied
-    to test if used in a full model run. If not used in a full model run,
-    an output path must be provided to generate the training transformations
-    which would then be applied to the test data when called again.
+    Preprocess and scale numerical data using scikit-learn's StandardScaler.
 
-    Train example:
-    is_test_data: False
-    numerical_pipeline_train = None
-    output_folder: Path
+    Applies transformations for both training and test data, ensuring that test data
+    uses the same transformations as training data. Saves and loads transformation
+    parameters as needed.
 
-    Test example:
-    is_test_data: True
-    numerical_pipeline_train: set to value if scalar stored in memory. Else
-                              leave as None.
-    output_folder: One of scale_csv.csv or numerical_pipeline.pkl is to be used.
-                   These will have been generated when using the function on
-                   training data. If you do not have these then the function
-                   needs to be used on training data first.
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input data.
+    numerical_features : list of str
+        List of column names for continuous variables.
+    is_test_data : bool
+        Whether the data is test data.
+    numerical_pipeline_train : sklearn.Pipeline or None, optional
+        Pre-fitted pipeline from training data, used for test data.
+    output_folder : str or pathlib.Path or None, optional
+        Path to output folder for saving/loading transformation parameters.
 
-    :param df: Input data.
-    :param numerical_features: List of string column names that are
-                               continuous variables.
-    :param is_test_data: Bool. Used to dictate if test data is used or not.
-    :param numerical_pipeline_train: Always None unless full model flow is
-                                     running. Only is relevant to test data.
-                                     If None then one of numerical_pipeline.pkl
-                                     or scale_csv.csv needs to be available to
-                                     apply transformations to train.
-    :param output_folder: Path to output folder.
-    :return: Dataframe of only the scaled numerical data set to the input
-             datas index. Also, the numerical pipeline information.
+    Returns
+    -------
+    numerical_df : pandas.DataFrame
+        Scaled numerical data.
+    numerical_pipeline : sklearn.Pipeline, optional
+        The fitted pipeline (only returned for training data).
     """
     if is_test_data:
         LOG.info("Processing test data - attempting to apply training transformations")
@@ -70,36 +58,27 @@ def preprocess_numerical_data(
         method_used = None
 
         if numerical_pipeline_train is not None:
-            try:
-                numerical_pipeline = numerical_pipeline_train
-                method_used = "in-memory pipeline"
-            except Exception as e:
-                LOG.warning(f"Could not use in-memory pipeline: {str(e)}")
+            numerical_pipeline = numerical_pipeline_train
+            method_used = "in-memory pipeline"
 
         if numerical_pipeline is None and output_folder is not None:
             numerical_pipeline_path_pkl = os.path.join(output_folder, "numerical_pipeline.pkl")
-            try:
-                numerical_pipeline = joblib.load(numerical_pipeline_path_pkl)
-                method_used = "pickled pipeline"
-            except Exception as e:
-                LOG.warning(f"Could not load pipeline from pickle: {str(e)}")
+            numerical_pipeline = joblib.load(numerical_pipeline_path_pkl)
+            method_used = "pickled pipeline"
 
         if numerical_pipeline is None and output_folder is not None:
             scale_csv_path = os.path.join(output_folder, "scale_csv.csv")
-            try:
-                scale_df = pd.read_csv(scale_csv_path, index_col=0)
+            scale_df = pd.read_csv(scale_csv_path, index_col=0)
 
-                scaler = StandardScaler()
-                scaler.mean_ = scale_df.loc["mean"].values
-                scaler.scale_ = scale_df.loc["std"].values
-                scaler.var_ = scale_df.loc["var"].values
+            scaler = StandardScaler()
+            scaler.mean_ = scale_df.loc["mean"].values
+            scaler.scale_ = scale_df.loc["std"].values
+            scaler.var_ = scale_df.loc["var"].values
 
-                numerical_pipeline = Pipeline(
-                    [("imputer", SimpleImputer(strategy="median")), ("scaler", scaler)]
-                )
-                method_used = "CSV scaler values"
-            except Exception as e:
-                LOG.warning(f"Could not load scaler values from CSV: {str(e)}")
+            numerical_pipeline = Pipeline(
+                [("imputer", SimpleImputer(strategy="median")), ("scaler", scaler)]
+            )
+            method_used = "CSV scaler values"
 
         if numerical_pipeline is None:
             raise ValueError(
@@ -109,7 +88,7 @@ def preprocess_numerical_data(
             )
 
         LOG.info(
-            f"Successfully applied training transformations to test data using {method_used}"
+            "Successfully applied training transformations to test data using %s", method_used
         )
 
         numerical_data = numerical_pipeline.transform(df[numerical_features])
@@ -133,7 +112,7 @@ def preprocess_numerical_data(
 
         numerical_pipeline_path_pkl = os.path.join(output_folder, "numerical_pipeline.pkl")
         joblib.dump(numerical_pipeline, numerical_pipeline_path_pkl)
-        LOG.info(f"Saved numerical pipeline to {numerical_pipeline_path_pkl}")
+        LOG.info("Saved numerical pipeline to %s", numerical_pipeline_path_pkl)
 
         scale_csv_path = os.path.join(output_folder, "scale_csv.csv")
         scaler = numerical_pipeline.named_steps["scaler"]
@@ -142,7 +121,7 @@ def preprocess_numerical_data(
             index=numerical_features,
         ).T
         scale_df.to_csv(scale_csv_path)
-        LOG.info(f"Saved scaler values to {scale_csv_path}")
+        LOG.info("Saved scaler values to %s", scale_csv_path)
 
         return numerical_df, numerical_pipeline
 
@@ -155,28 +134,30 @@ def preprocess_categorical_data(
     encode_values_to_drop: List[str],
 ) -> pd.DataFrame:
     """
-    Encodes categorical variables via a choice of methods. Standard
-    encoding where the first in each category is dropped is default,
-    see pandas.get_dummies documentation. Encoding via sample size or values
-    set by the user is also possible.
+    Encode categorical variables using various strategies.
 
-    :param df: Input dataframe.
-    :param categorical_features: List of string column names that are
-                                 categorical variables.
-    :param sample_size_encode: Optional bool. If true, the data will be split
-                               based on sample size. Variables with the largest
-                               sample size will be used as reference class.
-    :param select_encode_values: Optional bool. If True, data is split based
-                                 on custom values set by the user. Corresponds
-                                 to encode_values_to_drop.
-    :param encode_values_to_drop: If select_encode_values is True, then this
-                                  must be a list of strings the length of
-                                  categorical_features. Position one in the list
-                                  will link to the first variable provided in
-                                  categorical_features and so on.
-    :return: categorical_df: Dataframe of encoded categorical data set
-                             to the input datas index.
-    :return: drop_vals: Dataframe of columns removed during the encoding process.
+    Supports standard encoding (drop first), encoding by sample size, or custom
+    value encoding.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input dataframe.
+    categorical_features : list of str
+        List of column names for categorical variables.
+    sample_size_encode : bool
+        If True, use sample size encoding.
+    select_encode_values : bool
+        If True, use custom value encoding.
+    encode_values_to_drop : list of str
+        Values to drop for custom encoding.
+
+    Returns
+    -------
+    categorical_df : pandas.DataFrame
+        Encoded categorical data.
+    drop_vals : pandas.DataFrame
+        Columns removed during the encoding process.
     """
     df.columns = df.columns.astype(str)
 
@@ -207,15 +188,21 @@ def preprocess_categorical_data(
 
 def sample_size_encode_(df: pd.DataFrame, categorical_features: List[str]):
     """
-    Encodes variables based on sample size. The value that appears most often
-    in each of the categorical variables is used as the reference and therefore
-    dropped during encoding.
+    Encode categorical variables by dropping the most frequent value in each.
 
-    :param df: Input dataframe.
-    :param categorical_features: List of string column names that are
-                                 categorical variables.
-    :return: categorical_encoded: Dataframe of encoded categorical data.
-    :return: dropped_df: Dataframe of columns removed during the encoding process.
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input dataframe.
+    categorical_features : list of str
+        List of column names for categorical variables.
+
+    Returns
+    -------
+    categorical_encoded : pandas.DataFrame
+        Encoded categorical data.
+    dropped_df : pandas.DataFrame
+        Columns removed during the encoding process.
     """
     modes = df[categorical_features].mode().iloc[0]
 
@@ -251,19 +238,23 @@ def custom_sample_encode(
     df: pd.DataFrame, categorical_features: List[str], drop_values: List[str]
 ):
     """
-    Encodes variables based on user specified values. The values should be
-    specified in the order that the variables are listed in categorical_features.
-    These will be the values dropped when encoded and therefore used as
-    the reference.
+    Encode categorical variables by dropping user-specified values.
 
-    :param df: Input dataframe.
-    :param categorical_features: List of string column names that are
-                                 categorical variables.
-    :param drop_values: List of strings the length of categorical_features.
-                        Position one in the list will link to the first
-                        variable provided in categorical_features and so on.
-    :return: categorical_encoded: Dataframe of encoded categorical data.
-    :return: dropped_df: Dataframe of columns removed during the encoding process.
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input dataframe.
+    categorical_features : list of str
+        List of column names for categorical variables.
+    drop_values : list of str
+        Values to drop for each categorical variable.
+
+    Returns
+    -------
+    categorical_encoded : pandas.DataFrame
+        Encoded categorical data.
+    dropped_df : pandas.DataFrame
+        Columns removed during the encoding process.
     """
     if len(categorical_features) != len(drop_values):
         LOG.error("The number of categorical features must match the number of drop values")
@@ -309,17 +300,27 @@ def encode_test_data(
     weight_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    This encodes the test data to match the training data.
+    Encode test data to match the columns of the encoded training data.
 
-    :param test_df: Test data to be encoded.
-    :param categorical_features: List of string column names that are
-                                 categorical variables.
-    :param train_encoded:
-    :param target_column: sting column name of value to predict.
-    :param weight_column: Optional string column value to be used as weight.
-    :param weight_df: The weight column in dataframe form to be added back
-                      to the encoded test data.
-    :return: Encoded test data.
+    Parameters
+    ----------
+    test_df : pandas.DataFrame
+        Test data to be encoded.
+    categorical_features : list of str
+        List of column names for categorical variables.
+    train_encoded : pandas.DataFrame
+        Encoded training data (used to align columns).
+    target_column : str
+        Name of the target column.
+    weight_column : str
+        Name of the weight column.
+    weight_df : pandas.DataFrame
+        Weight column to be added back to the encoded test data.
+
+    Returns
+    -------
+    test_encoded : pandas.DataFrame
+        Encoded test data.
     """
 
     if target_column in train_encoded.columns:
@@ -351,7 +352,7 @@ def process_data_pipeline(
     sample_size_encode: bool,
     select_encode_values: bool,
     encode_values_to_drop: List[str],
-    train_encoded: None or pd.DataFrame,
+    train_encoded: None | pd.DataFrame,
     test_data: bool,
     numerical_pipeline,
     output_folder: Path,
@@ -359,41 +360,41 @@ def process_data_pipeline(
     """
     Pipeline to process input data via encoding and scaling transformations.
 
-    :param df: input dataframe.
-    :param numerical_features: List of string column names that are
-                               continuous variables.
-    :param categorical_features: List of string column names that are
-                                 categorical variables.
-    :param target_column: String column name of value to predict.
-    :param weight_column: Optional string column value to be used as weight.
-    :param sample_size_encode: Optional bool. If true, the data will be split
-                               based on sample size. Variables with the largest
-                               sample size will be used as reference class.
-    :param select_encode_values: Optional bool. If True, data is split based
-                                 on custom values set by the user. Corresponds
-                                 to encode_values_to_drop.
-    :param encode_values_to_drop: If select_encode_values is True, then this
-                                  must be a list of strings the length of
-                                  categorical_features. Position one in the list
-                                  will link to the first variable provided in
-                                  categorical_features and so on.
-    :param train_encoded: Either None or an encoded and scaled train dataset.
-                          This is to ensure that the corresponding test data
-                          is encoding in the same way as the training data.
-                          Columns in train and test must match for prediction.
-    :param test_data: If True then the dataframe passed must be the test
-                      data.
-    :param numerical_pipeline: This is the stored numerical pipline used on
-                               the training data. Can be left as None if a full
-                               model run is not being complete. In that case,
-                               output_folder must contain the csv or pkl
-                               version of numerical_pipeline.
-    :param output_folder: Path to output folder
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input dataframe.
+    numerical_features : list of str
+        List of column names for continuous variables.
+    categorical_features : list of str
+        List of column names for categorical variables.
+    target_column : str
+        Name of the column to predict.
+    weight_column : str
+        Optional column name to be used as sample weights.
+    sample_size_encode : bool
+        If True, use sample size encoding for categorical variables.
+    select_encode_values : bool
+        If True, use custom value encoding for categorical variables.
+    encode_values_to_drop : list of str
+        Values to drop for custom encoding.
+    train_encoded : pandas.DataFrame or None
+        Encoded and scaled training dataset, used to align test data.
+    test_data : bool
+        If True, the dataframe is test data.
+    numerical_pipeline : sklearn.Pipeline or None
+        Stored numerical pipeline from training data.
+    output_folder : pathlib.Path
+        Path to output folder.
 
-    :return:
-        (numerical_df, categorical_df, preprocessed_df): Scaled and encoded dataframe.
-        drop_vals: Dataframe of columns removed during the encoding process.
-        numerical_pipeline: stored transformation pipeline for continuous variables
+    Returns
+    -------
+    preprocessed_df : pandas.DataFrame
+        Scaled and encoded dataframe.
+    drop_vals : pandas.DataFrame or None
+        Columns removed during the encoding process.
+    numerical_pipeline : sklearn.Pipeline or None
+        Stored transformation pipeline for continuous variables.
     """
     preprocessed_df = None
 

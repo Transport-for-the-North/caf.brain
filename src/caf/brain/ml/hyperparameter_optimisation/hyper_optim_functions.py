@@ -20,7 +20,7 @@ from sklearn.ensemble import (
 )
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
-from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import (
+from caf.brain.ml.main_models.prediction_model.inputs import (
     ModelGrids,
     get_model_grid,
 )

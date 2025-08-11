@@ -1,13 +1,6 @@
-# -*- coding: utf-8 -*-
-"""
-Created on: 12/28/2023
-Original author: Adil Zaheer
-"""
-# pylint: disable=import-error,wrong-import-position
-# pylint: enable=import-error,wrong-import-position
-from statsmodels.stats.diagnostic import linear_rainbow
+# Third Party
 from scipy.stats import shapiro
-from statsmodels.stats.diagnostic import het_breuschpagan, het_white
+from statsmodels.stats.diagnostic import het_breuschpagan, het_white, linear_rainbow
 
 
 def assumption_analysis(model):

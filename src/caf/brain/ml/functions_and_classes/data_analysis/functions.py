@@ -1,28 +1,33 @@
-"""
-Created on: 1/17/2025
-Original author: Adil Zaheer
-"""
-
-import os.path
+# Built-Ins
 import logging
+import os.path
 from pathlib import Path
+
+# Third Party
 import numpy as np
 import pandas as pd
 from scipy.stats import shapiro
+from sklearn.ensemble import (
+    ExtraTreesClassifier,
+    GradientBoostingClassifier,
+    RandomForestClassifier,
+)
+from sklearn.linear_model import (
+    ElasticNet,
+    Lasso,
+    LinearRegression,
+    LogisticRegression,
+    Ridge,
+)
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from statsmodels.stats.diagnostic import het_breuschpagan, het_white
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tools import add_constant
-from statsmodels.stats.diagnostic import het_breuschpagan, het_white
 from statsmodels.tools.sm_exceptions import MissingDataError
-from sklearn.linear_model import Ridge, Lasso, ElasticNet, LinearRegression, LogisticRegression
-from sklearn.ensemble import (
-    GradientBoostingClassifier,
-    RandomForestClassifier,
-    ExtraTreesClassifier,
-)
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.multiclass import OneVsRestClassifier
 
+# Local Imports
 # from sklearn.decomposition import PCA
 from caf.brain.ml.functions_and_classes.process_data_functions.encode_and_scale import (
     preprocess_numerical_data,

@@ -1,7 +1,7 @@
 API Reference
 =============
 
-This section shows the detailed documentation for CAF.brAIn,
+This section shows the detailed documentation for CAF.brain,
 last updated on |today|.
 
 .. note::

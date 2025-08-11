@@ -3,17 +3,24 @@
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
+# Built-Ins
+import logging
+
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 import os
 from pathlib import Path
+
+# Third Party
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 from sklearn.svm import LinearSVC
-from sklearn.metrics import r2_score, mean_squared_error
-from caf.brain.ml.model_selection.model_selection_functions import calculate_final_coefficients
-import logging
+
+# Local Imports
+from caf.brain.ml.model_selection.functions import (
+    calculate_final_coefficients,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -31,27 +38,35 @@ def prediction(
     cols_dropped_by_feat_select: pd.DataFrame,
 ):
     """
-    Final prediction function which calls final coefficient generation if
-    applicable.
+    Generate predictions and final model coefficients, saving results to disk.
 
-    :param model: Fitted final model for prediction on unseen (test) data.
-    :param test: Dataframe of final test data post feature selection.
-    :param target_column: String column name of value to predict.
-    :param output_folder: Path to output location.
-    :param validation: Validation data if available.
-    :param weight_column: Optional string column value to be used as weight.
-    :param classification_prediction: List of integers that correspond to the
-                                      target column. The value(s) to predict
-                                      in a classification problem.
-    :param mse: Mean squared error or None. Dependency on if the algorithm selected
-                has coefficient values.
-    :param drop_vals: Values dropped during encoding of categorical variables.
-    :param cols_dropped_by_feat_select: These are the columns removed due to
-                                        feature selection.
+    Parameters
+    ----------
+    model : object
+        Fitted final model for prediction on unseen (test) data.
+    test : pandas.DataFrame
+        Final test data after feature selection.
+    target_column : str
+        Name of the column to predict.
+    output_folder : pathlib.Path
+        Path to output location.
+    validation : pandas.DataFrame or None
+        Validation data, if available.
+    weight_column : str
+        Optional column name to be used as sample weights.
+    classification_prediction : tuple of int or None
+        Target values to predict in a classification problem.
+    mse : float or None
+        Mean squared error, or None if the algorithm selected does not provide coefficients.
+    drop_vals : pandas.DataFrame or None
+        Values dropped during encoding of categorical variables.
+    cols_dropped_by_feat_select : pandas.DataFrame or None
+        Columns removed due to feature selection.
 
-    :return:
-        predictions: Predicted values based on the test data and set to the same
-                     index.
+    Returns
+    -------
+    None
+        Saves predictions and coefficients to disk.
     """
     if target_column in test.columns:
         test = test.drop(columns=target_column)

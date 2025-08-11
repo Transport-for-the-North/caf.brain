@@ -1,7 +1,7 @@
 Code Examples
 =============
 
-This section contains code examples for using some of the functionality within CAF.brAIn.
+This section contains code examples for using some of the functionality within CAF.brain.
 
 .. attention::
     The code examples are currently work-in-progress, if you have any

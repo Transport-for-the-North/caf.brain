@@ -3,6 +3,7 @@ Created on: 1/15/2025
 Original author: Adil Zaheer
 """
 
+# Built-Ins
 import os.path
 from pathlib import Path
 from typing import List
@@ -10,10 +11,12 @@ from typing import List
 # Third Party
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+
+# Local Imports
 from caf.brain.ml.functions_and_classes.process_data_functions.input_data import (
     InitialDataProcessing,
 )
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
 
 
 def split_data(

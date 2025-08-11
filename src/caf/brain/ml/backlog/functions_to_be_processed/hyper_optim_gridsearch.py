@@ -6,25 +6,24 @@
 Created on: 1/31/2024
 Original author: Adil Zaheer
 """
+# Third Party
+import statsmodels.api as sm
+from caf.ml.backlog.old_inputs import ModelGrids, Models
 from sklearn.ensemble import (
-    RandomForestRegressor,
+    ExtraTreesClassifier,
     ExtraTreesRegressor,
     RandomForestClassifier,
-    ExtraTreesClassifier,
+    RandomForestRegressor,
 )
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import (
     GridSearchCV,
-    RandomizedSearchCV,
-    ParameterGrid,
-    TimeSeriesSplit,
     KFold,
+    ParameterGrid,
+    RandomizedSearchCV,
+    TimeSeriesSplit,
 )
-from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import LogisticRegression
-
-from caf.ml.backlog.old_inputs import Models, ModelGrids
-import statsmodels.api as sm
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 
 def get_model_name(model_instance):

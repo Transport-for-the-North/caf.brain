@@ -11,11 +11,12 @@ File purpose: Model.py feeds into the land value uplift model. It contains
 cross validation and model prediction functions_to_be_processed.
 
 """
+# Third Party
+import numpy as np
+import pandas as pd
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import RepeatedKFold
 from tqdm import tqdm
-import pandas as pd
-import numpy as np
 
 
 def cross_validation(x, y, folds, model):

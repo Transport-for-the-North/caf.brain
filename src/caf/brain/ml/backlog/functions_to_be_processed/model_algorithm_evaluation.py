@@ -3,36 +3,42 @@
 Created on: 2/13/2024
 Original author: Adil Zaheer
 """
+# Built-Ins
 import os
 
-from sklearn.inspection import permutation_importance
-from sklearn.linear_model import LogisticRegression
+# Third Party
+import matplotlib.pyplot as plt
 import numpy as np
-import scipy.stats as stats
-from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
 import pandas as pd
+import scipy.stats as stats
+import seaborn as sns
+from caf.ml.backlog.old_inputs import Models
+from sklearn.inspection import permutation_importance
+from sklearn.linear_model import (
+    ElasticNet,
+    Lasso,
+    LinearRegression,
+    LogisticRegression,
+    Ridge,
+)
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    explained_variance_score,
+    mean_absolute_error,
+    mean_absolute_percentage_error,
+    mean_squared_error,
+    mean_squared_log_error,
+    median_absolute_error,
+    precision_recall_fscore_support,
+    r2_score,
+)
 
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 from sklearn.model_selection import cross_val_score
 from sklearn.tree import DecisionTreeRegressor
-
-from caf.ml.backlog.old_inputs import Models
-import seaborn as sns
-import matplotlib.pyplot as plt
-from sklearn.metrics import (
-    mean_squared_error,
-    r2_score,
-    mean_absolute_error,
-    mean_absolute_percentage_error,
-    mean_squared_log_error,
-    explained_variance_score,
-    median_absolute_error,
-    accuracy_score,
-    precision_recall_fscore_support,
-    confusion_matrix,
-    classification_report,
-)
 
 
 def select_model(

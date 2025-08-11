@@ -1,16 +1,21 @@
+# Built-Ins
 import logging
 import os
+
+# Third Party
 import pandas as pd
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+
+# Local Imports
 from caf.brain.ml.functions_and_classes.process_data_functions.encode_and_scale import (
     process_data_pipeline,
-)
-from caf.brain.ml.functions_and_classes.process_data_functions.split_data_into_ttv import (
-    split_data,
 )
 from caf.brain.ml.functions_and_classes.process_data_functions.input_data import (
     InitialDataProcessing,
 )
+from caf.brain.ml.functions_and_classes.process_data_functions.split_data_into_ttv import (
+    split_data,
+)
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
 
 LOG = logging.getLogger(__name__)
 

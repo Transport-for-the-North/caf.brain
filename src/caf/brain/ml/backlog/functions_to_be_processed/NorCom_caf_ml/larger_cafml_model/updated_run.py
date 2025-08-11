@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
+# Built-Ins
 import sys
 from pathlib import Path
+
+# Third Party
 from caf.ml.backlog.functions_to_be_processed.NorCom_caf_ml.larger_cafml_model.norcom_cafml_main import (
     main,
 )
 from caf.ml.backlog.functions_to_be_processed.NorCom_caf_ml.larger_cafml_model.norcom_inputs import (
-    NorCom_inputs,
     Models,
+    NorCom_inputs,
 )
 
 sys.path.extend(r"C:\Users\Liberty\Documents\GitHub\caf.ml\src")

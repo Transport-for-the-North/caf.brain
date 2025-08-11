@@ -1,6 +1,6 @@
 # Built-Ins
-import os
 import logging
+import os
 from pathlib import Path
 
 # Third Party
@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 from sklearn.svm import LinearSVC
+
+# Local Imports
 from caf.brain.ml.functions_and_classes.model_selection.functions import (
     calculate_final_coefficients,
 )

@@ -3,11 +3,14 @@
 Created on: 1/24/2025
 Original author: Adil Zaheer
 """
+# Built-Ins
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 from pathlib import Path
+from typing import Any, List, Optional, Union
+
+# Third Party
 from caf.toolkit import BaseConfig
-from typing import Optional, List, Any, Union
 
 
 class TensorFlowModelInputs(BaseConfig):

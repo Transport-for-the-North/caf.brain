@@ -6,11 +6,14 @@ from pathlib import Path
 # Third Party
 import pandas as pd
 
+# Local Imports
+from caf.brain.ml.functions_and_classes.model_selection.functions import select_model
+from caf.brain.ml.functions_and_classes.process_data_functions.main import (
+    main_input_data,
+)
 from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     PredictionModelInputs,
 )
-from caf.brain.ml.functions_and_classes.model_selection.functions import select_model
-from caf.brain.ml.functions_and_classes.process_data_functions.main import main_input_data
 
 LOG = logging.getLogger(__name__)
 

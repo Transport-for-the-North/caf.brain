@@ -10,14 +10,18 @@ File purpose: Land Value uplift model. Forecast rateable value
 
 """
 
+# Built-Ins
+import logging
+import os
+from pathlib import Path
+
+# Third Party
+import inputs
+
 # IMPORTS
 import pandas as pd
-import os
-import logging
-from pathlib import Path
-import inputs
 from inputs import *
-from LVU import selection, model
+from LVU import model, selection
 
 # LOG CREATION
 logging.basicConfig(

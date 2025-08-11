@@ -9,10 +9,12 @@ import os
 # Third Party
 import yaml
 from caf.toolkit import LogHelper, ToolDetails
-from caf.brain.ml.main_models.prediction_model.__main__ import main
+
+# Local Imports
 from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     PredictionModelInputs,
 )
+from caf.brain.ml.main_models.prediction_model.__main__ import main
 
 
 def model_setup():

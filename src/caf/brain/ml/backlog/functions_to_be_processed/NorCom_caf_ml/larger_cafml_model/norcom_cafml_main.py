@@ -3,9 +3,14 @@
 Created on: 10/9/2024
 Original author: Adil Zaheer
 """
+# Built-Ins
 import os
 
+# Third Party
 import pandas as pd
+from caf.ml.backlog.functions_to_be_processed.NorCom_caf_ml.larger_cafml_model.norcom_inputs import (
+    NorCom_inputs,
+)
 
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
@@ -13,13 +18,12 @@ from caf.ml.backlog.functions_to_be_processed.NorCom_caf_ml.larger_cafml_model.n
     saved_model_func,
 )
 from caf.ml.backlog.functions_to_be_processed.NorCom_caf_ml.larger_cafml_model.norcom_specific_functions import (
+    encode_and_sort,
     norcom_run_functions,
     refined_data_processor_function,
-    encode_and_sort,
 )
-from caf.ml.backlog.functions_to_be_processed.save_model import load_model_and_parameters
-from caf.ml.backlog.functions_to_be_processed.NorCom_caf_ml.larger_cafml_model.norcom_inputs import (
-    NorCom_inputs,
+from caf.ml.backlog.functions_to_be_processed.save_model import (
+    load_model_and_parameters,
 )
 
 

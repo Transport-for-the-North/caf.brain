@@ -103,10 +103,10 @@ def initialise_model(
 
 def select_model(
     train: pd.DataFrame,
+    output_folder: Path,
     target_column: str,
     weight_column: str,
-    models_to_test: List[Models],
-    output_folder: Path,
+    models_to_test: list[Models],
     classification_prediction: tuple[int, ...],
 ):
     """
@@ -114,23 +114,20 @@ def select_model(
 
     Parameters
     ----------
-    train : pandas.DataFrame
-        Processed input data split into the training subset.
-    target_column : str
-        Name of the column to predict.
-    weight_column : str
-        Optional column name to be used as sample weights.
-    models_to_test : list of Models
-        List of model enums to test.
-    output_folder : pathlib.Path
-        Path to the output location.
-    classification_prediction : tuple of int
-        Target values to predict in a classification problem.
+    train: Processed input data split into train subset.
+    output_folder: Path to output location.
+    target_column: Sting column name of value to predict.
+    weight_column: Optional string column value to be used as weight.
+    models_to_test: List or one algorithm to use as the base of the model.
+                    Available algorithms can be seen in
+                    prediction_model_inputs.py or __info__.py.
+    classification_prediction: List of integers that correspond to the
+                               target column. The value(s) to predict
+                               in a classification problem.
 
     Returns
     -------
-    best_model : object
-        The best performing initialised model.
+    best_model: Best performing model initialised.
     """
     weight = None
     y = train[target_column]
@@ -211,7 +208,7 @@ def score_regression(
             cv=3,
             scoring="r2",
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
         scores_mse = -cross_val_score(
@@ -221,7 +218,7 @@ def score_regression(
             cv=3,
             scoring="neg_mean_squared_error",
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
     else:
@@ -259,15 +256,24 @@ def score_classification(
     scores_auc : numpy.ndarray
         AUC scores from cross-validation.
     """
+
+    y_ = y.squeeze()
+    if y_.nunique() > 2:
+        f1 = "f1_weighted"
+        roc_auc = "roc_auc_ovr_weighted"
+    else:
+        f1 = "f1"
+        roc_auc = "roc_auc"
+
     if weight is not None:
         scores_f1 = cross_val_score(
             model_instance,
             x,
             y,
             cv=3,
-            scoring="f1",
+            scoring=f1,
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
         scores_auc = -cross_val_score(
@@ -275,17 +281,17 @@ def score_classification(
             x,
             y,
             cv=3,
-            scoring="roc_auc",
+            scoring=roc_auc,
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
     else:
         scores_f1 = cross_val_score(
-            model_instance, x, y, cv=3, scoring="f1", n_jobs=-1, verbose=1
+            model_instance, x, y, cv=3, scoring=f1, n_jobs=-1, verbose=1
         )
         scores_auc = -cross_val_score(
-            model_instance, x, y, cv=3, scoring="roc_auc", n_jobs=-1, verbose=1
+            model_instance, x, y, cv=3, scoring=roc_auc, n_jobs=-1, verbose=1
         )
 
     return scores_f1, scores_auc

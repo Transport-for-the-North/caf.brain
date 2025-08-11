@@ -11,7 +11,7 @@ import yaml
 from caf.toolkit import LogHelper, ToolDetails
 
 # Local Imports
-from caf.brain.ml.main_models.prediction_model.__main__ import main
+from caf.brain.ml.main_models.prediction_model.__example_doc__ import main as example_main
 from caf.brain.ml.main_models.prediction_model.inputs import (
     Models,
     PredictionModelInputs,
@@ -44,7 +44,7 @@ def model_setup():
     details = ToolDetails("caf.brAIn Prediction Model", "1.0.0")
 
     with LogHelper("caf.brain", details, console=True, log_file=path):
-        main(params)
+        example_main(params, output_path)
 
 
 if __name__ == "__main__":

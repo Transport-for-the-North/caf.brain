@@ -32,7 +32,8 @@ transforming_inputs:
 
 modelling:
     model_choice:
-        - MULTINOMIAL
+        - LOGIT_REGRESSION_ELASTICNET
+        - RANDOM_FOREST_CLASSIFIER
     full_transformations: True
     cv: null
     skip_feature_selection: False

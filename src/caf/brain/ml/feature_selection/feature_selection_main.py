@@ -1,72 +1,120 @@
-# -*- coding: utf-8 -*-
 """
 Created on: 1/21/2025
 Original author: Adil Zaheer
 """
-# pylint: disable=import-error,wrong-import-position
-# pylint: enable=import-error,wrong-import-position
+
 from pathlib import Path
+import logging
+import os
 import pandas as pd
 from caf.brain.ml.feature_selection.feature_selection_functions import (
     rf_feature_selection,
     combine_results,
     analyse_feature_importance,
 )
-import logging
+from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import (
+    PredictionModelInputs,
+)
+from caf.brain.ml.process_data_functions.process_data_main import main_input_data
 
 LOG = logging.getLogger(__name__)
 
 
 def main_feature_selection(
-    train: pd.DataFrame,
-    test: pd.DataFrame,
-    target_column: str,
-    cv: str,
-    regression_method,
-    weight_column: str,
-    classification_prediction: tuple[int, ...],
-    output: Path,
-    skip_feature_selection: bool,
-    intensive_feature_selection: bool,
-    is_time_series: bool,
+    paths: PredictionModelInputs.Paths,
+    data_classification: PredictionModelInputs.DataClassificationInputs,
+    transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
+    modelling: PredictionModelInputs.ModellingInputs,
+    train: pd.DataFrame = None,
+    test: pd.DataFrame = None,
+    initialised_model=None,
+    output: Path = None,
 ):
     """
-    Main feature selection function.
+    Feature selection function
 
-    :param train: Transformed input data split into training set.
-    :param test: Transformed input data split into training set.
-    :param target_column: String column name of value to predict.
-    :param cv: Cross validation method passed as a string. Any popular
-               SciKitlearn methods are suitable with KFold being default if
-               left as None.
-    :param regression_method: Initialised model algorithm from Models enum class.
-    :param weight_column: Optional string column value to be used as weight.
-    :param classification_prediction: List of integers that correspond to the
-                                      target column. The value(s) to predict
-                                      in a classification problem.
-    :param output: Path to output location.
-    :param skip_feature_selection: If true then feature selection is skipped.
-    :param intensive_feature_selection: If True then more invasive feature
-                                        selection is conducted.
-    :param is_time_series: If true then data must be time series. Time series
-                           based characteristics are taken into consideration
-                           during function execution.
+    Parameters
+    ----------
+    paths: Path inputs from the PredictionModelInputs class. These inputs
+           define paths to external files. See
+           caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+           for available options.
+    data_classification: Data classification inputs from the PredictionModelInputs
+                         class. These inputs help define and outline the
+                         structure of the input data. See
+                         caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+                         for available options.
+    transforming_inputs: Transforming inputs from the PredictionModelInputs
+                         class. These inputs dictate how the data is transformed
+                         for machine learning modelling. See
+                         caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+                         for available options.
+    modelling: Modelling inputs from the PredictionModelInputs
+               class. These inputs control the machine learning modelling
+               pipeline and functions. See
+               caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+               for available options.
+    train: Transformed input data split into training set.
+    test: Transformed input data split into training set.
+    initialised_model: Initialised model algorithm from Models enum class.
+    output: Path to output location.
 
-    :return:
-        train_final: Dataframe of final training data post feature selection.
-        test_final: Dataframe of final test data post feature selection.
-        cols_dropped_by_feat_select: These are the columns removed due to
-                                     feature selection.
+    Returns
+    -------
+    train_final: Dataframe of final training data post feature selection.
+    test_final: Dataframe of final test data post feature selection.
+    cols_dropped_by_feat_select: These are the columns removed due to
+                                 feature selection.
     """
-    if skip_feature_selection:
+
+    if modelling.skip_feature_selection:
         return train, test, None
 
-    if intensive_feature_selection:
+    if output is None:
+        output = os.path.join(paths.output_path, "output")
+        if not os.path.exists(output):
+            os.makedirs(output)
+
+    if train is None and test is None:
+        LOG.info(
+            "Train and test are none so they are being generated by the \
+                  main_input_data function"
+        )
+        data_dict, _, _ = main_input_data(
+            paths, data_classification, transforming_inputs, output_path=output
+        )
+
+        train = pd.DataFrame.from_dict(data_dict["train_scaled"])
+        test = pd.DataFrame.from_dict(data_dict["test_scaled"])
+
+    if modelling.intensive_feature_selection and initialised_model is None:
+        LOG.warning(
+            "In order to use intensive feature selection, you must \
+                     provide an initialised model from the Models class. This \
+                     this can be done using the main_model_selection function. \
+                     Standard feature selection being ran instead"
+        )
+        train_final = analyse_feature_importance(
+            train_transformed=train,
+            target_column=data_classification.target_column,
+            weight_column=data_classification.weight_column,
+            output_path=output,
+        )
+
+        test_final, cols_dropped_by_feat_select = combine_results(
+            train_final=train_final,
+            target_column=data_classification.target_column,
+            weight_column=data_classification.weight_column,
+            test=test,
+        )
+        return train_final, test_final, cols_dropped_by_feat_select
+
+    if modelling.intensive_feature_selection:
         # eval no. samples
         n_features = (
             len(train.columns)
-            - (1 if target_column in train.columns else 0)
-            - (1 if weight_column else 0)
+            - (1 if data_classification.target_column in train.columns else 0)
+            - (1 if data_classification.weight_column else 0)
         )
         n_samples = len(train)
 
@@ -75,58 +123,57 @@ def main_feature_selection(
 
         if n_samples < required_samples:
             LOG.warning(
-                f"Insufficient data for intensive feature selection. "
-                f"Falling back to basic feature importance analysis."
+                "Insufficient data for intensive feature selection. \
+                 Falling back to standard feature importance analysis."
             )
             train_final = analyse_feature_importance(
                 train_transformed=train,
-                target_column=target_column,
-                weight_column=weight_column,
+                target_column=data_classification.target_column,
+                weight_column=data_classification.weight_column,
                 output_path=output,
             )
 
             test_final, cols_dropped_by_feat_select = combine_results(
                 train_final=train_final,
-                target_column=target_column,
-                weight_column=weight_column,
+                target_column=data_classification.target_column,
+                weight_column=data_classification.weight_column,
                 test=test,
             )
-
             return train_final, test_final, cols_dropped_by_feat_select
 
-        else:
-            train_final = rf_feature_selection(
-                data=train,
-                target_column=target_column,
-                cv=cv,
-                regression_method=regression_method,
-                weight_column=weight_column,
-                classification_prediction=classification_prediction,
-                is_time_series=is_time_series,
-            )
-
-            test_final, cols_dropped_by_feat_select = combine_results(
-                train_final=train_final,
-                target_column=target_column,
-                weight_column=weight_column,
-                test=test,
-            )
-
-            return train_final, test_final, cols_dropped_by_feat_select
-
-    else:
-        train_final = analyse_feature_importance(
-            train_transformed=train,
-            target_column=target_column,
-            weight_column=weight_column,
-            output_path=output,
+        LOG.info("Intensive feature selection running")
+        train_final = rf_feature_selection(
+            data=train,
+            target_column=data_classification.target_column,
+            cv=modelling.cv,
+            regression_method=initialised_model,
+            weight_column=data_classification.weight_column,
+            classification_prediction=transforming_inputs.classification_prediction,
+            is_time_series=data_classification.is_time_series,
         )
 
         test_final, cols_dropped_by_feat_select = combine_results(
             train_final=train_final,
-            target_column=target_column,
-            weight_column=weight_column,
+            target_column=data_classification.target_column,
+            weight_column=data_classification.weight_column,
             test=test,
         )
 
         return train_final, test_final, cols_dropped_by_feat_select
+
+    LOG.info("Standard feature importance running")
+    train_final = analyse_feature_importance(
+        train_transformed=train,
+        target_column=data_classification.target_column,
+        weight_column=data_classification.weight_column,
+        output_path=output,
+    )
+
+    test_final, cols_dropped_by_feat_select = combine_results(
+        train_final=train_final,
+        target_column=data_classification.target_column,
+        weight_column=data_classification.weight_column,
+        test=test,
+    )
+
+    return train_final, test_final, cols_dropped_by_feat_select

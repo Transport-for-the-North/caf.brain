@@ -32,39 +32,27 @@ from caf.brain.ml.statsmodel_pipeline.statsmodel_main import main_stats_model
 LOG = logging.getLogger(__name__)
 
 
-def main(params: PredictionModelInputs):
+def main(params: PredictionModelInputs,
+         output_path):
     """
     Main function for caf.brAIn prediction model.
 
     Parameters
     ----------
     params: config file inputs
+    output_path
+
+    Returns
+    -------
 
     """
     start_time = time.time()
 
-    output_path = os.path.join(params.paths.output_path, "output")
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
-
     data_dict, drop_vals, numerical_pipeline = main_input_data(
         output_path=output_path,
-        file_path=params.paths.file_path,
-        folder_path=params.paths.folder_path,
-        target_column=params.data_classification.target_column,
-        custom_index=params.data_classification.custom_index,
-        column_name_to_drop_rows=params.transforming_inputs.column_name_to_drop_rows,
-        value_in_row=params.transforming_inputs.value_in_row,
-        weight_column=params.data_classification.weight_column,
-        categorical_features=params.data_classification.categorical_features,
-        numerical_features=params.data_classification.numerical_features,
-        classification_prediction=params.transforming_inputs.classification_prediction,
-        split_by_value=params.transforming_inputs.split_by_value,
-        validation_path=params.paths.validation_path,
-        split_size=params.transforming_inputs.split_size,
-        sample_size_encode=params.transforming_inputs.sample_size_encode,
-        select_encode_values=params.transforming_inputs.select_encode_values,
-        encode_values_to_drop=params.transforming_inputs.encode_values_to_drop,
+        paths=params.paths,
+        data_classification=params.data_classification ,
+        transforming_inputs=params.transforming_inputs,
     )
 
     train_scaled = pd.DataFrame.from_dict(data_dict["train_scaled"])
@@ -91,14 +79,12 @@ def main(params: PredictionModelInputs):
             weight_column=params.data_classification.weight_column,
         )
 
-    selected_model = main_model_selection(
-        train=train_scaled,
-        target_column=params.data_classification.target_column,
-        weight_column=params.data_classification.weight_column,
-        output=output_path,
-        model=params.modelling.model_choice,
-        classification_prediction=params.transforming_inputs.classification_prediction,
-    )
+    selected_model = main_model_selection(paths=params.paths,
+                                          data_classification=params.data_classification,
+                                          transforming_inputs=params.transforming_inputs,
+                                          modelling=params.modelling,
+                                          train=train_scaled,
+                                          output=output_path)
 
     x_train, x_test, y_train, y_test, x_train_weight = simple_train_test_split(
         df=train_scaled,
@@ -118,37 +104,30 @@ def main(params: PredictionModelInputs):
     )
 
     train_transformed, test_transformed = main_evaluate_input_data(
+        paths=params.paths,
+        data_classification=params.data_classification,
+        transforming_inputs=params.transforming_inputs,
+        modelling=params.modelling,
+        output_path=output_path,
+        train_scaled=train_scaled,
+        test_scaled=test_scaled,
+        train_unscaled=train_unscaled,
+        test_unscaled=test_unscaled,
         model_fit=x_train_model_fit,
         model_initialised=selected_model,
         residuals=residuals,
-        x_test=x_test,
-        train_scaled=train_scaled,
-        full_transformations=params.modelling.full_transformations,
-        train_unscaled=train_unscaled,
-        test_unscaled=test_unscaled,
-        categorical_features=params.data_classification.categorical_features,
-        numerical_features=params.data_classification.numerical_features,
-        target_column=params.data_classification.target_column,
-        weight_column=params.data_classification.weight_column,
-        test_scaled=test_scaled,
         x_train=x_train,
-        output_folder=output_path,
-        is_time_series=params.data_classification.is_time_series,
-        numerical_pipeline=numerical_pipeline,
-    )
+        x_test=x_test,
+        numerical_pipeline=numerical_pipeline)
 
     train_final, test_final, cols_dropped_by_feat_select = main_feature_selection(
+        paths=params.paths,
+        data_classification=params.data_classification,
+        transforming_inputs=params.transforming_inputs,
+        modelling=params.modelling,
         train=train_transformed,
         test=test_transformed,
-        target_column=params.data_classification.target_column,
-        cv=params.modelling.cv,
-        regression_method=selected_model,
-        weight_column=params.data_classification.weight_column,
-        classification_prediction=params.transforming_inputs.classification_prediction,
-        output=output_path,
-        skip_feature_selection=params.modelling.skip_feature_selection,
-        intensive_feature_selection=params.modelling.intensive_feature_selection,
-        is_time_series=params.data_classification.is_time_series,
+        output=output_path
     )
 
     best_model = main_hyperparameter_optimisation(

@@ -5,13 +5,10 @@ Original author: Adil Zaheer
 """
 # Built-Ins
 import logging
-import os as os
-from pathlib import Path
-from typing import List
+import os
 
+from caf.brain.ml.main_models.prediction_model.inputs import PredictionModelInputs
 # Third Party
-# pylint: disable=import-error,wrong-import-position
-# pylint: enable=import-error,wrong-import-position
 import pandas as pd
 
 # Local Imports
@@ -25,85 +22,25 @@ LOG = logging.getLogger(__name__)
 
 
 def main_input_data(
-    output_path: Path,
-    file_path: Path,
-    folder_path: Path,
-    target_column: str,
-    custom_index: List[str],
-    column_name_to_drop_rows: List[str],
-    value_in_row: List[str],
-    weight_column: str,
-    categorical_features: List[str],
-    numerical_features: List[str],
-    classification_prediction: tuple[int, ...],
-    split_by_value: str,
-    validation_path: Path,
-    split_size: float,
-    sample_size_encode: bool,
-    select_encode_values: bool,
-    encode_values_to_drop: List[str],
+        paths: PredictionModelInputs.Paths,
+        data_classification: PredictionModelInputs.DataClassificationInputs,
+        transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
+        output_path
 ) -> dict:
     """
-    Main function for processing input data.
 
     Parameters
     ----------
-    output_path : pathlib.Path
-        Path to output location.
-    file_path : pathlib.Path
-        Optional path to data to be used for modelling.
-    folder_path : pathlib.Path
-        Optional path to folder of data to be used for modelling.
-    target_column : str
-        Name of the column to predict.
-    custom_index : list of str
-        List of column names to be used as an index. Must be one value (e.g. year)
-        if splitting data into train and test via this column. Corresponds to
-        split_by_value in this case.
-    column_name_to_drop_rows : list of str
-        List of column names that contain values to drop.
-    value_in_row : list of str
-        Corresponding values for column_name_to_drop_rows.
-    weight_column : str
-        Optional column name to be used as sample weights.
-    categorical_features : list of str
-        List of column names that are categorical variables.
-    numerical_features : list of str
-        List of column names that are continuous variables.
-    classification_prediction : tuple of int
-        Target values to predict in a classification problem.
-    split_by_value : str
-        Optional string that links to custom_index. The value in the index column
-        to split the data into training and test.
-    validation_path : pathlib.Path
-        Optional path to validation data if it exists. This should correspond to
-        the test data created.
-    split_size : float
-        Ratio to randomly split data into train and test (e.g. 0.2). 0.2 is used
-        if left as None.
-    sample_size_encode : bool
-        If True, the data will be split based on sample size. Variables with the
-        largest sample size will be used as reference class.
-    select_encode_values : bool
-        If True, data is split based on custom values set by the user. Corresponds
-        to encode_values_to_drop.
-    encode_values_to_drop : list of str
-        If select_encode_values is True, then this must be a list of strings the
-        length of categorical_features. Position one in the list will link to the
-        first variable provided in categorical_features and so on.
+    paths
+    data_classification
+    transforming_inputs
+    output_path
 
     Returns
     -------
-    data_dict : dict
-        Dictionary of processed dataframes with keys:
-        'train_scaled', 'test_scaled', 'train_unscaled', 'test_unscaled', 'validate'.
-    drop_vals : pandas.DataFrame or None
-        Values dropped during encoding of categorical variables.
-    numerical_pipeline : sklearn.Pipeline or None
-        Fitted pipeline for numerical features.
-    """
 
-    folder_path = "" if folder_path is None else folder_path
+    """
+    folder_path = "" if paths.folder_path is None else paths.folder_path
 
     if os.path.exists(os.path.join(output_path, "train.csv")) or os.path.exists(
         os.path.join(folder_path, "train.csv")
@@ -114,7 +51,7 @@ def main_input_data(
             test_raw = pd.read_csv(os.path.join(output_path, "test.csv"))
             try:
                 validate = pd.read_csv(os.path.join(output_path, "validate.csv"))
-                validate[target_column] = validate[target_column].astype(float)
+                validate[data_classification.target_column] = validate[data_classification.target_column].astype(float)
             except FileNotFoundError:
                 LOG.warning("Validate not provided. Validation will not be performed")
                 validate = None
@@ -124,23 +61,23 @@ def main_input_data(
             test_raw = pd.read_csv(os.path.join(folder_path, "test.csv"))
             try:
                 validate = pd.read_csv(os.path.join(folder_path, "validate.csv"))
-                validate[target_column] = validate[target_column].astype(float)
+                validate[data_classification.target_column] = validate[data_classification.target_column].astype(float)
             except FileNotFoundError:
                 LOG.warning("Validate not provided. Validation will not be performed")
                 validate = None
 
         processor = InitialDataProcessing(
-            file_path=file_path,
+            file_path=paths.file_path,
             folder_path=folder_path,
             output_path=output_path,
-            target_column=target_column,
-            custom_index=custom_index,
-            column_name_to_drop_rows=column_name_to_drop_rows,
-            value_in_row=value_in_row,
-            weight_column=weight_column,
-            categorical_features=categorical_features,
-            numerical_features=numerical_features,
-            classification_prediction=classification_prediction,
+            target_column=data_classification.target_column,
+            custom_index=data_classification.custom_index,
+            column_name_to_drop_rows=transforming_inputs.column_name_to_drop_rows,
+            value_in_row=transforming_inputs.value_in_row,
+            weight_column=data_classification.weight_column,
+            categorical_features=data_classification.categorical_features,
+            numerical_features=data_classification.numerical_features,
+            classification_prediction=transforming_inputs.classification_prediction,
         )
 
         processed_dfs = {}
@@ -163,17 +100,17 @@ def main_input_data(
 
         train_unscaled = processed_dfs["train"]
         test_unscaled = processed_dfs["test"]
-        train_unscaled[target_column] = train_unscaled[target_column].astype(int)
+        train_unscaled[data_classification.target_column] = train_unscaled[data_classification.target_column].astype(int)
 
         train_scaled, drop_vals, numerical_pipeline = process_data_pipeline(
             df=train_unscaled.copy(),
-            numerical_features=numerical_features,
-            categorical_features=categorical_features,
-            target_column=target_column,
-            weight_column=weight_column,
-            sample_size_encode=sample_size_encode,
-            select_encode_values=select_encode_values,
-            encode_values_to_drop=encode_values_to_drop,
+            numerical_features=data_classification.numerical_features,
+            categorical_features=data_classification.categorical_features,
+            target_column=data_classification.target_column,
+            weight_column=data_classification.weight_column,
+            sample_size_encode=transforming_inputs.sample_size_encode,
+            select_encode_values=transforming_inputs.select_encode_values,
+            encode_values_to_drop=transforming_inputs.encode_values_to_drop,
             train_encoded=None,
             test_data=False,
             numerical_pipeline=None,
@@ -182,13 +119,13 @@ def main_input_data(
 
         test_scaled, _, _ = process_data_pipeline(
             df=test_unscaled.copy(),
-            numerical_features=numerical_features,
-            categorical_features=categorical_features,
-            target_column=target_column,
-            weight_column=weight_column,
-            sample_size_encode=sample_size_encode,
-            select_encode_values=select_encode_values,
-            encode_values_to_drop=encode_values_to_drop,
+            numerical_features=data_classification.numerical_features,
+            categorical_features=data_classification.categorical_features,
+            target_column=data_classification.target_column,
+            weight_column=data_classification.weight_column,
+            sample_size_encode=transforming_inputs.sample_size_encode,
+            select_encode_values=transforming_inputs.select_encode_values,
+            encode_values_to_drop=transforming_inputs.encode_values_to_drop,
             train_encoded=train_scaled,
             test_data=True,
             numerical_pipeline=numerical_pipeline,
@@ -206,17 +143,17 @@ def main_input_data(
 
     else:
         processor = InitialDataProcessing(
-            file_path=file_path,
+            file_path=paths.file_path,
             folder_path=folder_path,
             output_path=output_path,
-            target_column=target_column,
-            custom_index=custom_index,
-            column_name_to_drop_rows=column_name_to_drop_rows,
-            value_in_row=value_in_row,
-            weight_column=weight_column,
-            categorical_features=categorical_features,
-            numerical_features=numerical_features,
-            classification_prediction=classification_prediction,
+            target_column=data_classification.target_column,
+            custom_index=data_classification.custom_index,
+            column_name_to_drop_rows=transforming_inputs.column_name_to_drop_rows,
+            value_in_row=transforming_inputs.value_in_row,
+            weight_column=data_classification.weight_column,
+            categorical_features=data_classification.categorical_features,
+            numerical_features=data_classification.numerical_features,
+            classification_prediction=transforming_inputs.classification_prediction,
         )
 
         is_test_data = False
@@ -228,28 +165,24 @@ def main_input_data(
 
         train_unscaled, test_unscaled, validate = split_data(
             processed_dataframes=df,
-            index_columns=custom_index,
-            weight_column=weight_column,
-            target_column=target_column,
-            split_by_value=split_by_value,
-            validation_path=validation_path,
-            output_path=output_path,
-            split_size=split_size,
-            categorical_features=categorical_features,
+            paths=paths,
+            data_classification=data_classification,
+            transforming_inputs=transforming_inputs,
+            output_path=output_path
         )
 
         if validate is not None:
-            validate[target_column] = validate[target_column].astype(int)
+            validate[data_classification.target_column] = validate[data_classification.target_column].astype(int)
 
         train_scaled, drop_vals, numerical_pipeline = process_data_pipeline(
             df=train_unscaled.copy(),
-            numerical_features=numerical_features,
-            categorical_features=categorical_features,
-            target_column=target_column,
-            weight_column=weight_column,
-            sample_size_encode=sample_size_encode,
-            select_encode_values=select_encode_values,
-            encode_values_to_drop=encode_values_to_drop,
+            numerical_features=data_classification.numerical_features,
+            categorical_features=data_classification.categorical_features,
+            target_column=data_classification.target_column,
+            weight_column=data_classification.weight_column,
+            sample_size_encode=transforming_inputs.sample_size_encode,
+            select_encode_values=transforming_inputs.select_encode_values,
+            encode_values_to_drop=transforming_inputs.encode_values_to_drop,
             train_encoded=None,
             test_data=False,
             numerical_pipeline=None,
@@ -258,21 +191,21 @@ def main_input_data(
 
         test_scaled, _, _ = process_data_pipeline(
             df=test_unscaled.copy(),
-            numerical_features=numerical_features,
-            categorical_features=categorical_features,
-            target_column=target_column,
-            weight_column=weight_column,
-            sample_size_encode=sample_size_encode,
-            select_encode_values=select_encode_values,
-            encode_values_to_drop=encode_values_to_drop,
+            numerical_features=data_classification.numerical_features,
+            categorical_features=data_classification.categorical_features,
+            target_column=data_classification.target_column,
+            weight_column=data_classification.weight_column,
+            sample_size_encode=transforming_inputs.sample_size_encode,
+            select_encode_values=transforming_inputs.select_encode_values,
+            encode_values_to_drop=transforming_inputs.encode_values_to_drop,
             train_encoded=train_scaled,
             test_data=True,
             numerical_pipeline=numerical_pipeline,
             output_folder=output_path,
         )
 
-        train_unscaled[target_column] = train_unscaled[target_column].astype(int)
-        train_scaled[target_column] = train_scaled[target_column].astype(int)
+        train_unscaled[data_classification.target_column] = train_unscaled[data_classification.target_column].astype(int)
+        train_scaled[data_classification.target_column] = train_scaled[data_classification.target_column].astype(int)
 
         data_dict = {
             "train_scaled": train_scaled,

@@ -1,6 +1,5 @@
 # Built-Ins
 import logging
-import os
 from pathlib import Path
 
 # Third Party
@@ -63,8 +62,8 @@ def initialise_model(
     if x_train_weight is not None:
         weight = x_train_weight.values.flatten()
 
-    model_filename = os.path.join(output_folder, "initial_fitted_model.pkl")
-    if os.path.exists(model_filename):
+    model_filename = output_folder / "initial_fitted_model.pkl"
+    if model_filename.exists():
         model_fit = joblib.load(model_filename)
     else:
         if weight is not None:
@@ -89,7 +88,7 @@ def initialise_model(
 
     if coeff_df is not None:
         coeff_df.to_csv(
-            os.path.join(output_folder, "initial_model_coefficients.csv"), index=False
+            output_folder /"initial_model_coefficients.csv", index=False
         )
 
     return model_fit, residuals, mse
@@ -162,10 +161,7 @@ def select_model(
     LOG.info("Best model: %s", best_model)
     LOG.info("Best model score: %s", best_score)
     evaluation_df = pd.DataFrame.from_dict(acc, orient="index")
-
-    output_filename = "model_algorithm_evaluation.csv"
-    output_path = os.path.join(output_folder, output_filename)
-    evaluation_df.to_csv(output_path, index=True)
+    evaluation_df.to_csv(output_folder / "model_algorithm_evaluation.csv", index=True)
 
     return best_model
 

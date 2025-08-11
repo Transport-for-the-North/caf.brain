@@ -56,15 +56,12 @@ def main_input_data(
 
     folder_path = "" if paths.folder_path is None else paths.folder_path
 
-    if os.path.exists(os.path.join(output_path, "train.csv")) or os.path.exists(
-        os.path.join(folder_path, "train.csv")
-    ):
-        # try output_path
+    if (output_path / "train.csv").exists() or (folder_path / "train.csv").exists():
         try:
-            train_raw = pd.read_csv(os.path.join(output_path, "train.csv"))
-            test_raw = pd.read_csv(os.path.join(output_path, "test.csv"))
+            train_raw = pd.read_csv(output_path / "train.csv")
+            test_raw = pd.read_csv(output_path / "test.csv")
             try:
-                validate = pd.read_csv(os.path.join(output_path, "validate.csv"))
+                validate = pd.read_csv(output_path / "validate.csv")
                 validate[data_classification.target_column] = validate[
                     data_classification.target_column
                 ].astype(float)
@@ -73,10 +70,10 @@ def main_input_data(
                 validate = None
         # try folder_path
         except FileNotFoundError:
-            train_raw = pd.read_csv(os.path.join(folder_path, "train.csv"))
-            test_raw = pd.read_csv(os.path.join(folder_path, "test.csv"))
+            train_raw = pd.read_csv(folder_path / "train.csv")
+            test_raw = pd.read_csv(folder_path / "test.csv")
             try:
-                validate = pd.read_csv(os.path.join(folder_path, "validate.csv"))
+                validate = pd.read_csv(folder_path / "validate.csv")
                 validate[data_classification.target_column] = validate[
                     data_classification.target_column
                 ].astype(float)

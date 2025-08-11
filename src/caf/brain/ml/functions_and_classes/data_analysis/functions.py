@@ -1,6 +1,5 @@
 # Built-Ins
 import logging
-import os.path
 from pathlib import Path
 
 # Third Party
@@ -219,7 +218,7 @@ def pre_forecast_data_analysis(
     if any(issues.values()):
         LOG.warning("Data issue present: %s", issues_df)
 
-        issues_df.to_csv(os.path.join(output_folder, "data_issues_present.csv"), index=False)
+        issues_df.to_csv(output_folder / "data_issues_present.csv", index=False)
         if (
             modelling.full_transformations
             and data_classification.numerical_features

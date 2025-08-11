@@ -1,8 +1,3 @@
-"""
-Created on: 12/16/2024
-Original author: Adil Zaheer
-"""
-
 # Built-Ins
 import enum
 from pathlib import Path

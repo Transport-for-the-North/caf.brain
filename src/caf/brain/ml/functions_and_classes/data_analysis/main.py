@@ -86,8 +86,8 @@ def main_evaluate_input_data(
                       or test_scaled if transformations not applied.
     """
     if train_scaled is None and train_unscaled is None:
-        output_path = os.path.join(paths.output_path, "output")
-        if not os.path.exists(output_path):
+        output_path = paths.output_path / "output"
+        if not output_path.exists():
             os.makedirs(output_path)
 
     if train_scaled is None and train_unscaled is None:
@@ -130,7 +130,6 @@ def main_evaluate_input_data(
         )
 
         train_transformed, test_transformed = pre_forecast_data_analysis(
-            paths=paths,
             data_classification=data_classification,
             modelling=modelling,
             output_folder=output_path,
@@ -145,15 +144,13 @@ def main_evaluate_input_data(
             test_unscaled=test_unscaled,
             numerical_pipeline=numerical_pipeline,
         )
-        # todo code all works, still get warning. should just ignore
-        train_transformed.to_csv(os.path.join(output_path, "train_transformed.csv"))
-        test_transformed.to_csv(os.path.join(output_path, "test_transformed.csv"))
+        train_transformed.to_csv(output_path / "train_transformed.csv")
+        test_transformed.to_csv(output_path / "test_transformed.csv")
 
         LOG.info("Evaluation of input data finished.")
         return train_transformed, test_transformed
 
     train_transformed, test_transformed = pre_forecast_data_analysis(
-        paths=paths,
         data_classification=data_classification,
         modelling=modelling,
         output_folder=output_path,

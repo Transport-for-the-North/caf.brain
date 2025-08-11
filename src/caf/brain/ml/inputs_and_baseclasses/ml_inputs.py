@@ -10,7 +10,6 @@ from typing import Any, List, Optional, Union
 
 # Third Party
 import numpy as np
-import statsmodels.api as sm
 from caf.toolkit import BaseConfig
 from sklearn.ensemble import (
     AdaBoostRegressor,
@@ -33,7 +32,6 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR, LinearSVC
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from statsmodels.miscmodels.ordinal_model import OrderedModel
 
 
 class PredictionModelInputs(BaseConfig):

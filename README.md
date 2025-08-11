@@ -3,6 +3,9 @@
 <h1 align="center">CAF.brAIn</h1>
 
 <p align="center">
+<a href="https://transport-for-the-north.github.io/CAF-Handbook/python_tools/framework.html">
+  <img alt="CAF Status - Pre-Alpha" src="https://img.shields.io/badge/CAF%20Status-Pre--Alpha-orange">
+</a>
 <a href="https://pypi.org/project/caf.brain/">
   <img alt="Supported Python versions" src="https://img.shields.io/pypi/pyversions/caf.brain.svg?style=flat-square">
 </a>
@@ -12,6 +15,8 @@
 <a href="https://anaconda.org/conda-forge/caf.brain">
   <img alt="Conda" src="https://img.shields.io/conda/v/conda-forge/caf.brain?style=flat-square&logo=condaforge">
 </a>
+</p>
+<p align="center">
 <a href="https://app.codecov.io/gh/transport-for-the-north/caf.brain">
   <img alt="Coverage" src="https://img.shields.io/codecov/c/github/transport-for-the-north/caf.brain.svg?branch=main&style=flat-square&logo=CodeCov">
 </a>
@@ -26,7 +31,14 @@
 </a>
 </p>
 
-Common Analytical Framework package of Machine and Deep Learning tools.
+Common Analytical Framework package of Machine and Deep Learning tools
+
+> [!WARNING]  
+> This package is in an early stage of development so features may change or be removed. 
+> If using this package it is recommended to set a specific version and check before 
+> upgrading to a new version.
+
+Package description
 
 
 
@@ -36,9 +48,9 @@ This package is sits within the [Common Analytical Framework (CAF)](https://tran
 which is a collaboration between transport bodies in the UK to develop and maintain commonly used
 transport analytics and appraisal tools.
 
-## Maintainers
+---
 
-- Adil Zaheer (AdilZ16)
+<details><summary><h2>Contributing</h2></summary>
 
 ## Contributing
 
@@ -51,8 +63,9 @@ question has already been answered.
 
 Please see our [contribution guidelines](https://github.com/Transport-for-the-North/.github/blob/main/CONTRIBUTING.rst)
 for details on contributing to the codebase or documentation.
+</details>
 
-## Documentation
+<details><summary><h2>Documentation</h2></summary>
 
 Documentation is created using [Sphinx](https://www.sphinx-doc.org/en/master/index.html) and is hosted online at
 [cafbrain.readthedocs](https://cafbrain.readthedocs.io/en/stable/).
@@ -95,7 +108,13 @@ provides a target (latexpdf) which builds the LaTeX files then immediately build
 running `make latexpdf` MiKTeX may ask for permission to installed some required TeX packages.
 Once the command has finished the PDF will be located at
 [`docs/build/latex/cafbrain.pdf`](docs/build/latex/cafbrain.pdf).
+</details>
 
+
+## Maintainers
+
+- Adil Zaheer (AdilZ16)
+- Ben Taylor (BenTaylor-TfN)
 
 ## Credit
 

@@ -2,18 +2,25 @@
 Created on: 1/16/2025
 Original author: Adil Zaheer
 """
+
+# Built-Ins
+import logging
 import os
 from pathlib import Path
 from typing import List
-import logging
+
+# Third Party
 import joblib
 import numpy as np
 import pandas as pd
+from scipy import stats
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import cross_val_score
-from scipy import stats
-from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import Models
+
+# Local Imports
+from caf.brain.ml.main_models.prediction_model.inputs import Models
+
 LOG = logging.getLogger(__name__)
 
 
@@ -25,12 +32,10 @@ def initialise_model(
     output_folder: Path,
     model_initialised,
     classification_prediction: tuple[int, ...],
-    x_train_weight: pd.DataFrame = None
+    x_train_weight: pd.DataFrame = None,
 ):
     """
-    Fits the initialised model with machine learning prediction convention.
-    This gives a first look into how well the model will preform prior to
-    entering the machine learning pipeline.
+    Fit the initialised model and evaluate its initial performance.
 
     Parameters
     ----------
@@ -98,28 +103,31 @@ def initialise_model(
 
 def select_model(
     train: pd.DataFrame,
+    output_folder: Path,
     target_column: str,
     weight_column: str,
-    models_to_test: List[Models],
-    output_folder: Path,
+    models_to_test: list[Models],
     classification_prediction: tuple[int, ...],
 ):
     """
-    Function to quickly assess the best model for the data based on the list of
-    provided models.
+    Quickly assess and select the best model from a list of candidates.
 
-    :param train: processed input data split into train subset.
-    :param target_column: sting column name of value to predict.
-    :param weight_column: Optional string column value to be used as weight.
-    :param models_to_test: List or one algorithm to use as the base of the model.
-                           Available algorithms can be seen in
-                           prediction_model_inputs.py or __info__.py.
-    :param output_folder: Path to output location.
-    :param classification_prediction: List of integers that correspond to the
-                                      target column. The value(s) to predict
-                                      in a classification problem.
+    Parameters
+    ----------
+    train: Processed input data split into train subset.
+    output_folder: Path to output location.
+    target_column: Sting column name of value to predict.
+    weight_column: Optional string column value to be used as weight.
+    models_to_test: List or one algorithm to use as the base of the model.
+                    Available algorithms can be seen in
+                    prediction_model_inputs.py or __info__.py.
+    classification_prediction: List of integers that correspond to the
+                               target column. The value(s) to predict
+                               in a classification problem.
 
-    :return: Best performing model initialised.
+    Returns
+    -------
+    best_model: Best performing model initialised.
     """
     weight = None
     y = train[target_column]
@@ -172,20 +180,25 @@ def score_regression(
     weight: pd.DataFrame, model_instance: Models, x: pd.DataFrame, y: pd.DataFrame
 ):
     """
-    Function to score regression based problems.
+    Score regression models using cross-validation.
 
-    :param weight: Pandas dataframe of weight values from the original
-                   train input data.
-    :param model_instance: Initialised model.
-    :param x: Train data split into only the explanatory variables. Target
-              and weight should be removed. Any index columns should be
-              set.
-    :param y: Train data split into only the target. Any index columns should
-              be set.
+    Parameters
+    ----------
+    weight : pandas.DataFrame or None
+        Sample weights from the original training data.
+    model_instance : object
+        Initialised model.
+    x : pandas.DataFrame
+        Explanatory variables (features).
+    y : pandas.DataFrame
+        Target variable.
 
-    :return:
-        scores_r2: Series of R2 scores.
-        scores_mse: Series of mean squared error scores.
+    Returns
+    -------
+    scores_r2 : numpy.ndarray
+        R-squared scores from cross-validation.
+    scores_mse : numpy.ndarray
+        Mean squared error scores from cross-validation.
     """
     if weight is not None:
         scores_r2 = cross_val_score(
@@ -195,7 +208,7 @@ def score_regression(
             cv=3,
             scoring="r2",
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
         scores_mse = -cross_val_score(
@@ -205,7 +218,7 @@ def score_regression(
             cv=3,
             scoring="neg_mean_squared_error",
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
     else:
@@ -223,30 +236,44 @@ def score_classification(
     weight: pd.DataFrame, model_instance: Models, x: pd.DataFrame, y: pd.DataFrame
 ):
     """
-    Function to score classification based problems.
+    Score classification models using cross-validation.
 
-    :param weight: Pandas dataframe of weight values from the original
-                   train input data.
-    :param model_instance: Initialised model.
-    :param x: Train data split into only the explanatory variables. Target
-              and weight should be removed. Any index columns should be
-              set.
-    :param y: Train data split into only the target. Any index columns should
-              be set.
+    Parameters
+    ----------
+    weight : pandas.DataFrame or None
+        Sample weights from the original training data.
+    model_instance : object
+        Initialised model.
+    x : pandas.DataFrame
+        Explanatory variables (features).
+    y : pandas.DataFrame
+        Target variable.
 
-    :return:
-        scores_f1: Series of F1 scores.
-        scores_auc: Series of AUC scores.
+    Returns
+    -------
+    scores_f1 : numpy.ndarray
+        F1 scores from cross-validation.
+    scores_auc : numpy.ndarray
+        AUC scores from cross-validation.
     """
+
+    y_ = y.squeeze()
+    if y_.nunique() > 2:
+        f1 = "f1_weighted"
+        roc_auc = "roc_auc_ovr_weighted"
+    else:
+        f1 = "f1"
+        roc_auc = "roc_auc"
+
     if weight is not None:
         scores_f1 = cross_val_score(
             model_instance,
             x,
             y,
             cv=3,
-            scoring="f1",
+            scoring=f1,
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
         scores_auc = -cross_val_score(
@@ -254,17 +281,17 @@ def score_classification(
             x,
             y,
             cv=3,
-            scoring="roc_auc",
+            scoring=roc_auc,
             n_jobs=-1,
-            fit_params={"sample_weight": weight},
+            params={"sample_weight": weight},
             verbose=1,
         )
     else:
         scores_f1 = cross_val_score(
-            model_instance, x, y, cv=3, scoring="f1", n_jobs=-1, verbose=1
+            model_instance, x, y, cv=3, scoring=f1, n_jobs=-1, verbose=1
         )
         scores_auc = -cross_val_score(
-            model_instance, x, y, cv=3, scoring="roc_auc", n_jobs=-1, verbose=1
+            model_instance, x, y, cv=3, scoring=roc_auc, n_jobs=-1, verbose=1
         )
 
     return scores_f1, scores_auc
@@ -280,22 +307,31 @@ def calculate_model_coeff(
     y_pred: pd.Series,
 ):
     """
-    Calculates models linear coefficents if applicable to model selected.
+    Calculate linear model coefficients and statistics.
 
-    :param model: Fitted model on train_test_split of training data.
-    :param x_train: Series of train data to be used as train.
-    :param x_test: Series of test data to be used as unseen test data.
-    :param y_test: Series of target column inside train to be used as validation
-                   for predictions.
-    :param residuals: Series of residual values based on x_test predictions.
-    :param classification_prediction: List of integers that correspond to the
-                                      target column. The value(s) to predict
-                                      in a classification problem.
-    :param y_pred: Series of predicted values based on training data.
+    Parameters
+    ----------
+    model : object
+        Fitted model.
+    x_train : pandas.DataFrame
+        Training features.
+    x_test : pandas.DataFrame
+        Test features.
+    y_test : pandas.Series
+        True target values for the test set.
+    residuals : pandas.Series
+        Residuals between true and predicted values.
+    classification_prediction : tuple of int
+        Target values to predict in a classification problem.
+    y_pred : pandas.Series
+        Predicted values.
 
-    :return:
-        coeff_df: Dataframe of coefficient values and other relevant statistics.
-        mse: Mean squared error of predictions.
+    Returns
+    -------
+    coeff_df : pandas.DataFrame or None
+        DataFrame of coefficient values and statistics, or None if not applicable.
+    mse : float or None
+        Mean squared error of predictions, or None if not applicable.
     """
 
     if not hasattr(model, "coef_"):
@@ -374,26 +410,33 @@ def calculate_final_coefficients(
     cols_dropped_by_feat_select: pd.DataFrame,
 ):
     """
-    Calculates models linear coefficents if applicable to model used for
-    prediction.
+    Calculate final model coefficients and statistics.
 
-    :param model: Fitted final model for prediction on unseen (test) data.
-    :param test_data: Dataframe of final test data post feature selection.
-    :param training_mse: Mean squared error of predictions based on
-                         training data.
-    :param predictions: Predicted values based on the test data and set to the
-                        same index.
-    :param validation_data: Validation data if available.
-    :param target_column: String column name of value to predict.
-    :param is_classification: List of integers that correspond to the
-                              target column. The value(s) to predict
-                              in a classification problem.
-    :param drop_vals: Values dropped during encoding of categorical variables.
-    :param cols_dropped_by_feat_select: These are the columns removed due to
-                                        feature selection.
+    Parameters
+    ----------
+    model : object
+        Fitted final model for prediction on unseen (test) data.
+    test_data : pandas.DataFrame
+        Final test data after feature selection.
+    training_mse : float
+        Mean squared error of predictions on training data.
+    predictions : pandas.Series
+        Predicted values for the test data.
+    validation_data : pandas.DataFrame or None
+        Validation data, if available.
+    target_column : str
+        Name of the column to predict.
+    is_classification : tuple of int
+        Target values to predict in a classification problem.
+    drop_vals : pandas.DataFrame or None
+        Values dropped during encoding of categorical variables.
+    cols_dropped_by_feat_select : pandas.DataFrame or None
+        Columns removed due to feature selection.
 
-    :return:
-        coeff_df: Dataframe of coefficient values and other relevant statistics.
+    Returns
+    -------
+    coeff_df : pandas.DataFrame or None
+        DataFrame of coefficient values and statistics, or None if not applicable.
     """
     if not hasattr(model, "coef_"):
         return None

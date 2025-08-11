@@ -1,8 +1,3 @@
-"""
-Created on: 12/16/2024
-Original author: Adil Zaheer
-"""
-
 import logging
 import os
 import pandas as pd
@@ -13,7 +8,7 @@ from caf.brain.ml.functions_and_classes.process_data_functions.encode_and_scale 
 from caf.brain.ml.functions_and_classes.process_data_functions.split_data_into_ttv import (
     split_data,
 )
-from caf.brain.ml.functions_and_classes.process_data_functions.process_input_data_functions import (
+from caf.brain.ml.functions_and_classes.process_data_functions.input_data import (
     InitialDataProcessing,
 )
 

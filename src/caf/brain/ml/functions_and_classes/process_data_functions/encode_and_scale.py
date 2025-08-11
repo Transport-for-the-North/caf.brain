@@ -86,6 +86,7 @@ def preprocess_numerical_data(
             scaler.scale_ = scale_df.loc["std"].values
             scaler.var_ = scale_df.loc["var"].values
 
+            try:
                 numerical_pipeline = Pipeline(
                     [("imputer", SimpleImputer(strategy="median")), ("scaler", scaler)]
                 )
@@ -101,7 +102,6 @@ def preprocess_numerical_data(
             )
 
         LOG.info(
-            "Successfully applied training transformations to test data using %s", method_used
             "Successfully applied training transformations to test data using %s", method_used
         )
 

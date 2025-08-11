@@ -5,21 +5,12 @@ from pathlib import Path
 
 # Third Party
 import pandas as pd
-<<<<<<<< HEAD:src/caf/brain/ml/functions_and_classes/model_selection/model_selection_main.py
+
 from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     PredictionModelInputs,
 )
-from caf.brain.ml.functions_and_classes.model_selection.model_selection_functions import select_model
-from caf.brain.ml.functions_and_classes.process_data_functions.process_data_main import main_input_data
-========
-
-# Local Imports
-from caf.brain.ml.main_models.prediction_model.inputs import (
-    PredictionModelInputs,
-)
-from caf.brain.ml.model_selection.functions import select_model
-from caf.brain.ml.process_data_functions.process_data_main import main_input_data
->>>>>>>> main:src/caf/brain/ml/functions_and_classes/model_selection/main.py
+from caf.brain.ml.functions_and_classes.model_selection.functions import select_model
+from caf.brain.ml.functions_and_classes.process_data_functions.main import main_input_data
 
 LOG = logging.getLogger(__name__)
 

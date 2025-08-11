@@ -5,7 +5,7 @@ Original author: Adil Zaheer
 
 from pathlib import Path
 import pandas as pd
-from caf.brain.ml.functions_and_classes.prediction.prediction_functions import prediction
+from caf.brain.ml.functions_and_classes.prediction.functions import prediction
 
 
 def main_prediction(

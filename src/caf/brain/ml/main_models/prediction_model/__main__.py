@@ -16,10 +16,10 @@ from caf.brain.ml.functions_and_classes.data_analysis.main import (
 from caf.brain.ml.functions_and_classes.feature_selection.main import (
     main_feature_selection,
 )
-from caf.brain.ml.functions_and_classes.hyperparameter_optimisation.hyper_optim_main import (
+from caf.brain.ml.functions_and_classes.hparam_optimisation.main import (
     main_hyperparameter_optimisation,
 )
-from caf.brain.ml.functions_and_classes.model_selection.model_selection_functions import (
+from caf.brain.ml.functions_and_classes.model_selection.functions import (
     initialise_model,
 )
 from caf.brain.ml.functions_and_classes.model_selection.main import (
@@ -29,7 +29,7 @@ from caf.brain.ml.functions_and_classes.prediction.main import main_prediction
 from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     PredictionModelInputs,
 )
-from caf.brain.ml.functions_and_classes.process_data_functions.process_data_main import (
+from caf.brain.ml.functions_and_classes.process_data_functions.main import (
     main_input_data,
 )
 from caf.brain.ml.functions_and_classes.process_data_functions.split_data_into_ttv import (

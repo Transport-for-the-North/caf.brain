@@ -1,19 +1,9 @@
-"""
-Created on: 1/16/2025
-Original author: Adil Zaheer
-"""
-
 # Built-Ins
 import logging
 import os
 from pathlib import Path
-<<<<<<<< HEAD:src/caf/brain/ml/functions_and_classes/model_selection/model_selection_functions.py
-import logging
-========
-from typing import List
 
 # Third Party
->>>>>>>> main:src/caf/brain/ml/functions_and_classes/model_selection/functions.py
 import joblib
 import numpy as np
 import pandas as pd
@@ -21,14 +11,7 @@ from scipy import stats
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import cross_val_score
-<<<<<<<< HEAD:src/caf/brain/ml/functions_and_classes/model_selection/model_selection_functions.py
-from scipy import stats
 from caf.brain.ml.inputs_and_baseclasses.ml_inputs import Models
-========
-
-# Local Imports
-from caf.brain.ml.main_models.prediction_model.inputs import Models
->>>>>>>> main:src/caf/brain/ml/functions_and_classes/model_selection/functions.py
 
 LOG = logging.getLogger(__name__)
 
@@ -193,7 +176,6 @@ def score_regression(
 
     Parameters
     ----------
-<<<<<<<< HEAD:src/caf/brain/ml/functions_and_classes/model_selection/model_selection_functions.py
     weight: Pandas dataframe of weight values from the original
             train input data.
     model_instance: Initialised model.
@@ -205,23 +187,6 @@ def score_regression(
     -------
     scores_r2: Series of R2 scores.
     scores_mse: Series of mean squared error scores.
-========
-    weight : pandas.DataFrame or None
-        Sample weights from the original training data.
-    model_instance : object
-        Initialised model.
-    x : pandas.DataFrame
-        Explanatory variables (features).
-    y : pandas.DataFrame
-        Target variable.
-
-    Returns
-    -------
-    scores_r2 : numpy.ndarray
-        R-squared scores from cross-validation.
-    scores_mse : numpy.ndarray
-        Mean squared error scores from cross-validation.
->>>>>>>> main:src/caf/brain/ml/functions_and_classes/model_selection/functions.py
     """
     if weight is not None:
         scores_r2 = cross_val_score(
@@ -263,7 +228,6 @@ def score_classification(
 
     Parameters
     ----------
-<<<<<<<< HEAD:src/caf/brain/ml/functions_and_classes/model_selection/model_selection_functions.py
     weight: Pandas dataframe of weight values from the original train input data.
     model_instance: Initialised model.
     x: Train data split into only the explanatory variables. Target
@@ -274,23 +238,6 @@ def score_classification(
     -------
     scores_f1: Series of F1 scores.
     scores_auc: Series of AUC scores.
-========
-    weight : pandas.DataFrame or None
-        Sample weights from the original training data.
-    model_instance : object
-        Initialised model.
-    x : pandas.DataFrame
-        Explanatory variables (features).
-    y : pandas.DataFrame
-        Target variable.
-
-    Returns
-    -------
-    scores_f1 : numpy.ndarray
-        F1 scores from cross-validation.
-    scores_auc : numpy.ndarray
-        AUC scores from cross-validation.
->>>>>>>> main:src/caf/brain/ml/functions_and_classes/model_selection/functions.py
     """
     y_ = y.squeeze()
     if y_.nunique() > 2:
@@ -346,7 +293,6 @@ def calculate_model_coeff(
 
     Parameters
     ----------
-<<<<<<<< HEAD:src/caf/brain/ml/functions_and_classes/model_selection/model_selection_functions.py
     model: Fitted model on train_test_split of training data.
     x_train: Series of train data to be used as train.
     x_test: Series of test data to be used as unseen test data.
@@ -362,29 +308,6 @@ def calculate_model_coeff(
     -------
     coeff_df: Dataframe of coefficient values and other relevant statistics.
     mse: Mean squared error of predictions.
-========
-    model : object
-        Fitted model.
-    x_train : pandas.DataFrame
-        Training features.
-    x_test : pandas.DataFrame
-        Test features.
-    y_test : pandas.Series
-        True target values for the test set.
-    residuals : pandas.Series
-        Residuals between true and predicted values.
-    classification_prediction : tuple of int
-        Target values to predict in a classification problem.
-    y_pred : pandas.Series
-        Predicted values.
-
-    Returns
-    -------
-    coeff_df : pandas.DataFrame or None
-        DataFrame of coefficient values and statistics, or None if not applicable.
-    mse : float or None
-        Mean squared error of predictions, or None if not applicable.
->>>>>>>> main:src/caf/brain/ml/functions_and_classes/model_selection/functions.py
     """
     if not hasattr(model, "coef_"):
         return None, None
@@ -466,7 +389,6 @@ def calculate_final_coefficients(
 
     Parameters
     ----------
-<<<<<<<< HEAD:src/caf/brain/ml/functions_and_classes/model_selection/model_selection_functions.py
     model: Fitted final model for prediction on unseen (test) data.
     test_data: Dataframe of final test data post feature selection.
     training_mse: Mean squared error of predictions based on training data.
@@ -483,31 +405,6 @@ def calculate_final_coefficients(
     Returns
     -------
     coeff_df: Dataframe of coefficient values and other relevant statistics.
-========
-    model : object
-        Fitted final model for prediction on unseen (test) data.
-    test_data : pandas.DataFrame
-        Final test data after feature selection.
-    training_mse : float
-        Mean squared error of predictions on training data.
-    predictions : pandas.Series
-        Predicted values for the test data.
-    validation_data : pandas.DataFrame or None
-        Validation data, if available.
-    target_column : str
-        Name of the column to predict.
-    is_classification : tuple of int
-        Target values to predict in a classification problem.
-    drop_vals : pandas.DataFrame or None
-        Values dropped during encoding of categorical variables.
-    cols_dropped_by_feat_select : pandas.DataFrame or None
-        Columns removed due to feature selection.
-
-    Returns
-    -------
-    coeff_df : pandas.DataFrame or None
-        DataFrame of coefficient values and statistics, or None if not applicable.
->>>>>>>> main:src/caf/brain/ml/functions_and_classes/model_selection/functions.py
     """
     if not hasattr(model, "coef_"):
         return None

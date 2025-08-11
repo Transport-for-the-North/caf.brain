@@ -22,7 +22,7 @@ from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 from sklearn.svm import LinearSVC
 <<<<<<<< HEAD:src/caf/brain/ml/functions_and_classes/prediction/prediction_functions.py
 from sklearn.metrics import r2_score, mean_squared_error
-from caf.brain.ml.functions_and_classes.model_selection.model_selection_functions import (
+from caf.brain.ml.functions_and_classes.model_selection.functions import (
 ========
 
 # Local Imports

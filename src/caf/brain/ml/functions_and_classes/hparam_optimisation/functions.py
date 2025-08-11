@@ -23,7 +23,7 @@ from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     ModelGrids,
     get_model_grid,
 )
-from caf.brain.ml.functions_and_classes.feature_selection.feature_selection_functions import (
+from caf.brain.ml.functions_and_classes.feature_selection.functions import (
     get_cv_class,
 )
 

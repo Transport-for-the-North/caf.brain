@@ -10,10 +10,10 @@ import pandas as pd
 from caf.brain.ml.functions_and_classes.data_analysis.functions import (
     pre_forecast_data_analysis,
 )
-from caf.brain.ml.functions_and_classes.model_selection.model_selection_functions import (
+from caf.brain.ml.functions_and_classes.model_selection.functions import (
     initialise_model,
 )
-from caf.brain.ml.functions_and_classes.process_data_functions.process_data_main import (
+from caf.brain.ml.functions_and_classes.process_data_functions.main import (
     main_input_data,
 )
 from caf.brain.ml.functions_and_classes.process_data_functions.split_data_into_ttv import (

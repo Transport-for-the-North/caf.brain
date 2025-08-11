@@ -61,11 +61,12 @@ def main_evaluate_input_data(
                       or test_scaled if transformations not applied.
     """
 
-    if train_scaled is None and train_unscaled is None:
+    if output_path is None:
         output_path = os.path.join(paths.output_path, "output")
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
+    if train_scaled is None and train_unscaled is None:
         LOG.info("Evaluation of input data beginning. Outputs are saved to: %s", output_path)
 
         data_dict, _, numerical_pipeline = main_input_data(paths,

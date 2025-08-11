@@ -1,7 +1,7 @@
 User Guide
 ==========
 
-This section provides an in-depth guide on using CAF.brAIn.
+This section provides an in-depth guide on using CAF.brain.
 
 .. note::
    - For quick start guide see :ref:`quick start`

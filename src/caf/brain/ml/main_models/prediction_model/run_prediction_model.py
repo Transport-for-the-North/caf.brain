@@ -2,13 +2,16 @@
 Created on: 1/15/2025
 Original author: Adil Zaheer
 """
+
+# Built-Ins
 import os
+
+# Third Party
 import yaml
 from caf.toolkit import LogHelper, ToolDetails
 from caf.brain.ml.main_models.prediction_model.__main__ import main
 from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     PredictionModelInputs,
-    Models,
 )
 
 
@@ -18,7 +21,7 @@ def model_setup():
     for the caf.brAIn prediction model config run.
     """
 
-    with open("empty_config.yaml", "r", encoding='UTF-8') as file:
+    with open("empty_config.yaml", "r", encoding="UTF-8") as file:
         config_data = yaml.safe_load(file)
 
     params = PredictionModelInputs(**config_data)
@@ -26,7 +29,9 @@ def model_setup():
     if isinstance(params.modelling.model_choice, str):
         params.modelling.model_choice = [Models[params.modelling.model_choice]]
     else:
-        params.modelling.model_choice = [Models[model] for model in params.modelling.model_choice]
+        params.modelling.model_choice = [
+            Models[model] for model in params.modelling.model_choice
+        ]
 
     output_path = os.path.join(params.paths.output_path, "output")
     if not os.path.exists(output_path):

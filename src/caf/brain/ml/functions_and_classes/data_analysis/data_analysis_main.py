@@ -90,6 +90,7 @@ def main_evaluate_input_data(
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
+    if train_scaled is None and train_unscaled is None:
         LOG.info("Evaluation of input data beginning. Outputs are saved to: %s", output_path)
 
         data_dict, _, numerical_pipeline = main_input_data(

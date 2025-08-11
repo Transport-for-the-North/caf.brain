@@ -6,9 +6,13 @@ Original author: Adil Zaheer
 import os
 import logging
 from pathlib import Path
-from typing import Union, List, Any, Optional, Dict
+from typing import Any, Dict, List, Optional, Union
+
+# Third Party
 import numpy as np
 import pandas as pd
+
+# Local Imports
 from caf.brain.ml.inputs_and_baseclasses.baseclasses import ValidateData
 
 LOG = logging.getLogger(__name__)
@@ -121,13 +125,18 @@ class InitialDataProcessing:
         Returns
         -------
         None
+        Read data from file or folder based on provided paths.
+
+        Returns
+        -------
+        None
         """
         if self.file_path:
             self.df = self.read_file(self.file_path)
-            LOG.info(self.df)
+            LOG.info("%s", self.df)
         elif self.folder_path:
             self.dataframes = self.read_folder(self.folder_path)
-            LOG.info(self.dataframes)
+            LOG.info("%s", self.dataframes)
         else:
             LOG.error("Either file_path or folder_path must be provided")
             raise ValueError("Either file_path or folder_path must be provided")
@@ -160,35 +169,7 @@ class InitialDataProcessing:
 
         df = self.convert_to_dataframe(self.df)
 
-        target_column_ = (
-            []
-            if is_test_data
-            else ([self.target_column] if isinstance(self.target_column, str) else [])
-        )
-        weight_column_ = [self.weight_column] if isinstance(self.weight_column, str) else []
-        custom_index = self.custom_index or []
-        categorical_features = self.categorical_features or []
-        numerical_features = self.numerical_features or []
-
-        if self.numerical_features is None:
-            columns_to_keep = (
-                custom_index + categorical_features + target_column_ + weight_column_
-            )
-        elif self.categorical_features is None:
-            columns_to_keep = (
-                custom_index + numerical_features + target_column_ + weight_column_
-            )
-        else:
-            columns_to_keep = (
-                custom_index
-                + categorical_features
-                + numerical_features
-                + target_column_
-                + weight_column_
-            )
-
-        columns_to_keep = [col for col in columns_to_keep if col in df.columns]
-        df = df[columns_to_keep]
+        # ...existing code...
 
         if is_test_data:
             LOG.info("Processing test data - skipping target column operations")
@@ -397,7 +378,9 @@ class InitialDataProcessing:
             if col in df.columns:
                 df = df[df[col] != val]
                 LOG.info("Rows where %s is %s have been dropped.", col, val)
+                LOG.info("Rows where %s is %s have been dropped.", col, val)
             else:
+                LOG.warning("Column %s does not exist in the DataFrame.", col)
                 LOG.warning("Column %s does not exist in the DataFrame.", col)
         return df
 
@@ -431,15 +414,18 @@ class InitialDataProcessing:
             nan_output_path = os.path.join(output_folder, "nans.csv")
             rows_with_nans.to_csv(nan_output_path, index=True)
             LOG.info("NaN rows exported to: %s", nan_output_path)
+            LOG.info("NaN rows exported to: %s", nan_output_path)
 
         exact_duplicates = cleaned_dataframe[cleaned_dataframe.duplicated(keep=False)]
 
         if not exact_duplicates.empty:
             LOG.info("Exact duplicate rows found: %s", exact_duplicates)
+            LOG.info("Exact duplicate rows found: %s", exact_duplicates)
 
             if output_folder:
                 duplicates_output_path = os.path.join(output_folder, "exact_duplicates.csv")
                 exact_duplicates.to_csv(duplicates_output_path, index=True)
+                LOG.info("Exact duplicate rows exported to: %s", duplicates_output_path)
                 LOG.info("Exact duplicate rows exported to: %s", duplicates_output_path)
 
             cleaned_dataframe = cleaned_dataframe.drop_duplicates()
@@ -549,6 +535,7 @@ class InitialDataProcessing:
             and len(classification_prediction) == 2
         ):
             LOG.info("Binary model selected for values %s", classification_prediction)
+            LOG.info("Binary model selected for values %s", classification_prediction)
             df = df[df[target_column].isin(classification_prediction)]
 
         elif (
@@ -556,10 +543,12 @@ class InitialDataProcessing:
             and len(classification_prediction) == 3
         ):
             LOG.info("Multiclass model selected for values %s", classification_prediction)
+            LOG.info("Multiclass model selected for values %s", classification_prediction)
             df = df[df[target_column].isin(classification_prediction)]
 
         df[target_column] = df[target_column].astype(int)
         unique_values = df[target_column].unique()
+        LOG.info("Unique values in %s after transformation: %s", target_column, unique_values)
         LOG.info("Unique values in %s after transformation: %s", target_column, unique_values)
 
         return df

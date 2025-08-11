@@ -6,6 +6,8 @@ Original author: Adil Zaheer
 import os.path
 from pathlib import Path
 from typing import List
+
+# Third Party
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
@@ -80,11 +82,10 @@ def stratified_split_with_categories(
     output_path: Path,
 ) -> pd.DataFrame:
     """
-    Function to split data into train, test and validate by using a value
-    provided by the user. The value is the ratio in which to split the data
-    randomly into train and test. The function ensures that all categories are
-    represented at least once in both train and test. If split_size is None
-    then 0.2 is used by default.
+    Split data into train, test, and validate sets using stratification.
+
+    Ensures all categories are represented at least once in both train and test.
+    If split_size is None, 0.2 is used by default.
 
     Parameters
     ----------
@@ -156,11 +157,12 @@ def split_by_column_value(
     output_path: Path,
 ) -> pd.DataFrame:
     """
-    Function to split data into train, test and validate by using a value
-    provided by the user. The value must correspond to the index column
-    used. The index column must only be one column specified, multi-index is
-    not applicable. E.g. index_columns: year, split_by_value '2019'. This would
-    mean everything pre-2019 is training and everything post 2019 is test.
+    Split data into train, test, and validate sets by a specific column value.
+
+    The value must correspond to the index column used. The index column must only
+    be one column specified (no multi-index). For example, index_columns: year,
+    split_by_value: '2019' means everything pre-2019 is training and everything
+    post-2019 is test.
 
     Parameters
     ----------
@@ -215,18 +217,29 @@ def split_by_column_value(
 
 def simple_train_test_split(df: pd.DataFrame, target_column: str, weight_column: str):
     """
-    Split data into train test split for model building purposes
+    Split data into train and test sets for model building.
 
     Parameters
     ----------
-    df: Input pandas dataframe
-    target_column: Y (dependent) variable in the dataframe (column)
-    weight_column: Weight column in the dataframe
+    df : pandas.DataFrame
+        Input dataframe.
+    target_column : str
+        Name of the dependent (target) variable in the dataframe.
+    weight_column : str
+        Name of the weight column in the dataframe.
 
     Returns
     -------
-    Dataframes containing the input data split into train and test as well as a
-    Numpy ndarray of weight values.
+    x_train : pandas.DataFrame
+        Training features.
+    x_test : pandas.DataFrame
+        Test features.
+    y_train : pandas.Series
+        Training target values.
+    y_test : pandas.Series
+        Test target values.
+    x_train_weight : pandas.Series or None
+        Weight values for the training set, if available.
     """
     x = df.drop(columns=[target_column])
     y = df[target_column]

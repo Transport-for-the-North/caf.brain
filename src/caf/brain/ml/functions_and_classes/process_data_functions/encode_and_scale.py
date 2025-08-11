@@ -79,13 +79,12 @@ def preprocess_numerical_data(
 
         if numerical_pipeline is None and output_folder is not None:
             scale_csv_path = os.path.join(output_folder, "scale_csv.csv")
-            try:
-                scale_df = pd.read_csv(scale_csv_path, index_col=0)
+            scale_df = pd.read_csv(scale_csv_path, index_col=0)
 
-                scaler = StandardScaler()
-                scaler.mean_ = scale_df.loc["mean"].values
-                scaler.scale_ = scale_df.loc["std"].values
-                scaler.var_ = scale_df.loc["var"].values
+            scaler = StandardScaler()
+            scaler.mean_ = scale_df.loc["mean"].values
+            scaler.scale_ = scale_df.loc["std"].values
+            scaler.var_ = scale_df.loc["var"].values
 
                 numerical_pipeline = Pipeline(
                     [("imputer", SimpleImputer(strategy="median")), ("scaler", scaler)]
@@ -102,6 +101,7 @@ def preprocess_numerical_data(
             )
 
         LOG.info(
+            "Successfully applied training transformations to test data using %s", method_used
             "Successfully applied training transformations to test data using %s", method_used
         )
 

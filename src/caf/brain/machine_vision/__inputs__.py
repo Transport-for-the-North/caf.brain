@@ -5,8 +5,11 @@
 Created on: 3/3/2025
 Original author: Adil Zaheer
 """
+# Built-Ins
 from pathlib import Path
 from typing import Optional
+
+# Third Party
 from caf.toolkit import BaseConfig
 
 
@@ -29,16 +32,21 @@ class GenerateSatelliteImagesInput(BaseConfig):
     geo_path: Optional[Path] = None
 
     image_folder_path: Optional[Path] = None  # path to outermost satellite image folder
-    final_html_info: Optional[Path] = None  # path to satellite image info (will be generated if it doesn't exist)
+    final_html_info: Optional[Path] = (
+        None  # path to satellite image info (will be generated if it doesn't exist)
+    )
 
     # only relevant if noham_path and geo_path are none. The columns easting and northing coordinates for what you're trying to predict
     x_column: Optional[str] = None
     y_column: Optional[str] = None
     individual_junc_types: Optional[Path] = None
 
+
 class ObjectDetectionInputs(BaseConfig):
     output: Optional[Path] = None
     class_names: Optional[list[str]] = None
     hyperparameter_optimisation: Optional[str] = None
     image_path: Optional[Path] = None
-    path_to_code: Optional[Path] = None  # path to where your brain folder is inside caf.brAIn e.g. C:\Users\Liberty\Documents\GitHub\caf.brain\src\caf\brain
+    path_to_code: Optional[Path] = (
+        None  # path to where your brain folder is inside caf.brAIn e.g. C:\Users\Liberty\Documents\GitHub\caf.brain\src\caf\brain
+    )

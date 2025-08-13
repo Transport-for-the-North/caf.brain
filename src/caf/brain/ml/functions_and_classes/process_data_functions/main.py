@@ -69,7 +69,7 @@ def main_input_data(
             except FileNotFoundError:
                 LOG.warning("Validate not provided. Validation will not be performed")
                 validate = None
-      
+
         except FileNotFoundError:
             train_raw = pd.read_csv(folder_path / "train.csv")
             test_raw = pd.read_csv(folder_path / "test.csv")

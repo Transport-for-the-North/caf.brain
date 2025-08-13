@@ -6,11 +6,12 @@ Original author: Adil Zaheer
 # Built-Ins
 import enum
 from pathlib import Path
-from typing import Any, List, Optional, Union, Type
+from typing import Any, List, Optional, Type, Union
 
 # Third Party
 import numpy as np
 from caf.toolkit import BaseConfig
+from sklearn.base import BaseEstimator
 from sklearn.ensemble import (
     AdaBoostRegressor,
     BaggingRegressor,
@@ -32,7 +33,6 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR, LinearSVC
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.base import BaseEstimator
 
 
 class PredictionModelInputs(BaseConfig):
@@ -387,7 +387,6 @@ class ModelGrids(enum.Enum):
         return getattr(cls, model_enum.name).value
 
 
-
 def get_model_grid_from_type(model_type: Type[BaseEstimator]) -> dict:
     """
     Retrieve the hyperparameter grid for a given scikit-learn model class.
@@ -437,4 +436,4 @@ def get_model_grid_from_type(model_type: Type[BaseEstimator]) -> dict:
         assert isinstance(param_grid, dict)
         return param_grid
     except KeyError as e:
-        raise ValueError(f"No grid found for model instance of type {model_type}")  from e
+        raise ValueError(f"No grid found for model instance of type {model_type}") from e

@@ -23,7 +23,7 @@ def main_model_selection(
     transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
     modelling: PredictionModelInputs.ModellingInputs,
     output: Path,
-    paths: PredictionModelInputs.Paths = None,
+    paths: PredictionModelInputs.Paths,
     train: pd.DataFrame = None,
 ) -> object:
     """

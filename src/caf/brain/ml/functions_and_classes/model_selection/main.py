@@ -22,9 +22,9 @@ def main_model_selection(
     data_classification: PredictionModelInputs.DataClassificationInputs,
     transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
     modelling: PredictionModelInputs.ModellingInputs,
+    output: Path,
     paths: PredictionModelInputs.Paths = None,
     train: pd.DataFrame = None,
-    output: Path = None,
 ) -> object:
     """
     Function to automatically score and rank algorithms from the Models
@@ -60,12 +60,6 @@ def main_model_selection(
                     provided list. This model is not initialised and ready
                     for further use.
     """
-
-    if output is None:
-        output = os.path.join(paths.output_path, "output")
-        if not os.path.exists(output):
-            os.makedirs(output)
-
     if train is None:
         LOG.info(
             "Train is none so data is being read in from PredictionModelInputs.Paths.file_path"

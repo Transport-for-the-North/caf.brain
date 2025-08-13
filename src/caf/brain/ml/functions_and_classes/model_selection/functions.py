@@ -87,9 +87,7 @@ def initialise_model(
     )
 
     if coeff_df is not None:
-        coeff_df.to_csv(
-            output_folder /"initial_model_coefficients.csv", index=False
-        )
+        coeff_df.to_csv(output_folder / "initial_model_coefficients.csv", index=False)
 
     return model_fit, residuals, mse
 
@@ -453,7 +451,7 @@ def calculate_final_coefficients(
     )
     covariance_matrix = np.linalg.pinv(x_with_intercept.T.dot(x_with_intercept)) * mse
     std_errors = np.sqrt(np.diag(covariance_matrix))
-    t_values = coefficients / std_errors
+    t_values = co / std_errors
     p_values = 2 * (1 - stats.t.cdf(abs(t_values), dof))
 
     coeff_df = pd.DataFrame(

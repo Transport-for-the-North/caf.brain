@@ -1,6 +1,6 @@
 # Built-Ins
 import logging
-import os
+import pathlib
 
 # Third Party
 import pandas as pd
@@ -54,7 +54,8 @@ def main_input_data(
     numerical_pipeline: SciKit-Learn pipeline that contains scaling information.
     """
 
-    folder_path = "" if paths.folder_path is None else paths.folder_path
+    folder_path = pathlib.Path("" if paths.folder_path is None else paths.folder_path)
+    output_path = pathlib.Path(output_path)
 
     if (output_path / "train.csv").exists() or (folder_path / "train.csv").exists():
         try:
@@ -68,7 +69,7 @@ def main_input_data(
             except FileNotFoundError:
                 LOG.warning("Validate not provided. Validation will not be performed")
                 validate = None
-        # try folder_path
+      
         except FileNotFoundError:
             train_raw = pd.read_csv(folder_path / "train.csv")
             test_raw = pd.read_csv(folder_path / "test.csv")

@@ -1,8 +1,3 @@
-"""
-Created on: 12/16/2024.
-Original author: Adil Zaheer
-"""
-
 # Built-Ins
 import logging
 import os
@@ -170,7 +165,35 @@ class InitialDataProcessing:
 
         df = self.convert_to_dataframe(self.df)
 
-        # ...existing code...
+        target_column_ = (
+            []
+            if is_test_data
+            else ([self.target_column] if isinstance(self.target_column, str) else [])
+        )
+        weight_column_ = [self.weight_column] if isinstance(self.weight_column, str) else []
+        custom_index = self.custom_index or []
+        categorical_features = self.categorical_features or []
+        numerical_features = self.numerical_features or []
+
+        if self.numerical_features is None:
+            columns_to_keep = (
+                custom_index + categorical_features + target_column_ + weight_column_
+            )
+        elif self.categorical_features is None:
+            columns_to_keep = (
+                custom_index + numerical_features + target_column_ + weight_column_
+            )
+        else:
+            columns_to_keep = (
+                custom_index
+                + categorical_features
+                + numerical_features
+                + target_column_
+                + weight_column_
+            )
+
+        columns_to_keep = [col for col in columns_to_keep if col in df.columns]
+        df = df[columns_to_keep]
 
         if is_test_data:
             LOG.info("Processing test data - skipping target column operations")

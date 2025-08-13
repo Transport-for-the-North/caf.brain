@@ -33,9 +33,9 @@ def main_hyperparameter_optimisation(
     data_classification: PredictionModelInputs.DataClassificationInputs,
     transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
     modelling: PredictionModelInputs.ModellingInputs,
+    output_folder: Path,
     train: pd.DataFrame = None,
     model_instance=None,
-    output_folder: Path = None,
 ):
     """
     Main function for hyperparameter optimisation.
@@ -69,11 +69,6 @@ def main_hyperparameter_optimisation(
     -------
     best_model: Fitted final model for prediction on unseen (test) data.
     """
-    if output_folder is None:
-        output_folder = os.path.join(paths.output_path, "output")
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
-
     if train is None:
         LOG.info(
             "Train does not exist so is being generated with the main_input_data \

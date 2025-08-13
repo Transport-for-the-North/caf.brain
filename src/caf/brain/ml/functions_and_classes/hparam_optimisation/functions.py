@@ -29,7 +29,7 @@ from caf.brain.ml.functions_and_classes.feature_selection.functions import (
 )
 from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     ModelGrids,
-    get_model_grid,
+    get_model_grid_from_type,
 )
 
 LOG = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ def select_param(
     if len(model_name) == 1:
         param_grid = ModelGrids.get_grid(model_name[0])
     else:
-        param_grid = get_model_grid(model_instance)
+        param_grid = get_model_grid_from_type(type(model_instance))
 
     if isinstance(model_instance, LinearRegression):
         LOG.info(
@@ -184,8 +184,7 @@ def select_param(
         if coefficients.ndim == 1:
             coeff_df = pd.DataFrame({"Feature": x.columns, "Coefficient": coefficients})
         else:
-            coeff_df = pd.DataFrame(coefficients.T, columns=x.columns)
-            coeff_df.insert(0, "Feature", x.columns)
+            coeff_df = pd.DataFrame(coefficients.T, index=x.columns)
 
         coeff_df.to_csv(
             os.path.join(output_folder, "final_model_coefficients.csv"), index=False

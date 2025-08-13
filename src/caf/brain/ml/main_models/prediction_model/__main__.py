@@ -71,8 +71,8 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
     train_unscaled = pd.DataFrame.from_dict(data_dict["train_unscaled"])
     test_unscaled = pd.DataFrame.from_dict(data_dict["test_unscaled"])
 
-    train_scaled.to_csv(os.path.join(output_path, "train_scaled.csv"), index=True)
-    test_scaled.to_csv(os.path.join(output_path, "test_scaled.csv"), index=True)
+    train_scaled.to_csv(output_path / "train_scaled.csv", index=True)
+    test_scaled.to_csv(output_path / "test_scaled.csv", index=True)
 
     validate = None
     if data_dict["validate"] is not None and len(data_dict["validate"]) > 0:

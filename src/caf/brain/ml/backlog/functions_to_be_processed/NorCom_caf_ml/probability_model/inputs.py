@@ -5,16 +5,18 @@
 Created on: 10/17/2024
 Original author: Adil Zaheer
 """
+# Built-Ins
 from pathlib import Path
+from typing import List, Optional, Union
 
+# Third Party
 import numpy as np
 from caf.toolkit import BaseConfig
-from typing import Optional, List, Union
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.multiclass import OneVsRestClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.svm import LinearSVC
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import LinearSVC
+from sklearn.tree import DecisionTreeClassifier
 
 
 class NorCom_probability_model_inputs_cafml(BaseConfig):

@@ -3,21 +3,24 @@
 Created on: 10/8/2024
 Original author: Adil Zaheer
 """
+# Third Party
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from caf.ml.backlog.functions_to_be_processed import process_data_pipeline
-from caf.ml.backlog.functions_to_be_processed import process_forecast_data
-from caf.ml.backlog.functions_to_be_processed import apply_transformations
-from caf.ml.backlog.functions_to_be_processed import DataProcessor
+from caf.ml.backlog.functions_to_be_processed import (
+    DataProcessor,
+    apply_transformations,
+    process_data_pipeline,
+    process_forecast_data,
+)
+from caf.ml.backlog.old_inputs.cafml_inputs import TensorFlowModelInputs
 
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 from caf.ml.MODELS.requires_update_tf_nn_model.tf_functions import (
-    train_model,
     calculate_coefficient_stats,
     train_improved_model,
+    train_model,
 )
-from caf.ml.backlog.old_inputs.cafml_inputs import TensorFlowModelInputs
+from sklearn.model_selection import train_test_split
 
 
 def main(params: TensorFlowModelInputs):

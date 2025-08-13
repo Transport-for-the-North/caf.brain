@@ -7,11 +7,11 @@ Original author: Adil Zaheer
 import logging
 import os
 
-from caf.brain.ml.main_models.prediction_model.inputs import PredictionModelInputs
 # Third Party
 import pandas as pd
 
 # Local Imports
+from caf.brain.ml.main_models.prediction_model.inputs import PredictionModelInputs
 from caf.brain.ml.process_data_functions.encode_and_scale import process_data_pipeline
 from caf.brain.ml.process_data_functions.process_input_data_functions import (
     InitialDataProcessing,
@@ -22,10 +22,10 @@ LOG = logging.getLogger(__name__)
 
 
 def main_input_data(
-        paths: PredictionModelInputs.Paths,
-        data_classification: PredictionModelInputs.DataClassificationInputs,
-        transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
-        output_path
+    paths: PredictionModelInputs.Paths,
+    data_classification: PredictionModelInputs.DataClassificationInputs,
+    transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
+    output_path,
 ) -> dict:
     """
 
@@ -51,7 +51,9 @@ def main_input_data(
             test_raw = pd.read_csv(os.path.join(output_path, "test.csv"))
             try:
                 validate = pd.read_csv(os.path.join(output_path, "validate.csv"))
-                validate[data_classification.target_column] = validate[data_classification.target_column].astype(float)
+                validate[data_classification.target_column] = validate[
+                    data_classification.target_column
+                ].astype(float)
             except FileNotFoundError:
                 LOG.warning("Validate not provided. Validation will not be performed")
                 validate = None
@@ -61,7 +63,9 @@ def main_input_data(
             test_raw = pd.read_csv(os.path.join(folder_path, "test.csv"))
             try:
                 validate = pd.read_csv(os.path.join(folder_path, "validate.csv"))
-                validate[data_classification.target_column] = validate[data_classification.target_column].astype(float)
+                validate[data_classification.target_column] = validate[
+                    data_classification.target_column
+                ].astype(float)
             except FileNotFoundError:
                 LOG.warning("Validate not provided. Validation will not be performed")
                 validate = None
@@ -100,7 +104,9 @@ def main_input_data(
 
         train_unscaled = processed_dfs["train"]
         test_unscaled = processed_dfs["test"]
-        train_unscaled[data_classification.target_column] = train_unscaled[data_classification.target_column].astype(int)
+        train_unscaled[data_classification.target_column] = train_unscaled[
+            data_classification.target_column
+        ].astype(int)
 
         train_scaled, drop_vals, numerical_pipeline = process_data_pipeline(
             df=train_unscaled.copy(),
@@ -168,11 +174,13 @@ def main_input_data(
             paths=paths,
             data_classification=data_classification,
             transforming_inputs=transforming_inputs,
-            output_path=output_path
+            output_path=output_path,
         )
 
         if validate is not None:
-            validate[data_classification.target_column] = validate[data_classification.target_column].astype(int)
+            validate[data_classification.target_column] = validate[
+                data_classification.target_column
+            ].astype(int)
 
         train_scaled, drop_vals, numerical_pipeline = process_data_pipeline(
             df=train_unscaled.copy(),
@@ -204,8 +212,12 @@ def main_input_data(
             output_folder=output_path,
         )
 
-        train_unscaled[data_classification.target_column] = train_unscaled[data_classification.target_column].astype(int)
-        train_scaled[data_classification.target_column] = train_scaled[data_classification.target_column].astype(int)
+        train_unscaled[data_classification.target_column] = train_unscaled[
+            data_classification.target_column
+        ].astype(int)
+        train_scaled[data_classification.target_column] = train_scaled[
+            data_classification.target_column
+        ].astype(int)
 
         data_dict = {
             "train_scaled": train_scaled,

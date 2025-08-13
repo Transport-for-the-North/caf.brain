@@ -7,42 +7,54 @@ Original author: Adil Zaheer
 import logging
 import os
 import time
+from pathlib import Path
 
 # Third Party
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml.data_analysis.data_analysis_main import main_evaluate_input_data
-from caf.brain.ml.feature_selection.feature_selection_main import main_feature_selection
-from caf.brain.ml.hyperparameter_optimisation.hyper_optim_main import (
+from caf.brain.ml.functions_and_classes.data_analysis.main import (
+    main_evaluate_input_data,
+)
+from caf.brain.ml.functions_and_classes.feature_selection.main import (
+    main_feature_selection,
+)
+from caf.brain.ml.functions_and_classes.hparam_optimisation.main import (
     main_hyperparameter_optimisation,
 )
-from caf.brain.ml.main_models.prediction_model.inputs import (
-    PredictionModelInputs,
+from caf.brain.ml.functions_and_classes.model_selection.functions import (
+    initialise_model,
 )
-from caf.brain.ml.model_selection.functions import initialise_model
-from caf.brain.ml.model_selection.main import main_model_selection
-from caf.brain.ml.prediction.main import main_prediction
-from caf.brain.ml.process_data_functions.process_data_main import main_input_data
-from caf.brain.ml.process_data_functions.split_data_into_ttv import (
+from caf.brain.ml.functions_and_classes.model_selection.main import (
+    main_model_selection,
+)
+from caf.brain.ml.functions_and_classes.prediction.main import main_prediction
+from caf.brain.ml.functions_and_classes.process_data_functions.main import (
+    main_input_data,
+)
+from caf.brain.ml.functions_and_classes.process_data_functions.split_data_into_ttv import (
     simple_train_test_split,
 )
-from caf.brain.ml.statsmodel_pipeline.statsmodel_main import main_stats_model
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
+    PredictionModelInputs,
+)
 
 LOG = logging.getLogger(__name__)
 
 
-def main(params: PredictionModelInputs, output_path):
+def main(params: PredictionModelInputs, output_path: Path) -> None:
     """
-    Main function for caf.brAIn prediction model.
+    The main function for the caf.brAIn prediction model.
+    The prediction model utilises machine learning libraries in order to
+    generate predictions. It's designed to streamline the process and remove
+    any barrier to entry thereby making machine learning modelling more
+    accessible.
 
     Parameters
     ----------
     params: config file inputs
-    output_path
-
-    Returns
-    -------
+    output_path: path to output file location. Should be generated during
+                 model setup if not passed directly.
 
     """
     start_time = time.time()
@@ -59,24 +71,23 @@ def main(params: PredictionModelInputs, output_path):
     train_unscaled = pd.DataFrame.from_dict(data_dict["train_unscaled"])
     test_unscaled = pd.DataFrame.from_dict(data_dict["test_unscaled"])
 
-    train_scaled.to_csv(os.path.join(output_path, "train_scaled.csv"), index=True)
-    test_scaled.to_csv(os.path.join(output_path, "test_scaled.csv"), index=True)
+    train_scaled.to_csv(output_path / "train_scaled.csv", index=True)
+    test_scaled.to_csv(output_path / "test_scaled.csv", index=True)
 
     validate = None
     if data_dict["validate"] is not None and len(data_dict["validate"]) > 0:
         validate = pd.DataFrame.from_dict(data_dict["validate"])
 
-    is_statsmodel = any(
-        base.__module__.startswith("statsmodels")
-        for base in params.modelling.model_choice.__class__.__mro__
-    )
-    if is_statsmodel:
-        main_stats_model(
-            model_choice=params.modelling.model_choice,
-            train=train_scaled,
-            target_column=params.data_classification.target_column,
-            weight_column=params.data_classification.weight_column,
-        )
+    # is_statsmodel = any(
+    #     base.__module__.startswith("statsmodels")
+    #     for base in params.modelling.model_choice.__class__.__mro__
+    # )
+    # if is_statsmodel:
+    #     main_stats_model(
+    #         model_choice=params.modelling.model_choice,
+    #         train=train_scaled,
+    #         target_column=params.data_classification.target_column,
+    #         weight_column=params.data_classification.weight_column)
 
     selected_model = main_model_selection(
         paths=params.paths,

@@ -4,29 +4,30 @@ Created on: 1/23/2025
 Original author: Adil Zaheer
 """
 
+# Third Party
 import numpy as np
 
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 import pandas as pd
+from caf.ml.feature_selection.feature_selection_functions import get_cv_class
+from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from sklearn.ensemble import BaggingRegressor
 from sklearn.feature_selection import (
+    RFE,
+    RFECV,
     SelectFromModel,
     SelectKBest,
-    RFE,
-    mutual_info_regression,
     f_regression,
-    RFECV,
     mutual_info_classif,
+    mutual_info_regression,
 )
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import get_scorer
 from sklearn.model_selection import cross_val_score
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR
 from tqdm import tqdm
-from caf.ml.feature_selection.feature_selection_functions import get_cv_class
-from sklearn.linear_model import LogisticRegression
-from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 
 
 def feature_selection_test(

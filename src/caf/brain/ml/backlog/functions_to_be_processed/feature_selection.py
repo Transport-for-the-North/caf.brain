@@ -3,50 +3,54 @@
 Created on: 1/12/2024
 Original author: Adil Zaheer
 """
+# Built-Ins
 import os
-import statsmodels.api as sm
 
+# Third Party
 # pylint: disable=import-error,wrong-import-position
 # Local imports here
 # pylint: enable=import-error,wrong-import-position
 import pandas as pd
+import statsmodels.api as sm
+from caf.ml.backlog.functions_to_be_processed.model_algorithm_evaluation import (
+    select_model,
+)
+from caf.ml.backlog.old_inputs import (
+    CV_models,
+    Default_regression_methods,
+    Models,
+    Models_List_,
+)
+from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from sklearn.ensemble import (
-    RandomForestRegressor,
-    ExtraTreesRegressor,
     BaggingRegressor,
+    ExtraTreesRegressor,
     GradientBoostingRegressor,
+    RandomForestRegressor,
+)
+from sklearn.feature_selection import (
+    RFE,
+    RFECV,
+    SelectFromModel,
+    SelectKBest,
+    f_regression,
+    mutual_info_classif,
+    mutual_info_regression,
+)
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import (
+    KFold,
+    RepeatedKFold,
+    RepeatedStratifiedKFold,
+    StratifiedKFold,
+    TimeSeriesSplit,
+    cross_val_score,
 )
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import (
-    KFold,
-    StratifiedKFold,
-    RepeatedKFold,
-    RepeatedStratifiedKFold,
-    cross_val_score,
-    TimeSeriesSplit,
-)
-from sklearn.feature_selection import (
-    SelectFromModel,
-    f_regression,
-    mutual_info_regression,
-    mutual_info_classif,
-    RFECV,
-)
-from sklearn.feature_selection import SelectKBest, RFE
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
 from tqdm import tqdm
-
-from caf.ml.backlog.old_inputs import (
-    Models,
-    Default_regression_methods,
-    CV_models,
-    Models_List_,
-)
-from caf.ml.backlog.functions_to_be_processed.model_algorithm_evaluation import select_model
-from mlxtend.feature_selection import SequentialFeatureSelector as SFS
-from sklearn.linear_model import LogisticRegression
 
 
 def feature_selection_cv(

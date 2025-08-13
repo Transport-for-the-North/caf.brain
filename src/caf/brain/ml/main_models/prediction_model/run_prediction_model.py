@@ -5,17 +5,15 @@ Original author: Adil Zaheer
 
 # Built-Ins
 import os
+import pathlib
 
 # Third Party
 import yaml
 from caf.toolkit import LogHelper, ToolDetails
 
 # Local Imports
-from caf.brain.ml.main_models.prediction_model.__example_doc__ import main as example_main
-from caf.brain.ml.main_models.prediction_model.inputs import (
-    Models,
-    PredictionModelInputs,
-)
+from caf.brain.ml import Models, PredictionModelInputs
+from caf.brain.ml.main_models.prediction_model.__main__ import main
 
 
 def model_setup():
@@ -24,7 +22,8 @@ def model_setup():
     for the caf.brAIn prediction model config run.
     """
 
-    with open("empty_config.yaml", "r", encoding="UTF-8") as file:
+    yaml_path = pathlib.Path("src/caf/brain/ml/main_models/prediction_model/empty_config.yaml")
+    with open(yaml_path, "r", encoding="UTF-8") as file:
         config_data = yaml.safe_load(file)
 
     params = PredictionModelInputs(**config_data)
@@ -36,15 +35,15 @@ def model_setup():
             Models[model] for model in params.modelling.model_choice
         ]
 
-    output_path = os.path.join(params.paths.output_path, "output")
-    if not os.path.exists(output_path):
+    output_path = params.paths.output_path / "output"
+    if not output_path.exists():
         os.makedirs(output_path)
 
-    path = os.path.join(output_path, "log_file.log")
+    path = output_path / "log_file.log"
     details = ToolDetails("caf.brAIn Prediction Model", "1.0.0")
 
     with LogHelper("caf.brain", details, console=True, log_file=path):
-        example_main(params, output_path)
+        main(params, output_path)
 
 
 if __name__ == "__main__":

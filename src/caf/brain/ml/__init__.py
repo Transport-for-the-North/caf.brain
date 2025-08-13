@@ -1,3 +1,2 @@
-"""Package description."""
-
-# from ._version import __version__
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import Models
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs

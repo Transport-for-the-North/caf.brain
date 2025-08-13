@@ -1,28 +1,35 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
-from pathlib import Path
-import numpy as np
-from sklearn.linear_model import LogisticRegression
-import statsmodels.api as sm
-from pathlib import Path
-from caf.toolkit import BaseConfig
-from typing import Optional, List, Any, Union
+# Built-Ins
 import enum
+from pathlib import Path
+from typing import Any, List, Optional, Union
+
+# Third Party
+import numpy as np
+import statsmodels.api as sm
+from caf.toolkit import BaseConfig
 from sklearn.ensemble import (
-    ExtraTreesRegressor,
-    RandomForestRegressor,
-    GradientBoostingRegressor,
     AdaBoostRegressor,
     BaggingRegressor,
-    RandomForestClassifier,
     ExtraTreesClassifier,
+    ExtraTreesRegressor,
+    GradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
 )
-from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
-from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
-from sklearn.svm import SVR
+from sklearn.linear_model import (
+    ElasticNet,
+    Lasso,
+    LinearRegression,
+    LogisticRegression,
+    Ridge,
+)
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neural_network import MLPRegressor
+from sklearn.svm import SVR
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 
 class NorCom_inputs(BaseConfig):

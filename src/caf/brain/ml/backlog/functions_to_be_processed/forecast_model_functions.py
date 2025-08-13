@@ -3,19 +3,22 @@
 Created on: 2/16/2024
 Original author: Adil Zaheer
 """
+# Built-Ins
+import os
+
+# Third Party
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 import pandas as pd
-from sklearn.metrics import mean_squared_error, r2_score
-import os
 from caf.ml.process_data_functions import (
-    index_sorter,
-    function_remove_spaces,
     convert_to_dataframe,
     find_numeric_target_column,
+    function_remove_spaces,
+    index_sorter,
     process_data_numeric,
     remove_and_export_outliers,
 )
+from sklearn.metrics import mean_squared_error, r2_score
 
 
 def process_data_loaded_model(

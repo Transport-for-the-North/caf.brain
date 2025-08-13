@@ -11,14 +11,16 @@ File purpose: The file feeds into the land value uplift model. It contains
 functions_to_be_processed that load, process and transform data for future modelling purposes.
 
 """
+# Built-Ins
 import os
 from dataclasses import dataclass
 from functools import reduce
-from typing import Union
-import pandas as pd
 from pathlib import Path
+from typing import Union
 
+# Third Party
 import inputs
+import pandas as pd
 
 
 @dataclass

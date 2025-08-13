@@ -5,13 +5,16 @@
 Created on: 10/10/2024
 Original author: Adil Zaheer
 """
+# Third Party
 from caf.ml.backlog.functions_to_be_processed.forecast_model_functions import (
-    process_data_loaded_model,
-    process_forecast_data,
     align_dataframes,
     predict_refined,
+    process_data_loaded_model,
+    process_forecast_data,
 )
-from caf.ml.backlog.functions_to_be_processed.model_algorithm_evaluation import eval_model
+from caf.ml.backlog.functions_to_be_processed.model_algorithm_evaluation import (
+    eval_model,
+)
 from caf.ml.backlog.functions_to_be_processed.NorCom_caf_ml.larger_cafml_model.norcom_specific_functions import (
     apply_transformations_norcom,
 )

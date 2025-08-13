@@ -3,16 +3,27 @@ Created on: 1/21/2025
 Original author: Adil Zaheer
 """
 
+# Built-Ins
+import logging
 import os
 from pathlib import Path
-import logging
+
+# Third Party
 import pandas as pd
-from caf.brain.ml.hyperparameter_optimisation.hyper_optim_functions import select_param
-from caf.brain.ml.main_models.prediction_model.prediction_model_inputs import (
+
+# Local Imports
+from caf.brain.ml.functions_and_classes.hparam_optimisation.functions import (
+    select_param,
+)
+from caf.brain.ml.functions_and_classes.model_selection.main import (
+    main_model_selection,
+)
+from caf.brain.ml.functions_and_classes.process_data_functions.main import (
+    main_input_data,
+)
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     PredictionModelInputs,
 )
-from caf.brain.ml.model_selection.model_selection_main import main_model_selection
-from caf.brain.ml.process_data_functions.process_data_main import main_input_data
 
 LOG = logging.getLogger(__name__)
 
@@ -22,9 +33,9 @@ def main_hyperparameter_optimisation(
     data_classification: PredictionModelInputs.DataClassificationInputs,
     transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
     modelling: PredictionModelInputs.ModellingInputs,
+    output_folder: Path,
     train: pd.DataFrame = None,
     model_instance=None,
-    output_folder: Path = None,
 ):
     """
     Main function for hyperparameter optimisation.
@@ -33,22 +44,22 @@ def main_hyperparameter_optimisation(
     ----------
     paths: Path inputs from the PredictionModelInputs class. These inputs
            define paths to external files. See
-           caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+           caf/brain/ml/main_models/prediction_model/ml_inputs.py
            for available options.
     data_classification: Data classification inputs from the PredictionModelInputs
                          class. These inputs help define and outline the
                          structure of the input data. See
-                         caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+                         caf/brain/ml/main_models/prediction_model/ml_inputs.py
                          for available options.
     transforming_inputs: Transforming inputs from the PredictionModelInputs
                          class. These inputs dictate how the data is transformed
                          for machine learning modelling. See
-                         caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+                         caf/brain/ml/main_models/prediction_model/ml_inputs.py
                          for available options.
     modelling: Modelling inputs from the PredictionModelInputs
                class. These inputs control the machine learning modelling
                pipeline and functions. See
-               caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+               caf/brain/ml/main_models/prediction_model/ml_inputs.py
                for available options.
     train: Dataframe of final training data post feature selection.
     model_instance: Initialised model algorithm from Models enum class.
@@ -58,11 +69,6 @@ def main_hyperparameter_optimisation(
     -------
     best_model: Fitted final model for prediction on unseen (test) data.
     """
-    if output_folder is None:
-        output_folder = os.path.join(paths.output_path, "output")
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
-
     if train is None:
         LOG.info(
             "Train does not exist so is being generated with the main_input_data \

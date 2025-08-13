@@ -11,20 +11,22 @@ File purpose: This file contains variable and model optimisation and selection
 functions_to_be_processed that feed into the LVU model.
 
 """
+# Built-Ins
 # IMPORTS
 import logging
+
+# Third Party
+import inputs
+import pandas as pd
 from sklearn.ensemble import (
-    ExtraTreesRegressor,
-    RandomForestRegressor,
-    GradientBoostingRegressor,
     AdaBoostRegressor,
     BaggingRegressor,
+    ExtraTreesRegressor,
+    GradientBoostingRegressor,
+    RandomForestRegressor,
 )
-from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import GridSearchCV
-import pandas as pd
-import inputs
+from sklearn.linear_model import ElasticNet, Lasso, LinearRegression, Ridge
+from sklearn.model_selection import GridSearchCV, cross_val_score
 
 # Done in order to create a log of run messages
 LOG = logging.getLogger(__name__)

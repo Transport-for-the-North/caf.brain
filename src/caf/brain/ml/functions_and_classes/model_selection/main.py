@@ -7,11 +7,13 @@ from pathlib import Path
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml.main_models.prediction_model.inputs import (
+from caf.brain.ml.functions_and_classes.model_selection.functions import select_model
+from caf.brain.ml.functions_and_classes.process_data_functions.main import (
+    main_input_data,
+)
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     PredictionModelInputs,
 )
-from caf.brain.ml.model_selection.functions import select_model
-from caf.brain.ml.process_data_functions.process_data_main import main_input_data
 
 LOG = logging.getLogger(__name__)
 
@@ -20,9 +22,9 @@ def main_model_selection(
     data_classification: PredictionModelInputs.DataClassificationInputs,
     transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
     modelling: PredictionModelInputs.ModellingInputs,
-    paths: PredictionModelInputs.Paths = None,
+    output: Path,
+    paths: PredictionModelInputs.Paths,
     train: pd.DataFrame = None,
-    output: Path = None,
 ) -> object:
     """
     Function to automatically score and rank algorithms from the Models
@@ -33,21 +35,21 @@ def main_model_selection(
     data_classification: Data classification inputs from the PredictionModelInputs
                          class. These inputs help define and outline the
                          structure of the input data. See
-                         caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+                         caf/brain/ml/main_models/prediction_model/ml_inputs.py
                          for available options.
     transforming_inputs: Transforming inputs from the PredictionModelInputs
                          class. These inputs dictate how the data is transformed
                          for machine learning modelling. See
-                         caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+                         caf/brain/ml/main_models/prediction_model/ml_inputs.py
                          for available options.
     modelling: Modelling inputs from the PredictionModelInputs
                class. These inputs control the machine learning modelling
                pipeline and functions. See
-               caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+               caf/brain/ml/main_models/prediction_model/ml_inputs.py
                for available options.
     paths: Path inputs from the PredictionModelInputs class. These inputs
            define paths to external files. See
-           caf/brain/ml/main_models/prediction_model/prediction_model_inputs.py
+           caf/brain/ml/main_models/prediction_model/ml_inputs.py
            for available options.
     output: Path to output location.
     train: Processed input data split into train subset.
@@ -58,12 +60,6 @@ def main_model_selection(
                     provided list. This model is not initialised and ready
                     for further use.
     """
-
-    if output is None:
-        output = os.path.join(paths.output_path, "output")
-        if not os.path.exists(output):
-            os.makedirs(output)
-
     if train is None:
         LOG.info(
             "Train is none so data is being read in from PredictionModelInputs.Paths.file_path"

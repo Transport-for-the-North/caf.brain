@@ -1,12 +1,17 @@
+"""
+Created on: 12/16/2024
+Original author: Adil Zaheer
+"""
+
 # Built-Ins
 import enum
 from pathlib import Path
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Type, Union
 
 # Third Party
 import numpy as np
-import statsmodels.api as sm
 from caf.toolkit import BaseConfig
+from sklearn.base import BaseEstimator
 from sklearn.ensemble import (
     AdaBoostRegressor,
     BaggingRegressor,
@@ -28,7 +33,6 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR, LinearSVC
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from statsmodels.miscmodels.ordinal_model import OrderedModel
 
 
 class PredictionModelInputs(BaseConfig):
@@ -383,40 +387,53 @@ class ModelGrids(enum.Enum):
         return getattr(cls, model_enum.name).value
 
 
-model_instance_to_enum = {
-    RandomForestRegressor: ModelGrids.RANDOM_FOREST_REGRESSOR,
-    ExtraTreesRegressor: ModelGrids.EXTRA_TREES_REGRESSOR,
-    GradientBoostingRegressor: ModelGrids.GRADIENT_BOOSTING_REGRESSOR,
-    AdaBoostRegressor: ModelGrids.ADABOOST_REGRESSOR,
-    BaggingRegressor: ModelGrids.BAGGING_REGRESSOR,
-    SVR: ModelGrids.SVR,
-    KNeighborsRegressor: ModelGrids.KNN,
-    Ridge: ModelGrids.RIDGE,
-    Lasso: ModelGrids.LASSO,
-    ElasticNet: ModelGrids.ELASTICNET,
-    DecisionTreeRegressor: ModelGrids.DECISION_TREE_REGRESSOR,
-    RandomForestClassifier: ModelGrids.RANDOM_FOREST_CLASSIFIER,
-    ExtraTreesClassifier: ModelGrids.EXTRA_TREES_CLASSIFIER,
-    DecisionTreeClassifier: ModelGrids.DECISION_TREE_CLASSIFIER,
-    GradientBoostingClassifier: ModelGrids.GRADIENT_BOOSTING_CLASSIFIER,
-}
-
-
-def get_model_grid(model_instance):
+def get_model_grid_from_type(model_type: Type[BaseEstimator]) -> dict:
     """
-    Used to get corresponding hyperparameter grid for selected model from the
-    Models class.
+    Retrieve the hyperparameter grid for a given scikit-learn model class.
+
+    This function maps a model class (e.g., `RandomForestRegressor`) to its predefined
+    hyperparameter grid stored in the `ModelGrids` enum. It is used to support automated
+    hyperparameter tuning workflows such as grid search.
 
     Parameters
     ----------
-    model_instance: Initialised model from Models class.
+    model_type : Type[BaseEstimator]
+        The scikit-learn model class for which the hyperparameter grid is requested.
+        This should be a class (not an instance) that inherits from `BaseEstimator`.
 
     Returns
     -------
+    dict:
+        A dictionary containing the hyperparameter grid for the specified model class.
 
+    Raises
+    ------
+    ValueError
+        If the model type is not found in the grid mapping.
     """
-    model_enum = model_instance_to_enum.get(type(model_instance))
-    if model_enum:
-        return model_enum.value
 
-    return ValueError(f"No grid found for model instance of type {type(model_instance)}")
+    model_type_to_parm_grid = {
+        RandomForestRegressor: ModelGrids.RANDOM_FOREST_REGRESSOR.value,
+        ExtraTreesRegressor: ModelGrids.EXTRA_TREES_REGRESSOR.value,
+        GradientBoostingRegressor: ModelGrids.GRADIENT_BOOSTING_REGRESSOR.value,
+        AdaBoostRegressor: ModelGrids.ADABOOST_REGRESSOR.value,
+        BaggingRegressor: ModelGrids.BAGGING_REGRESSOR.value,
+        SVR: ModelGrids.SVR.value,
+        KNeighborsRegressor: ModelGrids.KNN.value,
+        Ridge: ModelGrids.RIDGE.value,
+        Lasso: ModelGrids.LASSO.value,
+        ElasticNet: ModelGrids.ELASTICNET.value,
+        DecisionTreeRegressor: ModelGrids.DECISION_TREE_REGRESSOR.value,
+        RandomForestClassifier: ModelGrids.RANDOM_FOREST_CLASSIFIER.value,
+        ExtraTreesClassifier: ModelGrids.EXTRA_TREES_CLASSIFIER.value,
+        DecisionTreeClassifier: ModelGrids.DECISION_TREE_CLASSIFIER.value,
+        GradientBoostingClassifier: ModelGrids.GRADIENT_BOOSTING_CLASSIFIER.value,
+        # KLUDGE: Need a better way to handle the different logistic regressions
+        LogisticRegression: ModelGrids.LOGIT_REGRESSION_ELASTICNET.value,
+    }
+    try:
+        param_grid = model_type_to_parm_grid[model_type]
+        assert isinstance(param_grid, dict)
+        return param_grid
+    except KeyError as e:
+        raise ValueError(f"No grid found for model instance of type {model_type}") from e

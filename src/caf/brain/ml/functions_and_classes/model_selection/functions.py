@@ -1,13 +1,6 @@
-"""
-Created on: 1/16/2025
-Original author: Adil Zaheer
-"""
-
 # Built-Ins
 import logging
-import os
 from pathlib import Path
-from typing import List
 
 # Third Party
 import joblib
@@ -19,7 +12,7 @@ from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import cross_val_score
 
 # Local Imports
-from caf.brain.ml.main_models.prediction_model.inputs import Models
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import Models
 
 LOG = logging.getLogger(__name__)
 
@@ -69,8 +62,8 @@ def initialise_model(
     if x_train_weight is not None:
         weight = x_train_weight.values.flatten()
 
-    model_filename = os.path.join(output_folder, "initial_fitted_model.pkl")
-    if os.path.exists(model_filename):
+    model_filename = output_folder / "initial_fitted_model.pkl"
+    if model_filename.exists():
         model_fit = joblib.load(model_filename)
     else:
         if weight is not None:
@@ -94,9 +87,7 @@ def initialise_model(
     )
 
     if coeff_df is not None:
-        coeff_df.to_csv(
-            os.path.join(output_folder, "initial_model_coefficients.csv"), index=False
-        )
+        coeff_df.to_csv(output_folder / "initial_model_coefficients.csv", index=False)
 
     return model_fit, residuals, mse
 
@@ -120,7 +111,7 @@ def select_model(
     weight_column: Optional string column value to be used as weight.
     models_to_test: List or one algorithm to use as the base of the model.
                     Available algorithms can be seen in
-                    prediction_model_inputs.py or __info__.py.
+                    ml_inputs.py or __info__.py.
     classification_prediction: List of integers that correspond to the
                                target column. The value(s) to predict
                                in a classification problem.
@@ -143,7 +134,7 @@ def select_model(
     for model_enum in models_to_test:
         # scikit
         model_instance = model_enum.get_model()
-        LOG.info(f"Testing model: {model_instance}")
+        LOG.info("Testing model: %s", model_instance)
 
         if isinstance(model_instance, LogisticRegression):
             model_instance.set_params(max_iter=1000)
@@ -165,13 +156,10 @@ def select_model(
             best_score = mean_score
             best_model = model_enum.get_model()
 
-    LOG.info(f"Best model: {best_model}")
-    LOG.info(f"Best model score: {best_score}")
+    LOG.info("Best model: %s", best_model)
+    LOG.info("Best model score: %s", best_score)
     evaluation_df = pd.DataFrame.from_dict(acc, orient="index")
-
-    output_filename = "model_algorithm_evaluation.csv"
-    output_path = os.path.join(output_folder, output_filename)
-    evaluation_df.to_csv(output_path, index=True)
+    evaluation_df.to_csv(output_folder / "model_algorithm_evaluation.csv", index=True)
 
     return best_model
 
@@ -184,21 +172,17 @@ def score_regression(
 
     Parameters
     ----------
-    weight : pandas.DataFrame or None
-        Sample weights from the original training data.
-    model_instance : object
-        Initialised model.
-    x : pandas.DataFrame
-        Explanatory variables (features).
-    y : pandas.DataFrame
-        Target variable.
+    weight: Pandas dataframe of weight values from the original
+            train input data.
+    model_instance: Initialised model.
+    x: Train data split into only the explanatory variables. Target
+       and weight should be removed. Any index columns should be set.
+    y: Train data split into only the target. Any index columns should be set.
 
     Returns
     -------
-    scores_r2 : numpy.ndarray
-        R-squared scores from cross-validation.
-    scores_mse : numpy.ndarray
-        Mean squared error scores from cross-validation.
+    scores_r2: Series of R2 scores.
+    scores_mse: Series of mean squared error scores.
     """
     if weight is not None:
         scores_r2 = cross_val_score(
@@ -240,23 +224,17 @@ def score_classification(
 
     Parameters
     ----------
-    weight : pandas.DataFrame or None
-        Sample weights from the original training data.
-    model_instance : object
-        Initialised model.
-    x : pandas.DataFrame
-        Explanatory variables (features).
-    y : pandas.DataFrame
-        Target variable.
+    weight: Pandas dataframe of weight values from the original train input data.
+    model_instance: Initialised model.
+    x: Train data split into only the explanatory variables. Target
+       and weight should be removed. Any index columns should be set.
+    y: Train data split into only the target. Any index columns should be set.
 
     Returns
     -------
-    scores_f1 : numpy.ndarray
-        F1 scores from cross-validation.
-    scores_auc : numpy.ndarray
-        AUC scores from cross-validation.
+    scores_f1: Series of F1 scores.
+    scores_auc: Series of AUC scores.
     """
-
     y_ = y.squeeze()
     if y_.nunique() > 2:
         f1 = "f1_weighted"
@@ -311,29 +289,22 @@ def calculate_model_coeff(
 
     Parameters
     ----------
-    model : object
-        Fitted model.
-    x_train : pandas.DataFrame
-        Training features.
-    x_test : pandas.DataFrame
-        Test features.
-    y_test : pandas.Series
-        True target values for the test set.
-    residuals : pandas.Series
-        Residuals between true and predicted values.
-    classification_prediction : tuple of int
-        Target values to predict in a classification problem.
-    y_pred : pandas.Series
-        Predicted values.
+    model: Fitted model on train_test_split of training data.
+    x_train: Series of train data to be used as train.
+    x_test: Series of test data to be used as unseen test data.
+    y_test: Series of target column inside train to be used as validation
+            for predictions.
+    residuals: Series of residual values based on x_test predictions.
+    classification_prediction: List of integers that correspond to the
+                               target column. The value(s) to predict
+                               in a classification problem.
+    y_pred: Series of predicted values based on training data.
 
     Returns
     -------
-    coeff_df : pandas.DataFrame or None
-        DataFrame of coefficient values and statistics, or None if not applicable.
-    mse : float or None
-        Mean squared error of predictions, or None if not applicable.
+    coeff_df: Dataframe of coefficient values and other relevant statistics.
+    mse: Mean squared error of predictions.
     """
-
     if not hasattr(model, "coef_"):
         return None, None
 
@@ -361,10 +332,10 @@ def calculate_model_coeff(
         mse = np.mean(residuals**2)
 
     # variance-covariance matrix
-    X_with_intercept = (
+    x_with_intercept = (
         np.column_stack([np.ones(n), x_train]) if hasattr(model, "intercept_") else x_train
     )
-    covariance_matrix = np.linalg.pinv(X_with_intercept.T.dot(X_with_intercept)) * mse
+    covariance_matrix = np.linalg.pinv(x_with_intercept.T.dot(x_with_intercept)) * mse
 
     std_errors = np.sqrt(np.diag(covariance_matrix))
 
@@ -414,29 +385,22 @@ def calculate_final_coefficients(
 
     Parameters
     ----------
-    model : object
-        Fitted final model for prediction on unseen (test) data.
-    test_data : pandas.DataFrame
-        Final test data after feature selection.
-    training_mse : float
-        Mean squared error of predictions on training data.
-    predictions : pandas.Series
-        Predicted values for the test data.
-    validation_data : pandas.DataFrame or None
-        Validation data, if available.
-    target_column : str
-        Name of the column to predict.
-    is_classification : tuple of int
-        Target values to predict in a classification problem.
-    drop_vals : pandas.DataFrame or None
-        Values dropped during encoding of categorical variables.
-    cols_dropped_by_feat_select : pandas.DataFrame or None
-        Columns removed due to feature selection.
+    model: Fitted final model for prediction on unseen (test) data.
+    test_data: Dataframe of final test data post feature selection.
+    training_mse: Mean squared error of predictions based on training data.
+    predictions: Predicted values based on the test data and set to the
+                 same index.
+    validation_data: Validation data if available.
+    target_column: String column name of value to predict.
+    is_classification: List of integers that correspond to the target column.
+                       The value(s) to predict in a classification problem.
+    drop_vals: Values dropped during encoding of categorical variables.
+    cols_dropped_by_feat_select: These are the columns removed due to
+                                 feature selection.
 
     Returns
     -------
-    coeff_df : pandas.DataFrame or None
-        DataFrame of coefficient values and statistics, or None if not applicable.
+    coeff_df: Dataframe of coefficient values and other relevant statistics.
     """
     if not hasattr(model, "coef_"):
         return None
@@ -459,15 +423,15 @@ def calculate_final_coefficients(
                     predictions,
                     labels=np.unique(validation_data[target_column]),
                 )
-            LOG.info(f"Using validation log loss: {mse}")
+            LOG.info("Using validation log loss: %s", mse)
         else:
             # regression
             mse = mean_squared_error(validation_data[target_column], predictions)
-            LOG.info(f"Using validation MSE: {mse}")
+            LOG.info("Using validation MSE: %s", mse)
 
     else:
         mse = training_mse
-        LOG.info(f"Using training {'log loss' if is_classification else 'MSE'}: {mse}")
+        LOG.info("Using training 'log loss' if %s else 'MSE': %s", is_classification, mse)
 
     feature_names = list(test_data.columns)
     if hasattr(model, "intercept_"):

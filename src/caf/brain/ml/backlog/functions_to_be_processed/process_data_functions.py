@@ -3,11 +3,13 @@
 Created on: 16/11/2023
 Original author: Adil Zaheer
 """
+# Built-Ins
 import os
-import pandas as pd
-import numpy as np
-from scipy.stats import zscore
 
+# Third Party
+import numpy as np
+import pandas as pd
+from scipy.stats import zscore
 
 ######### READ DATA FUNCTIONS #########
 

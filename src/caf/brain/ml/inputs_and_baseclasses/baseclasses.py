@@ -1,13 +1,14 @@
-# -*- coding: utf-8 -*-
-# pylint: disable=import-error,wrong-import-position
-# pylint: enable=import-error,wrong-import-position
 """
 Created on: 12/13/2024
 Original author: Adil Zaheer
 """
+
+# Built-Ins
 import warnings
 from abc import ABC, abstractmethod
 from typing import Union
+
+# Third Party
 import pandas as pd
 
 
@@ -35,33 +36,28 @@ class BaseDataClass(ABC):
     @abstractmethod
     def index_present(self) -> bool:
         """Validate the presence of an appropriate index"""
-        pass
 
     @abstractmethod
     def target_column_present(self) -> bool:
         """Validate the presence of the target column"""
-        pass
 
     @abstractmethod
     def explanatory_data(self) -> bool:
         """Validate the presence of explanatory variables"""
-        pass
 
     @abstractmethod
     def is_data_numeric(self) -> bool:
         """Validate that the data is numeric"""
-        pass
 
     @abstractmethod
     def data_correct_shape(self) -> bool:
         """Validate the shape of the DataFrame"""
-        pass
 
 
 class ValidateData(BaseDataClass):
     def index_present(self) -> bool:
         """
-        Check if a custom index is used or if the default index is acceptable
+        Check if a custom index is used or if the default index is acceptable.
         """
         if self.custom_index is not None:
 
@@ -81,7 +77,7 @@ class ValidateData(BaseDataClass):
 
     def target_column_present(self) -> bool:
         """
-        Verify the presence of the target column
+        Verify the presence of the target column.
         """
         if self.target_column is None:
             raise ValueError("Target column not specified")
@@ -93,7 +89,7 @@ class ValidateData(BaseDataClass):
 
     def explanatory_data(self) -> bool:
         """
-        Check for explanatory variables
+        Check for explanatory variables.
         """
         explanatory_columns = [
             col for col in self.dataframe.columns if col != self.target_column
@@ -111,7 +107,7 @@ class ValidateData(BaseDataClass):
 
     def is_data_numeric(self) -> bool:
         """
-        Check if all columns (except target) are numeric
+        Check if all columns (except target) are numeric.
         """
         non_target_columns = [
             col for col in self.dataframe.columns if col != self.target_column
@@ -130,7 +126,7 @@ class ValidateData(BaseDataClass):
 
     def data_correct_shape(self) -> bool:
         """
-        Validate DataFrame structure
+        Validate DataFrame structure.
         """
         if self.dataframe.empty:
             raise ValueError("DataFrame is empty")

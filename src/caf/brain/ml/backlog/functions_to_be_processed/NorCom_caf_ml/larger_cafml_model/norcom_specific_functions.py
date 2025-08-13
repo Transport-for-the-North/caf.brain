@@ -3,46 +3,49 @@
 Created on: 10/3/2024
 Original author: Adil Zaheer
 """
+# Built-Ins
 # pylint: disable=import-error,wrong-import-position
 # pylint: enable=import-error,wrong-import-position
 import os
+import time
+
+# Third Party
 import joblib
 import numpy as np
 import pandas as pd
+from caf.ml.backlog.functions_to_be_processed.NorCom_caf_ml.larger_cafml_model.norcom_inputs import (
+    Default_regression_methods,
+    Models,
+    Models_List_,
+)
 from caf.ml.process_data_functions import (
     convert_to_dataframe,
-    process_data_numeric,
-    index_sorter,
-    function_remove_spaces,
-    find_numeric_target_column,
     drop_rows,
-)
-from caf.ml.backlog.functions_to_be_processed.NorCom_caf_ml.larger_cafml_model.norcom_inputs import (
-    Models,
-    Default_regression_methods,
-    Models_List_,
+    find_numeric_target_column,
+    function_remove_spaces,
+    index_sorter,
+    process_data_numeric,
 )
 from sklearn.decomposition import FactorAnalysis
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.model_selection import (
+    RandomizedSearchCV,
+    StratifiedShuffleSplit,
     TimeSeriesSplit,
     cross_val_score,
     train_test_split,
-    RandomizedSearchCV,
-    StratifiedShuffleSplit,
 )
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, PolynomialFeatures
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from statsmodels.stats.diagnostic import het_breuschpagan
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tools import add_constant
 from tqdm import tqdm
-from sklearn.linear_model import LogisticRegression
-import time
 
 
 def norcom_run_functions(params, training, test, validation):

@@ -1,13 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-Created on: 12/16/2024
-Original author: Adil Zaheer
-"""
 # Built-Ins
 import logging
-
-# pylint: disable=import-error,wrong-import-position
-# pylint: enable=import-error,wrong-import-position
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -23,6 +15,8 @@ LOG = logging.getLogger(__name__)
 
 
 class InitialDataProcessing:
+    """Class for processing initial input data to the caf.brAIn prediction model."""
+
     def __init__(
         self,
         file_path: Path,
@@ -39,38 +33,33 @@ class InitialDataProcessing:
         is_test_data: bool = False,
     ):
         """
-        Class for processing initial input data to the caf.brAIn prediction model.
-
         Parameters
         ----------
-        file_path : pathlib.Path
-            Optional path to data to be used for modelling.
-        folder_path : pathlib.Path
-            Optional path to folder of data to be used for modelling.
-        output_path : pathlib.Path
-            Path to output location.
-        target_column : str
-            Name of the column to predict.
-        custom_index : list of str
-            List of column names to be used as an index. Must be one value (e.g. year)
-            if splitting data into train and test via this column. Corresponds to
-            split_by_value in this case.
-        column_name_to_drop_rows : list of str
-            List of column names that contain values to drop.
-        value_in_row : list of str
-            Corresponding values for column_name_to_drop_rows.
-        weight_column : str
-            Optional column name to be used as sample weights.
-        categorical_features : list of str
-            List of column names that are categorical variables.
-        numerical_features : list of str
-            List of column names that are continuous variables.
-        classification_prediction : tuple of int
-            Target values to predict in a classification problem.
-        is_test_data : bool, default=False
-            Set to False by default unless test data is being processed. This is set to
-            True when using the main prediction function. If using separately then set
-            to True or False when calling the class.
+
+        file_path: Optional path to data to be used for modelling.
+        folder_path: Optional path to folder of data to be used for
+                     modelling.
+        output_path: Path to output location.
+        target_column: String column name of value to predict.
+        custom_index: List of string column names to be used as an index.
+                      Must be one value e.g. year if splitting data
+                      into train and test via this column. Corresponds to
+                      split_by_value in this case.
+        column_name_to_drop_rows: List of string column names that
+                                  contain values to drop.
+        value_in_row: Corresponding values for column_name_to_drop_rows.
+        weight_column: Optional string column value to be used as weight.
+        categorical_features: List of string column names that are
+                              categorical variables.
+        numerical_features: List of string column names that are
+                            continuous variables.
+        classification_prediction: List of integers that correspond to the
+                                   target column. The value(s) to predict
+                                   in a classification problem.
+        is_test_data: Set to False by default unless test data is
+                      being processed. This is set to true when using
+                      the main prediction function. If using separately
+                      then set to True or False when calling the class.
         """
 
         self.file_path = file_path
@@ -92,17 +81,15 @@ class InitialDataProcessing:
     # # # Data flow pipelines # # #
     def execute_pipeline(self, is_test_data: bool) -> Dict[str, pd.DataFrame]:
         """
-        Runs the InitialDataProcessing pipeline.
+        Run the InitialDataProcessing pipeline.
 
         Parameters
         ----------
-        is_test_data : bool
-            Whether the data being processed is test data.
+        is_test_data: Dictates if data being processed is train or test.
 
         Returns
         -------
-        dataframes : dict of {str: pandas.DataFrame}
-            Dictionary containing the finished processed dataframes.
+        Dictionary containing the finished processed dataframes
         """
         self.read_data()
         self.process_dataframes(is_test_data)
@@ -111,18 +98,17 @@ class InitialDataProcessing:
 
     def data_already_split_pipeline(self, is_test_data: bool) -> Dict[str, pd.DataFrame]:
         """
-        Runs the pipeline if train and test data is already split by the user
+        Run the pipeline if train and test data is already split by the user
         or previous model runs.
 
         Parameters
         ----------
-        is_test_data : bool
-            Whether the data being processed is test data.
+        is_test_data: Dictates if data being processed is train or test.
 
         Returns
         -------
-        dataframes : dict of {str: pandas.DataFrame}
-            Dictionary containing the finished processed dataframes.
+        Dictionary containing the finished processed dataframes
+
         """
         self.process_dataframes(is_test_data)
         self.validate_data(is_test_data)
@@ -130,6 +116,11 @@ class InitialDataProcessing:
 
     def read_data(self) -> None:
         """
+        Read data from file or folder based on provided paths.
+
+        Returns
+        -------
+        None
         Read data from file or folder based on provided paths.
 
         Returns
@@ -152,14 +143,13 @@ class InitialDataProcessing:
 
         Parameters
         ----------
-        is_test_data : bool
-            Whether the data being processed is test data.
+        is_test_data: Dictates if data being processed is train or test.
 
         Returns
         -------
         None
         """
-        LOG.info("Processing %s data", "test" if is_test_data is True else "training")
+        LOG.info("Processing test if %s is True else training data", is_test_data)
 
         if len(self.dataframes) > 1:
             if self.custom_index is None:
@@ -168,16 +158,42 @@ class InitialDataProcessing:
                                   multiple dataframes. Data processing outside of \
                                   caf.ml is advised."
                 )
-            else:
-                self.df = pd.concat(self.dataframes, axis=0)
+            self.df = pd.concat(self.dataframes, axis=0)
 
         if self.df.empty:
-            LOG.error("Dataframe %s is empty", self.df)
             raise ValueError(f"Dataframe {self.df} is empty")
 
         df = self.convert_to_dataframe(self.df)
 
-        # ...existing code...
+        target_column_ = (
+            []
+            if is_test_data
+            else ([self.target_column] if isinstance(self.target_column, str) else [])
+        )
+        weight_column_ = [self.weight_column] if isinstance(self.weight_column, str) else []
+        custom_index = self.custom_index or []
+        categorical_features = self.categorical_features or []
+        numerical_features = self.numerical_features or []
+
+        if self.numerical_features is None:
+            columns_to_keep = (
+                custom_index + categorical_features + target_column_ + weight_column_
+            )
+        elif self.categorical_features is None:
+            columns_to_keep = (
+                custom_index + numerical_features + target_column_ + weight_column_
+            )
+        else:
+            columns_to_keep = (
+                custom_index
+                + categorical_features
+                + numerical_features
+                + target_column_
+                + weight_column_
+            )
+
+        columns_to_keep = [col for col in columns_to_keep if col in df.columns]
+        df = df[columns_to_keep]
 
         if is_test_data:
             LOG.info("Processing test data - skipping target column operations")
@@ -201,7 +217,6 @@ class InitialDataProcessing:
                 df = self.drop_rows(df, self.column_name_to_drop_rows, self.value_in_row)
 
             if self.target_column not in df.columns:
-                LOG.error("Target column '%s' not found in training data", self.target_column)
                 raise ValueError(
                     f"Target column '{self.target_column}' not found in training data"
                 )
@@ -230,20 +245,18 @@ class InitialDataProcessing:
     def validate_data(self, is_test_data) -> None:
         """
         Validate processed dataframes using the ValidateData class.
-
         Ensures data is in the format of the base class.
 
         Parameters
         ----------
-        is_test_data : bool
-            Whether the data being processed is test data.
+        is_test_data: Dictates if data being processed is train or test.
 
         Returns
         -------
         None
         """
         LOG.info("Starting data validation")
-        for name, df in self.dataframes.items():
+        for _, df in self.dataframes.items():
             validator = ValidateData(
                 dataframe=df, custom_index=self.custom_index, target_column=self.target_column
             )
@@ -260,33 +273,107 @@ class InitialDataProcessing:
                 validator.explanatory_data()
                 validator.is_data_numeric()
 
-    # ...existing code...
+    # # # DATA PROCESSING METHODS # # #
+    @staticmethod
+    def read_file(file_path) -> pd.DataFrame:
+        """
+        Read in a file whilst trying all common encoding types and file types.
+
+        Parameters
+        ----------
+        file_path: File path location.
+
+        Returns
+        -------
+        Pandas dataframe of your input data.
+        """
+        file_extension = os.path.splitext(file_path)[1].lower()
+
+        try:
+            if file_extension == ".csv":
+                encodings = ["utf-8", "latin-1", "iso-8859-1", "cp1252"]
+                for encoding in encodings:
+                    try:
+                        df = pd.read_csv(file_path, encoding=encoding, low_memory=False)
+                        return df
+                    except (UnicodeDecodeError, pd.errors.ParserError):
+                        continue
+                raise UnicodeDecodeError(
+                    f"Unable to read CSV file with encodings: {encodings}"
+                )
+
+            if file_extension in [".xlsx", ".xls"]:
+                df = pd.read_excel(file_path)
+                return df
+
+            if file_extension == ".json":
+                df = pd.read_json(file_path)
+                return df
+
+            raise ValueError(
+                f"Unsupported file type: {file_extension}. Supported types: CSV, XLSX and JSON"
+            )
+
+        except Exception as e:
+            LOG.error("Error reading file %s: %s", file_path, e)
+            raise
+
+    @staticmethod
+    def read_folder(folder_path: Path) -> dict:
+        """
+        Create a dictionary of dataframes based on a path.
+        #TODO MAKE IT READ IN OTHER FILE TYPES
+
+        Parameters
+        ----------
+        folder_path: Path to a folder that contains csvs to be used as
+                     input data.
+
+        Returns
+        -------
+        Dictionary of Pandas dataframes based on your input data.
+        """
+        dataframes_dict = {}
+        for file_name in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, file_name)
+            if os.path.isfile(file_path) and file_name.endswith(".csv"):
+                df = pd.read_csv(file_path, low_memory=False)
+                dataframes_dict[file_name] = df
+        return dataframes_dict
+
+    @staticmethod
+    def function_remove_spaces(df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Remove any whitespace from column titles. A common problem in data.
+
+        Parameters
+        ----------
+        df: Input dataframe.
+
+        Returns
+        -------
+        Dataframe with tidy column titles.
+        """
+        df = df.map(lambda x: str(x).replace(" ", ""))
+        return df
 
     @staticmethod
     def index_sorter(df: pd.DataFrame, custom_index: list[str]) -> pd.DataFrame:
         """
-        Sets columns in a dataframe as the index.
+        Set columns in a dataframe as the index.
 
         Parameters
         ----------
-        df : pandas.DataFrame
-            Input dataframe.
-        custom_index : list of str
-            Columns in the dataframe to set as index.
+        df: input dataframe.
+        custom_index: List of strings that are columns in the dataframe.
+                      These will be set as an index.
 
         Returns
         -------
-        df : pandas.DataFrame
-            Dataframe with a custom index.
-
-        Raises
-        ------
-        ValueError
-            If a specified column is not found in the dataframe.
+        Input dataframe with a custom index.
         """
         for col in custom_index:
             if col not in df.columns:
-                LOG.error("Column '%s' not found in DataFrame.", col)
                 raise ValueError(f"Column '{col}' not found in DataFrame.")
         df.set_index(custom_index, inplace=True, verify_integrity=False)
 
@@ -297,28 +384,27 @@ class InitialDataProcessing:
         df: pd.DataFrame, column_name_to_drop_rows: str, value_in_row: Union[str, float, int]
     ) -> pd.DataFrame:
         """
-        Removes specified rows from the input dataframe.
+        Remove specified rows from the input dataframe.
 
         Parameters
         ----------
-        df : pandas.DataFrame
-            Input data.
-        column_name_to_drop_rows : list of str
-            Column names where the problematic rows exist.
-        value_in_row : list of str, float, or int
-            The value inside the row that should be removed.
+        df: Input data.
+        column_name_to_drop_rows: Column names where the problematic
+                                  rows exist.
+        value_in_row: The value inside the row that should be removed.
 
         Returns
         -------
-        df : pandas.DataFrame
-            Dataframe with rows dropped.
+        Dataframe with rows dropped.
         """
         df = df.astype(str)
         for col, val in zip(column_name_to_drop_rows, value_in_row):
             if col in df.columns:
                 df = df[df[col] != val]
                 LOG.info("Rows where %s is %s have been dropped.", col, val)
+                LOG.info("Rows where %s is %s have been dropped.", col, val)
             else:
+                LOG.warning("Column %s does not exist in the DataFrame.", col)
                 LOG.warning("Column %s does not exist in the DataFrame.", col)
         return df
 
@@ -327,31 +413,19 @@ class InitialDataProcessing:
         dataframe: pd.DataFrame, target_column: str = None, output_folder: Path = None
     ) -> pd.DataFrame:
         """
-        Removes and exports NaNs and duplicates.
+        Remove and export nans and duplicates.
 
         Parameters
         ----------
-        dataframe : pandas.DataFrame
-            Input dataframe.
-        target_column : str, optional
-            Column in the dataframe specified by user.
-        output_folder : pathlib.Path, optional
-            Path to output folder.
+        dataframe: Input dataframe.
+        target_column: Column in the dataframe specified by user.
+        output_folder: Path to output folder.
 
         Returns
         -------
-        cleaned_dataframe : pandas.DataFrame
-            Dataframe without NaNs and duplicates.
-
-        Raises
-        ------
-        ValueError
-            If the target column contains NaN values.
+        Dataframe without nans and duplicates.
         """
         if target_column and dataframe[target_column].isna().any():
-            LOG.error(
-                "Target column '%s' has NaN values. Please review the data.", target_column
-            )
             raise ValueError(
                 f"Target column '{target_column}' has NaN values. \
                                Please review the data."
@@ -364,15 +438,18 @@ class InitialDataProcessing:
             nan_output_path = os.path.join(output_folder, "nans.csv")
             rows_with_nans.to_csv(nan_output_path, index=True)
             LOG.info("NaN rows exported to: %s", nan_output_path)
+            LOG.info("NaN rows exported to: %s", nan_output_path)
 
         exact_duplicates = cleaned_dataframe[cleaned_dataframe.duplicated(keep=False)]
 
         if not exact_duplicates.empty:
             LOG.info("Exact duplicate rows found: %s", exact_duplicates)
+            LOG.info("Exact duplicate rows found: %s", exact_duplicates)
 
             if output_folder:
                 duplicates_output_path = os.path.join(output_folder, "exact_duplicates.csv")
                 exact_duplicates.to_csv(duplicates_output_path, index=True)
+                LOG.info("Exact duplicate rows exported to: %s", duplicates_output_path)
                 LOG.info("Exact duplicate rows exported to: %s", duplicates_output_path)
 
             cleaned_dataframe = cleaned_dataframe.drop_duplicates()
@@ -382,27 +459,18 @@ class InitialDataProcessing:
     @staticmethod
     def numeric_transformation(data: pd.DataFrame, target_column: str) -> pd.DataFrame:
         """
-        Ensures all data is numeric.
+        Ensure all data is numeric in a dataframe where applicable.
 
         Parameters
         ----------
-        data : pandas.DataFrame
-            Input data.
-        target_column : str
-            Column in the dataframe specified by user.
+        data: Input data.
+        target_column: Column in the dataframe specified by user.
 
         Returns
         -------
-        data : pandas.DataFrame
-            Dataframe with all columns converted to numeric.
-
-        Raises
-        ------
-        ValueError
-            If the target column cannot be converted to numeric.
+        Pandas dataframe with numeric data where applicable.
         """
         if target_column not in data.columns:
-            LOG.error("The target column is not in the dataframe. Please evaluate data.")
             raise ValueError(
                 "The target column is not in the dataframe. Please evaluate data."
             )
@@ -412,7 +480,6 @@ class InitialDataProcessing:
         if not pd.to_numeric(data[target_column], errors="coerce").notna().all():
             data[target_column] = pd.to_numeric(data[target_column], errors="coerce")
             if not data[target_column].notna().all():
-                LOG.error("The target column could not be converted to numeric.")
                 raise ValueError("The target column could not be converted to numeric.")
 
         return data
@@ -424,26 +491,17 @@ class InitialDataProcessing:
         index: Optional[List[Any]] = None,
     ) -> pd.DataFrame:
         """
-        Converts data to a dataframe.
+        Convert data to a dataframe.
 
         Parameters
         ----------
-        data : pandas.DataFrame, list, tuple, set, numpy.ndarray, pandas.Series, or dict
-            Input data of any regularly used formats.
-        columns : list of str, optional
-            List of column names to assign to dataframe.
-        index : list, optional
-            List of index labels to assign to index.
+        data: Input data of any regularly used formats.
+        columns: List of column names to assign to dataframe.
+        index: List of index labels to assign to index.
 
         Returns
         -------
-        df : pandas.DataFrame
-            Dataframe with correct index and column titles.
-
-        Raises
-        ------
-        ValueError
-            If an unsupported data type is provided.
+        Dataframe with correct index and column titles.
         """
         try:
             if isinstance(data, pd.DataFrame):
@@ -468,33 +526,39 @@ class InitialDataProcessing:
                 df.index = index
 
             return df
-        except Exception as n:
-            LOG.error("An error occurred during data conversion: %s", n)
+        except ValueError as n:
+            LOG.error(
+                "An error occurred during data conversion: %s. Data must be \
+                       a standard Python, Numpy or Pandas datatype e.g. list, \
+                       ndarray or series to be converted",
+                n,
+            )
             return None
 
     @staticmethod
-    def transform_target_column(df, target_column, classification_prediction):
+    def transform_target_column(
+        df: pd.DataFrame, target_column: str, classification_prediction: tuple[int, ...]
+    ) -> pd.DataFrame:
         """
-        Transform the target column for classification problems.
+        Convert target column values to binary or multiclass.
 
         Parameters
         ----------
-        df : pandas.DataFrame
-            Input dataframe.
-        target_column : str
-            Name of the target column.
-        classification_prediction : tuple of int
-            Target values to predict in a classification problem.
+        df: Input dataframe
+        target_column: String column name of value to predict.
+        classification_prediction: List of integers that correspond to the
+                                   target column. The value(s) to predict
+                                   in a classification problem.
 
         Returns
         -------
-        df : pandas.DataFrame
-            Dataframe with transformed target column.
+        Dataframe with processed target column.
         """
         if (
             isinstance(classification_prediction, tuple)
             and len(classification_prediction) == 2
         ):
+            LOG.info("Binary model selected for values %s", classification_prediction)
             LOG.info("Binary model selected for values %s", classification_prediction)
             df = df[df[target_column].isin(classification_prediction)]
 
@@ -503,10 +567,12 @@ class InitialDataProcessing:
             and len(classification_prediction) == 3
         ):
             LOG.info("Multiclass model selected for values %s", classification_prediction)
+            LOG.info("Multiclass model selected for values %s", classification_prediction)
             df = df[df[target_column].isin(classification_prediction)]
 
         df[target_column] = df[target_column].astype(int)
         unique_values = df[target_column].unique()
+        LOG.info("Unique values in %s after transformation: %s", target_column, unique_values)
         LOG.info("Unique values in %s after transformation: %s", target_column, unique_values)
 
         return df

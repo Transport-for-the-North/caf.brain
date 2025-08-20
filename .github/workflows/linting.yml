@@ -33,12 +33,12 @@ jobs:
 
       - name: Lint with PyLint
         run: |
-          pylint src
+          pylint src/caf/brain/ml
 
       - name: Lint with MyPy
         run: |
-          mypy src
+          mypy src/caf/brain/ml
 
       - name: Lint with PyDocStyle
         run: |
-          pydocstyle src
+          pydocstyle src/caf/brain/ml

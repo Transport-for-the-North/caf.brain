@@ -9,4 +9,4 @@ rasterio==1.4.3
 ray==2.48.0
 tensorflow==2.10.0
 torch==2.8.0
-ultralytics==8.3.175
+ultralytics==8.3.185

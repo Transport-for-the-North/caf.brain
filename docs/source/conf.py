@@ -25,7 +25,7 @@ project = "CAF.brain"
 copyright = "2024, Transport for the North"
 author = "Transport for the North"
 
-# Third Party
+# Local Imports
 import caf.brain
 
 version = str(caf.brain.__version__)
@@ -54,7 +54,7 @@ templates_path = ["_templates", "_templates/autosummary"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = [] # type: ignore
+exclude_patterns = []  # type: ignore
 
 # -- Options for API summary -------------------------------------------------
 napoleon_google_docstring = False
@@ -91,6 +91,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
 }
 intersphinx_timeout = 30
+
 
 # -- Options for Todo extension ----------------------------------------------
 def get_env_bool(name: str, default: bool) -> bool:

@@ -5,25 +5,27 @@
 Created on: 4/27/2025
 Original author: Adil Zaheer
 """
-import pandas as pd
+# Built-Ins
+import logging
 import os
+
+# Third Party
 import numpy as np
+import pandas as pd
 import rasterio
 from PIL import Image
-from rasterio.merge import merge
-import logging
 from rasterio.errors import MergeError
-from caf.brain.machine_vision.satellite_image_processing.image_processing.image_processing_functions import \
-    check_raster_file
+from rasterio.merge import merge
+
+# Local Imports
+from caf.brain.machine_vision.satellite_image_processing.image_processing.image_processing_functions import (
+    check_raster_file,
+)
+
 LOG = logging.getLogger(__name__)
 
 
-def find_surrounding_images(col_start,
-                            row_start,
-                            col_end,
-                            row_end,
-                            image_width,
-                            image_height):
+def find_surrounding_images(col_start, row_start, col_end, row_end, image_width, image_height):
 
     missing_left = 0 if col_start >= 0 else abs(col_start)
     missing_top = 0 if row_start >= 0 else abs(row_start)
@@ -57,27 +59,29 @@ def find_surrounding_names(file_name):
 
     # west to east, south to north
     grid_letters = [
-        ['SV', 'SW', 'SX', 'SY', 'SZ', 'TV', 'TW'],
-        ['SQ', 'SR', 'SS', 'ST', 'SU', 'TQ', 'TR'],
-        ['SL', 'SM', 'SN', 'SO', 'SP', 'TL', 'TM'],
-        ['SF', 'SG', 'SH', 'SJ', 'SK', 'TF', 'TG'],
-        ['SA', 'SB', 'SC', 'SD', 'SE', 'TA', 'TB'],
-        ['NV', 'NW', 'NX', 'NY', 'NZ', 'OV', 'OW'],
-        ['NQ', 'NR', 'NS', 'NT', 'NU', 'OQ', 'OR'],
-        ['NL', 'NM', 'NN', 'NO', 'NP', 'OL', 'OM'],
-        ['NF', 'NG', 'NH', 'NJ', 'NK', 'OF', 'OG'],
-        ['NA', 'NB', 'NC', 'ND', 'NE', 'OA', 'OB'],
-        ['HV', 'HW', 'HX', 'HY', 'HZ', 'JV', 'JW'],
-        ['HQ', 'HR', 'HS', 'HT', 'HU', 'JQ', 'JR'],
-        ['HL', 'HM', 'HN', 'HO', 'HP', 'JL', 'JM']
+        ["SV", "SW", "SX", "SY", "SZ", "TV", "TW"],
+        ["SQ", "SR", "SS", "ST", "SU", "TQ", "TR"],
+        ["SL", "SM", "SN", "SO", "SP", "TL", "TM"],
+        ["SF", "SG", "SH", "SJ", "SK", "TF", "TG"],
+        ["SA", "SB", "SC", "SD", "SE", "TA", "TB"],
+        ["NV", "NW", "NX", "NY", "NZ", "OV", "OW"],
+        ["NQ", "NR", "NS", "NT", "NU", "OQ", "OR"],
+        ["NL", "NM", "NN", "NO", "NP", "OL", "OM"],
+        ["NF", "NG", "NH", "NJ", "NK", "OF", "OG"],
+        ["NA", "NB", "NC", "ND", "NE", "OA", "OB"],
+        ["HV", "HW", "HX", "HY", "HZ", "JV", "JW"],
+        ["HQ", "HR", "HS", "HT", "HU", "JQ", "JR"],
+        ["HL", "HM", "HN", "HO", "HP", "JL", "JM"],
     ]
 
     prefix = file_name[:2]
     nums_str = file_name[2:]
 
     if len(nums_str) != 4:
-        LOG.error(f"Expected 4-digit number after prefix, got {nums_str} \
-                    for {file_name}.")
+        LOG.error(
+            f"Expected 4-digit number after prefix, got {nums_str} \
+                    for {file_name}."
+        )
         raise ValueError(f"Expected 4-digit number after prefix, got {nums_str}")
 
     easting_major = int(nums_str[0:2])
@@ -96,7 +100,9 @@ def find_surrounding_names(file_name):
         raise ValueError(f"Prefix {prefix} not found in the grid letters map")
 
     def get_adjusted_reference(row_change, col_change, east_change, north_change):
-        new_row = prefix_row - row_change  # Subtract because rows increase southward in our grid
+        new_row = (
+            prefix_row - row_change
+        )  # Subtract because rows increase southward in our grid
         new_col = prefix_col + col_change
 
         new_easting = easting_major + east_change
@@ -124,24 +130,23 @@ def find_surrounding_names(file_name):
             return None  # gone off the edge of our defined grid
 
     image_layout_dict = {
-        'centre_image': file_name,
-        'north': get_adjusted_reference(0, 0, 0, 1),
-        'south': get_adjusted_reference(0, 0, 0, -1),
-        'east': get_adjusted_reference(0, 0, 1, 0),
-        'west': get_adjusted_reference(0, 0, -1, 0),
-        'northeast': get_adjusted_reference(0, 0, 1, 1),
-        'northwest': get_adjusted_reference(0, 0, -1, 1),
-        'southeast': get_adjusted_reference(0, 0, 1, -1),
-        'southwest': get_adjusted_reference(0, 0, -1, -1)
+        "centre_image": file_name,
+        "north": get_adjusted_reference(0, 0, 0, 1),
+        "south": get_adjusted_reference(0, 0, 0, -1),
+        "east": get_adjusted_reference(0, 0, 1, 0),
+        "west": get_adjusted_reference(0, 0, -1, 0),
+        "northeast": get_adjusted_reference(0, 0, 1, 1),
+        "northwest": get_adjusted_reference(0, 0, -1, 1),
+        "southeast": get_adjusted_reference(0, 0, 1, -1),
+        "southwest": get_adjusted_reference(0, 0, -1, -1),
     }
 
     return image_layout_dict
 
 
-def surrounding_img_path_finder(image_layout_dict,
-                                list_of_needed_tiles,
-                                image_folder,
-                                satellite_metadata: pd.DataFrame):
+def surrounding_img_path_finder(
+    image_layout_dict, list_of_needed_tiles, image_folder, satellite_metadata: pd.DataFrame
+):
 
     images_to_concat = []
     final_images_to_concat = []
@@ -152,9 +157,9 @@ def surrounding_img_path_finder(image_layout_dict,
                 images_to_concat.append(val)
 
     for item in images_to_concat:
-        if item in satellite_metadata['box_boundary'].values:
-            row_data = satellite_metadata[satellite_metadata['box_boundary'] == item]
-            path = row_data['path'].values[0]
+        if item in satellite_metadata["box_boundary"].values:
+            row_data = satellite_metadata[satellite_metadata["box_boundary"] == item]
+            path = row_data["path"].values[0]
             final_images_to_concat.append(path)
 
     if len(images_to_concat) != len(final_images_to_concat):
@@ -196,22 +201,26 @@ def estimate_memory_of_mosaic(image_paths):
         # memory requirement in bytes, then gigabytes
         bytes_per_element = np.dtype(np.uint8).itemsize
         est_memory_bytes = est_width * est_height * num_bands * bytes_per_element
-        est_memory_gb = est_memory_bytes / (1024 ** 3)
+        est_memory_gb = est_memory_bytes / (1024**3)
 
         return est_memory_gb
 
 
-def create_new_image(image_paths_to_concat,
-                     centre_image_path,
-                     junction_easting,
-                     junction_northing,
-                     output_dir,
-                     file_name):
+def create_new_image(
+    image_paths_to_concat,
+    centre_image_path,
+    junction_easting,
+    junction_northing,
+    output_dir,
+    file_name,
+):
     # todo more eloquent memory storage solution
 
     est_mem = estimate_memory_of_mosaic(image_paths=image_paths_to_concat)
     if est_mem is None:
-        LOG.error("Issue with one or all paths required for mosaic. Image expansion not possible.")
+        LOG.error(
+            "Issue with one or all paths required for mosaic. Image expansion not possible."
+        )
         return
     if est_mem > 30:
         LOG.error(f"Could not create mosaic for {centre_image_path} due to memory allocation")
@@ -233,7 +242,9 @@ def create_new_image(image_paths_to_concat,
         return
 
     if mosaic is None or mosaic.size == 0:
-        LOG.error(f"Mosaic creation failed for {centre_image_path} - empty or null mosaic returned")
+        LOG.error(
+            f"Mosaic creation failed for {centre_image_path} - empty or null mosaic returned"
+        )
         return
 
     # Convert junction coordinates (in map space) to pixel
@@ -247,8 +258,12 @@ def create_new_image(image_paths_to_concat,
     col_end = int(col + half_size)
     row_end = int(row + half_size)
 
-    if (col_start < 0 or row_start < 0 or
-        col_end > mosaic.shape[2] or row_end > mosaic.shape[1]):
+    if (
+        col_start < 0
+        or row_start < 0
+        or col_end > mosaic.shape[2]
+        or row_end > mosaic.shape[1]
+    ):
         LOG.warning(f"{centre_image_path} crop extends beyond mosaic boundaries:")
         LOG.warning(f" Mosaic shape: {mosaic.shape}")
         LOG.warning(f" Crop window: ({row_start}:{row_end}, {col_start}:{col_end})")

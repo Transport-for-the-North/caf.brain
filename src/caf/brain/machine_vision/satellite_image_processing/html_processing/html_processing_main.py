@@ -5,19 +5,26 @@
 Created on: 3/3/2025
 Original author: Adil Zaheer
 """
-from pathlib import Path
-import os
+# Built-Ins
 import glob
+import logging
+import os
+from pathlib import Path
+
+# Third Party
 import joblib
 import pandas as pd
 from tqdm import tqdm
-from caf.brain.machine_vision.satellite_image_processing.html_processing.html_processing_functions import extract_info_from_html
-import logging
+
+# Local Imports
+from caf.brain.machine_vision.satellite_image_processing.html_processing.html_processing_functions import (
+    extract_info_from_html,
+)
+
 LOG = logging.getLogger(__name__)
 
 
-def main_process_html(folder_path: Path,
-                      output_path: Path) -> dict:
+def main_process_html(folder_path: Path, output_path: Path) -> dict:
     """
     Creates a dictionary of HTML data based on a path.
 
@@ -26,18 +33,18 @@ def main_process_html(folder_path: Path,
 
     :return: dictionary of data.
     """
-    LOG.info('HTML processing beginning')
-    data_filename = os.path.join(output_path, 'data_dict_html.pkl')
+    LOG.info("HTML processing beginning")
+    data_filename = os.path.join(output_path, "data_dict_html.pkl")
     problem_html = []
 
     if os.path.exists(data_filename):
-        LOG.info('HTML data dictionary already exists and is being read in')
+        LOG.info("HTML data dictionary already exists and is being read in")
         data_dict = joblib.load(data_filename)
         final_data = pd.read_csv(os.path.join(output_path, "processed_html_data.csv"))
     else:
         data_dict = {}
         counter = 0
-        paths = glob.glob(os.path.join(folder_path) + '/**/*.xml', recursive=True)
+        paths = glob.glob(os.path.join(folder_path) + "/**/*.xml", recursive=True)
         with tqdm(total=None) as pbar:
             for path in paths:
                 df, name = extract_info_from_html(html_file_path=path)
@@ -60,5 +67,5 @@ def main_process_html(folder_path: Path,
         problem_df = pd.DataFrame(problem_html)
         problem_df.to_csv(os.path.join(output_path, "problem_html_files.csv"), index=False)
 
-    LOG.info('HTML processing ending')
+    LOG.info("HTML processing ending")
     return data_dict, final_data

@@ -5,16 +5,20 @@
 Created on: 3/4/2025
 Original author: Adil Zaheer
 """
+# Built-Ins
 import glob
-import pandas as pd
-from tqdm import tqdm
+import logging
 import os
-import numpy as np
-from scipy.spatial.distance import cdist
 from pathlib import Path
+
+# Third Party
+import numpy as np
+import pandas as pd
 import rasterio
 from rasterio import RasterioIOError
-import logging
+from scipy.spatial.distance import cdist
+from tqdm import tqdm
+
 LOG = logging.getLogger(__name__)
 
 
@@ -23,29 +27,31 @@ def euclidean_distance(df_a, df_b):
     df_a: html info about satellites
     df_b: their coordinates they want to have satellites images for
     """
-    coords_a = df_a[['tile_easting', 'tile_northing']].values
-    coords_b = df_b[['coordinates_easting', 'coordinates_northing']].values
+    coords_a = df_a[["tile_easting", "tile_northing"]].values
+    coords_b = df_b[["coordinates_easting", "coordinates_northing"]].values
 
     # Euclidean distance between each pair of points
-    distances = cdist(coords_b, coords_a, metric='euclidean')
+    distances = cdist(coords_b, coords_a, metric="euclidean")
 
     closest_indices = np.argmin(distances, axis=1)
-    closest_boundaries = df_a.iloc[closest_indices]['box_boundary'].values
+    closest_boundaries = df_a.iloc[closest_indices]["box_boundary"].values
 
     result_df = df_b.copy()
-    result_df['box_boundary'] = closest_boundaries
+    result_df["box_boundary"] = closest_boundaries
 
-    satellites = result_df['box_boundary'].unique()
-    satellites = pd.DataFrame(satellites, columns=['BNG_tile_names'])
+    satellites = result_df["box_boundary"].unique()
+    satellites = pd.DataFrame(satellites, columns=["BNG_tile_names"])
 
     return result_df, satellites
 
 
-def directory_iterator(dir_path: Path,
-                       training_data,
-                       image_reference_column: str,
-                       output: Path,
-                       folder_if_loop: Path) -> list[Path]:
+def directory_iterator(
+    dir_path: Path,
+    training_data,
+    image_reference_column: str,
+    output: Path,
+    folder_if_loop: Path,
+) -> list[Path]:
 
     path_file_name = "satellite_image_paths.csv"
     if os.path.exists(os.path.join(folder_if_loop, path_file_name)):
@@ -55,7 +61,7 @@ def directory_iterator(dir_path: Path,
 
     else:
         counter = 0
-        paths = glob.glob(os.path.join(dir_path) + '/**/*.jpg', recursive=True)
+        paths = glob.glob(os.path.join(dir_path) + "/**/*.jpg", recursive=True)
 
         try:
             training = pd.read_csv(training_data)
@@ -66,7 +72,9 @@ def directory_iterator(dir_path: Path,
         reference_set = set(training[image_reference_column].values)
 
         path_list = []
-        LOG.info(f"Looking for {len(reference_set)} unique reference values in {len(paths)} image files")
+        LOG.info(
+            f"Looking for {len(reference_set)} unique reference values in {len(paths)} image files"
+        )
 
         with tqdm(total=None) as pbar:
             for path in paths:
@@ -78,7 +86,9 @@ def directory_iterator(dir_path: Path,
                 pbar.update(1)
                 counter += 1
                 if counter % 100 == 0:
-                    LOG.info(f"Processed {counter}/{len(paths)} paths, found {len(path_list)} matches so far")
+                    LOG.info(
+                        f"Processed {counter}/{len(paths)} paths, found {len(path_list)} matches so far"
+                    )
 
         path_list_df = pd.DataFrame(path_list)
         path_list_df.to_csv(os.path.join(folder_if_loop, path_file_name), index=False)
@@ -86,8 +96,7 @@ def directory_iterator(dir_path: Path,
     return path_list
 
 
-def create_satellite_image_metadata(dir_path: Path,
-                                    output: Path):
+def create_satellite_image_metadata(dir_path: Path, output: Path):
     path_file_name = "satellite_image_metadata.csv"
     meta_dict = {}
 
@@ -96,13 +105,13 @@ def create_satellite_image_metadata(dir_path: Path,
         return df
 
     else:
-        paths = glob.glob(os.path.join(dir_path) + '/**/*.jpg', recursive=True)
+        paths = glob.glob(os.path.join(dir_path) + "/**/*.jpg", recursive=True)
         for path in paths:
             directory, file_name = os.path.split(path)
             name = os.path.splitext(file_name)[0]
             meta_dict[name] = path
 
-        df = pd.DataFrame(list(meta_dict.items()), columns=['box_boundary', 'path'])
+        df = pd.DataFrame(list(meta_dict.items()), columns=["box_boundary", "path"])
         df.to_csv(os.path.join(output, path_file_name), index=False)
 
     return df

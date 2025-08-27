@@ -12,10 +12,9 @@ requires-python = ">=3.9"
 authors = [{ name = "Transport for the North" }]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 
 [project.urls]
@@ -46,7 +45,7 @@ where = ["src"]
 # Linters
 [tool.black]
 line-length = 95
-target-version = ['py39']
+target-version = ['py311']
 
 [tool.pylint.messages_control]
 disable = [

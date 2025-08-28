@@ -61,8 +61,7 @@ disable = [
 good-names = ["df", "fn", "ca", "tp", "x", "i"]
 
 [tool.pylint.main]
-# Ignore machine_vision as it is WIP
-ignore = ["__init__.py", "_version.py", "machine_vision"]
+ignore = ["__init__.py", "_version.py"]
 
 [tool.pylint.design]
 max-args = 10
@@ -74,8 +73,6 @@ packages = ["caf.brain"]
 namespace_packages = true
 ignore_missing_imports = true
 allow_redefinition = true
-# Exclude machine vision as it is WIP
-exclude = "src/caf/brain/machine_vision/*"
 
 [tool.pydocstyle]
 convention = "numpy"
@@ -83,8 +80,6 @@ match = '(?!_test)(?!test_)(?!__init__).*\.py'
 add-ignore = [
     "D202", # Temporary compatibility with black
 ]
-# Exclude machine vision as it is WIP
-match-dir = "^(?!.*machine_vision).*"
 
 [tool.isort]
 profile = "black"

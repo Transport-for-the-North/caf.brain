@@ -33,12 +33,12 @@ jobs:
 
       - name: Lint with PyLint
         run: |
-          pylint src/caf/brain/ml
+          pylint src --ignore=src/caf/brain/machine_vision
 
       - name: Lint with MyPy
         run: |
-          mypy src/caf/brain/ml
+          mypy src --exclude 'src/caf/brain/machine_vision'
 
       - name: Lint with PyDocStyle
         run: |
-          pydocstyle src/caf/brain/ml
+          pydocstyle src --match-dir='^(?!machine_vision).*

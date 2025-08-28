@@ -133,3 +133,6 @@ dmypy.json
 
 # VS Code
 .vscode/
+
+# Yolo file to support yolo model run
+*.pt

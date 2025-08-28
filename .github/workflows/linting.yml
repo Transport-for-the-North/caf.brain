@@ -37,7 +37,7 @@ jobs:
 
       - name: Lint with MyPy
         run: |
-          mypy src
+          mypy
 
       - name: Lint with PyDocStyle
         run: |

@@ -1,3 +1,8 @@
+"""
+Main function used to apply data analysis and corrective measures where
+applicable.
+"""
+
 # Built-Ins
 import logging
 import os

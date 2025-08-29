@@ -1,3 +1,7 @@
+"""
+Input data functions used to tidy semi-structured / structured numeric data.
+"""
+
 # Built-Ins
 import logging
 import os
@@ -576,70 +580,3 @@ class InitialDataProcessing:
         LOG.info("Unique values in %s after transformation: %s", target_column, unique_values)
 
         return df
-
-
-# TODO: Custom outliers
-# def remove_and_export_outliers(df: pd.DataFrame, outlier_threshold=None, target_column=None, output_folder=None):
-#     if outlier_threshold is None:
-#         return df
-#
-#     columns_for_zscore = df.columns.difference([target_column]) if target_column else df.columns
-#
-#     z_scores = np.abs(zscore(df[columns_for_zscore]))
-#
-#     outliers = (z_scores > outlier_threshold).any(axis=1)
-#
-#     if output_folder and outliers.any():
-#         outliers_output_path = os.path.join(output_folder, "outliers.csv")
-#         outliers_df = df[outliers]
-#         outliers_df.to_csv(outliers_output_path, index=False)
-#         print(f"Outliers exported to: {outliers_output_path}")
-#
-#     df_no_outliers = df[~outliers]
-#
-#     return df_no_outliers#
-
-
-# processed_dataframes = {}
-# for name, df in self.dataframes.items():
-#     if df.empty:
-#         print(f"Warning: Dataframe '{name}' is empty. Skipping processing.")
-#         processed_dataframes[name] = df
-#         continue
-#     df = self.convert_to_dataframe(df)
-#     print(
-#         f"Columns before processing '{name}': {df.columns}")
-#     target_column_ = [self.target_column] if isinstance(self.target_column, str) else []
-#     weight_column_ = [self.weight_column] if isinstance(self.weight_column, str) else []
-#     custom_index = self.custom_index or []
-#     categorical_features = self.categorical_features or []
-#     numerical_features = self.numerical_features or []
-#
-#     if self.numerical_features is None:
-#         columns_to_keep = custom_index + categorical_features + target_column_ + weight_column_
-#     elif self.categorical_features is None:
-#         columns_to_keep = custom_index + numerical_features + target_column_ + weight_column_
-#     else:
-#         columns_to_keep = custom_index + categorical_features + numerical_features + target_column_ + weight_column_
-#
-#     columns_to_keep = [col for col in columns_to_keep if col in df.columns]
-#     df = df[columns_to_keep]
-#
-#     df = self.function_remove_spaces(df)
-#     if self.custom_index:
-#         df = self.index_sorter(df, self.custom_index)
-#
-#     if self.column_name_to_drop_rows and self.value_in_row:
-#         df = self.drop_rows(df,
-#                             self.column_name_to_drop_rows,
-#                             self.value_in_row)
-#
-#     df = self.handle_nans_and_duplicates(df,
-#                                          target_column=self.target_column,
-#                                          output_folder=self.output_path)
-#
-#     df = self.numeric_transformation(df, self.target_column)
-#     df = self.convert_to_dataframe(df, columns=df.columns, index=df.index)
-#     processed_dataframes[name] = df
-#
-# self.dataframes = processed_dataframes

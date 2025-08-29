@@ -1,3 +1,8 @@
+"""
+Module for model selection functions. Used to select and initialise a
+SciKit-Learn algorithm.
+"""
+
 # Built-Ins
 import logging
 from pathlib import Path

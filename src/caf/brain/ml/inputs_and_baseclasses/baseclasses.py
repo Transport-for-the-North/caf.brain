@@ -55,6 +55,10 @@ class BaseDataClass(ABC):
 
 
 class ValidateData(BaseDataClass):
+    """
+    Validation class to ensure data tidying was successful.
+    """
+
     def index_present(self) -> bool:
         """
         Check if a custom index is used or if the default index is acceptable.

@@ -1,3 +1,9 @@
+"""
+This module contains functions to conduct data analysis prior to machine
+learning model. Data transformation functions are used if issues are present
+and the user permits.
+"""
+
 # Built-Ins
 import logging
 from pathlib import Path

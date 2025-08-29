@@ -1,3 +1,7 @@
+"""
+Main function to tidy input data.
+"""
+
 # Built-Ins
 import logging
 import pathlib

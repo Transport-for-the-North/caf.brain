@@ -37,14 +37,14 @@ LOG = logging.getLogger(__name__)
 
 def select_param(
     train_final: pd.DataFrame,
-    target_column: str,
+    target_column: str | None,
     model_instance,
     model_name,
-    classification_prediction: tuple[int, ...],
-    cv: str,
-    weight_column: str,
+    classification_prediction: tuple[int, ...] | None,
+    cv: str | None,
+    weight_column: str | None,
     output_folder: Path,
-    is_time_series: bool,
+    is_time_series: bool | None,
 ):
     """
     Hyperparameter optimisation based on the ModelGrids Enum class.
@@ -73,6 +73,11 @@ def select_param(
     best_model: Fitted final model for prediction on unseen (test) data.
 
     """
+    if not target_column:
+        raise ValueError(
+            "Please provide a target column for hyperparameter \
+                          optimisation. This is a column title passed as a string."
+        )
     x = train_final.drop(columns=[target_column] + ([weight_column] if weight_column else []))
     y = train_final[target_column]
     weight = train_final[weight_column].values.flatten() if weight_column else None

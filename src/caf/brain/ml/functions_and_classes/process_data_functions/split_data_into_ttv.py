@@ -6,7 +6,7 @@ Original author: Adil Zaheer
 # Built-Ins
 import os.path
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 # Third Party
 import pandas as pd
@@ -76,12 +76,12 @@ def split_data(
 
 def stratified_split_with_categories(
     df: pd.DataFrame,
-    categorical_features: List[str],
-    target_column: str,
-    weight_column: str,
-    split_size: float,
-    validation_path: Path,
-    index_columns: List[str],
+    categorical_features: Optional[list[str]],
+    target_column: Optional[str],
+    weight_column: Optional[str],
+    split_size: Optional[float],
+    validation_path: Optional[Path],
+    index_columns: Optional[list[str]],
     output_path: Path,
 ) -> pd.DataFrame:
     """
@@ -152,11 +152,11 @@ def stratified_split_with_categories(
 
 def split_by_column_value(
     df: pd.DataFrame,
-    index_columns: List[str],
+    index_columns: Optional[list[str]],
     split_by_value: str,
-    weight_column: str,
-    target_column: str,
-    validation_path: Path,
+    weight_column: Optional[str],
+    target_column: Optional[str],
+    validation_path: Optional[Path],
     output_path: Path,
 ) -> pd.DataFrame:
     """
@@ -218,7 +218,9 @@ def split_by_column_value(
     return train, test, validate
 
 
-def simple_train_test_split(df: pd.DataFrame, target_column: str, weight_column: str):
+def simple_train_test_split(
+    df: pd.DataFrame, target_column: str | None, weight_column: str | None
+):
     """
     Split data into train and test sets for model building.
 
@@ -244,6 +246,11 @@ def simple_train_test_split(df: pd.DataFrame, target_column: str, weight_column:
     x_train_weight : pandas.Series or None
         Weight values for the training set, if available.
     """
+    if not target_column:
+        raise ValueError(
+            "Please provide a target column. This should be a \
+                          column title passed as a string."
+        )
     x = df.drop(columns=[target_column])
     y = df[target_column]
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.35, random_state=42)

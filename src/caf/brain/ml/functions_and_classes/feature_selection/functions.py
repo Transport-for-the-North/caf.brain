@@ -23,20 +23,22 @@ from sklearn.model_selection import (
     StratifiedKFold,
     TimeSeriesSplit,
     cross_val_score,
+    BaseCrossValidator,
 )
 from tqdm import tqdm
+from pathlib import Path
 
 LOG = logging.getLogger(__name__)
 
 
 def rf_feature_selection(
     data: pd.DataFrame,
-    target_column: str,
-    cv: str,
+    target_column: str | None,
+    cv: str | None,
     regression_method,
-    weight_column: str,
-    classification_prediction: bool,
-    is_time_series: bool,
+    weight_column: str | None,
+    classification_prediction: tuple[int, ...] | None,
+    is_time_series: bool | None,
 ) -> pd.DataFrame:
     """
     Two stage feature selection through Random Forest importance and if
@@ -64,6 +66,12 @@ def rf_feature_selection(
     dataframe_final: Training data post feature selection.
 
     """
+    if not target_column:
+        raise ValueError(
+            "Please provide a target column for feature selection. \
+                          This is a column title passed as a string."
+        )
+
     if isinstance(regression_method, LogisticRegression):
         regression_method.set_params(max_iter=1000)
     cv = get_cv_class(cv_method=cv, splits=None, repeats=None, is_time_series=is_time_series)
@@ -153,11 +161,11 @@ def rf_feature_selection(
 def feature_selection_intensive(
     x: pd.DataFrame,
     y: pd.DataFrame,
-    cv: str,
+    cv: BaseCrossValidator,
     regression_method,
     weight: pd.Series,
     weight_df: pd.DataFrame,
-    classification_prediction: tuple[int, ...],
+    classification_prediction: tuple[int, ...] | None,
 ) -> pd.DataFrame:
     """
     Thorough feature selection with multiple algorithms.
@@ -166,9 +174,8 @@ def feature_selection_intensive(
     ----------
     x: Training data split into explanatory variables only.
     y: Training data split only into the target variable.
-    cv: Cross validation method passed as a string. Any popular
-        SciKitlearn methods are suitable with KFold being default if
-        left as None.
+    cv: Cross validation method passed as an initialised SciKitLearn CV
+        splitter.
     regression_method: Initialised model algorithm from Models enum class.
     weight: Weight values in series form.
     weight_df: Weight values in a dataframe.
@@ -271,7 +278,12 @@ def _regression_feature_selection(x: pd.DataFrame, y: pd.DataFrame, weight: pd.S
     return final_features
 
 
-def get_cv_class(cv_method: str, splits: int, repeats: int, is_time_series: bool):
+def get_cv_class(
+    cv_method: str | None,
+    is_time_series: bool | None,
+    splits: int | None = None,
+    repeats: int | None = None,
+):
     """
     Select which SciKitLearn cross validation method to use.
 
@@ -316,7 +328,10 @@ def get_cv_class(cv_method: str, splits: int, repeats: int, is_time_series: bool
 
 
 def analyse_feature_importance(
-    train_transformed: pd.DataFrame, target_column: str, weight_column: str, output_path: str
+    train_transformed: pd.DataFrame,
+    target_column: str | None,
+    weight_column: str | None,
+    output_path: Path,
 ) -> pd.DataFrame:
     """
     Simple feature selection through importance and correlation metrics with
@@ -335,6 +350,9 @@ def analyse_feature_importance(
     """
     # pd.set_option("display.float_format", lambda x: "%.10f" % x)
     pd.set_option("display.float_format", lambda z: f"{z:.10f}")
+
+    if not target_column:
+        raise ValueError("A target column is required for feature selection")
 
     x = train_transformed.drop(
         columns=[target_column] + ([weight_column] if weight_column else [])
@@ -401,10 +419,11 @@ def analyse_feature_importance(
         )
         return train_transformed
 
-    create_importance_plots(results_df=importance_metrics, output_path=output_path)
-    results_df.to_csv(
-        os.path.join(output_path, "feature_importances.csv"), float_format="%.10f"
-    )
+    if output_path:
+        create_importance_plots(results_df=importance_metrics, output_path=output_path)
+        results_df.to_csv(
+            os.path.join(output_path, "feature_importances.csv"), float_format="%.10f"
+        )
 
     return filtered_data
 
@@ -448,7 +467,10 @@ def filtering_results(
 
 
 def combine_results(
-    train_final: pd.DataFrame, target_column: str, weight_column: str, test: pd.DataFrame
+    train_final: pd.DataFrame,
+    target_column: str | None,
+    weight_column: str | None,
+    test: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Function to apply feature selection results to training data.
@@ -483,7 +505,7 @@ def combine_results(
     return test_final, cols_dropped_by_feat_select
 
 
-def create_importance_plots(results_df: pd.DataFrame, output_path: str) -> None:
+def create_importance_plots(results_df: pd.DataFrame, output_path: Path) -> None:
     """
     Plotting feature selection scores where applicable.
 

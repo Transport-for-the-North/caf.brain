@@ -23,17 +23,17 @@ class InitialDataProcessing:
 
     def __init__(
         self,
-        file_path: Path,
+        file_path: Path | None,
         folder_path: Path,
         output_path: Path,
-        target_column: str,
-        custom_index: List[str],
-        column_name_to_drop_rows: List[str],
-        value_in_row: List[str],
-        weight_column: str,
-        categorical_features: List[str],
-        numerical_features: List[str],
-        classification_prediction: tuple[int, ...],
+        target_column: str | None,
+        custom_index: list[str] | None,
+        column_name_to_drop_rows: Optional[list[str]],
+        value_in_row: list[str | float | int] | None,
+        weight_column: str | None,
+        categorical_features: list[str] | None,
+        numerical_features: list[str] | None,
+        classification_prediction: tuple[int, ...] | None,
         is_test_data: bool = False,
     ):
         """
@@ -80,7 +80,7 @@ class InitialDataProcessing:
         self.is_test_data = is_test_data
 
         self.df: pd.DataFrame = None
-        self.dataframes: Dict[pd.DataFrame] = {}
+        self.dataframes: Dict[Any, pd.DataFrame] = {}
 
     # # # Data flow pipelines # # #
     def execute_pipeline(self, is_test_data: bool) -> Dict[str, pd.DataFrame]:
@@ -302,9 +302,7 @@ class InitialDataProcessing:
                         return df
                     except (UnicodeDecodeError, pd.errors.ParserError):
                         continue
-                raise UnicodeDecodeError(
-                    f"Unable to read CSV file with encodings: {encodings}"
-                )
+                raise ValueError(f"Unable to read CSV file with encodings: {encodings}")
 
             if file_extension in [".xlsx", ".xls"]:
                 df = pd.read_excel(file_path)
@@ -385,7 +383,9 @@ class InitialDataProcessing:
 
     @staticmethod
     def drop_rows(
-        df: pd.DataFrame, column_name_to_drop_rows: str, value_in_row: Union[str, float, int]
+        df: pd.DataFrame,
+        column_name_to_drop_rows: list[str],
+        value_in_row: list[str | float | int],
     ) -> pd.DataFrame:
         """
         Remove specified rows from the input dataframe.
@@ -406,15 +406,15 @@ class InitialDataProcessing:
             if col in df.columns:
                 df = df[df[col] != val]
                 LOG.info("Rows where %s is %s have been dropped.", col, val)
-                LOG.info("Rows where %s is %s have been dropped.", col, val)
             else:
-                LOG.warning("Column %s does not exist in the DataFrame.", col)
                 LOG.warning("Column %s does not exist in the DataFrame.", col)
         return df
 
     @staticmethod
     def handle_nans_and_duplicates(
-        dataframe: pd.DataFrame, target_column: str = None, output_folder: Path = None
+        dataframe: pd.DataFrame,
+        target_column: str | None = None,
+        output_folder: Path | None = None,
     ) -> pd.DataFrame:
         """
         Remove and export nans and duplicates.
@@ -461,7 +461,7 @@ class InitialDataProcessing:
         return cleaned_dataframe
 
     @staticmethod
-    def numeric_transformation(data: pd.DataFrame, target_column: str) -> pd.DataFrame:
+    def numeric_transformation(data: pd.DataFrame, target_column: str | None) -> pd.DataFrame:
         """
         Ensure all data is numeric in a dataframe where applicable.
 
@@ -541,7 +541,7 @@ class InitialDataProcessing:
 
     @staticmethod
     def transform_target_column(
-        df: pd.DataFrame, target_column: str, classification_prediction: tuple[int, ...]
+        df: pd.DataFrame, target_column: str | None, classification_prediction: tuple[int, ...]
     ) -> pd.DataFrame:
         """
         Convert target column values to binary or multiclass.
@@ -558,6 +558,7 @@ class InitialDataProcessing:
         -------
         Dataframe with processed target column.
         """
+
         if (
             isinstance(classification_prediction, tuple)
             and len(classification_prediction) == 2

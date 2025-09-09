@@ -34,7 +34,7 @@ def main_evaluate_input_data(
     data_classification: PredictionModelInputs.DataClassificationInputs,
     transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
     modelling: PredictionModelInputs.ModellingInputs,
-    output_path: Path = None,
+    output_path: Path | None = None,
     train_scaled: pd.DataFrame = None,
     test_scaled: pd.DataFrame = None,
     train_unscaled: pd.DataFrame = None,
@@ -90,7 +90,11 @@ def main_evaluate_input_data(
     test_transformed: test data with the numerical features transformed
                       or test_scaled if transformations not applied.
     """
-    if train_scaled is None and train_unscaled is None:
+    if not output_path:
+        if paths.output_path is None:
+            raise ValueError(
+                "paths.output_path must not be None when output_path is not provided."
+            )
         output_path = paths.output_path / "output"
         if not output_path.exists():
             os.makedirs(output_path)
@@ -112,15 +116,12 @@ def main_evaluate_input_data(
             weight_column=data_classification.weight_column,
         )
 
-        if len(modelling.model_choice) > 1:
-            LOG.error(
-                "You have passed more than one algorithm to the function. \
-                       Only provide one algorithm when using this function standalone. \
-                       Please use either the full prediction model pipeline or \
-                       use the model_selection_main function"
+        if not modelling.model_choice or len(modelling.model_choice) > 1:
+            raise ValueError(
+                "Please provide only one algorithm to be used to \
+                              evaluate input data if using the function standalone."
             )
-            raise ValueError("Multiple algorithms provided")
-
+        # model re-initialised as this flow is assuming you aren't running the full model
         model_initialised = modelling.model_choice[0].get_model()
 
         model_fit, residuals, _ = initialise_model(

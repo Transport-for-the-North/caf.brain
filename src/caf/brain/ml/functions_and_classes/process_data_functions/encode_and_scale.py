@@ -7,7 +7,7 @@ Original author: Adil Zaheer
 import logging
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 # Third Party
 import joblib
@@ -144,10 +144,10 @@ def preprocess_numerical_data(
 
 def preprocess_categorical_data(
     df: pd.DataFrame,
-    categorical_features: List[str],
-    sample_size_encode: bool,
-    select_encode_values: bool,
-    encode_values_to_drop: List[str],
+    categorical_features: list[str],
+    sample_size_encode: bool | None,
+    select_encode_values: bool | None,
+    encode_values_to_drop: list[str] | None,
 ) -> pd.DataFrame:
     """
     Encodes categorical variables via a choice of methods. Standard
@@ -186,6 +186,8 @@ def preprocess_categorical_data(
         )
         return categorical_df, drop_vals
     if select_encode_values is True:
+        if not encode_values_to_drop:
+            raise ValueError("")
         categorical_df, drop_vals = custom_sample_encode(
             df=df, categorical_features=categorical_features, drop_values=encode_values_to_drop
         )
@@ -253,7 +255,7 @@ def sample_size_encode_(df: pd.DataFrame, categorical_features: List[str]) -> pd
 
 
 def custom_sample_encode(
-    df: pd.DataFrame, categorical_features: List[str], drop_values: List[str]
+    df: pd.DataFrame, categorical_features: list[str], drop_values: list[str]
 ) -> pd.DataFrame:
     """
     Encodes variables based on user specified values. The values should be
@@ -275,6 +277,8 @@ def custom_sample_encode(
     Categorical_encoded: Dataframe of encoded categorical data.
     Dropped_df: Dataframe of columns removed during the encoding process.
     """
+    assert isinstance(categorical_features, list)
+    assert isinstance(drop_values, list)
     if len(categorical_features) != len(drop_values):
         LOG.error("The number of categorical features must match the number of drop values")
         raise ValueError(
@@ -314,8 +318,8 @@ def encode_test_data(
     test_df: pd.DataFrame,
     categorical_features: List[str],
     train_encoded: pd.DataFrame,
-    target_column: str,
-    weight_column: str,
+    target_column: str | None,
+    weight_column: str | None,
     weight_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
@@ -358,13 +362,13 @@ def encode_test_data(
 
 def process_data_pipeline(
     df: pd.DataFrame,
-    numerical_features: List[str],
-    categorical_features: List[str],
-    target_column: str,
-    weight_column: str,
-    sample_size_encode: bool,
-    select_encode_values: bool,
-    encode_values_to_drop: List[str],
+    numerical_features: List[str] | None,
+    categorical_features: List[str] | None,
+    target_column: str | None,
+    weight_column: str | None,
+    sample_size_encode: bool | None,
+    select_encode_values: bool | None,
+    encode_values_to_drop: list[str] | None,
     train_encoded: pd.DataFrame,
     test_data: bool,
     numerical_pipeline,
@@ -411,7 +415,7 @@ def process_data_pipeline(
     Drop_vals: Dataframe of columns removed during the encoding process.
     Numerical_pipeline: stored transformation pipeline for continuous variables
     """
-    preprocessed_df = None
+    preprocessed_df: Optional[pd.DataFrame] = None
 
     if target_column in df.columns:
         x = df.drop(columns=[target_column])
@@ -528,10 +532,12 @@ def process_data_pipeline(
         preprocessed_df = pd.concat([numerical_df, categorical_df], axis=1)
 
     if y is not None:
+        assert preprocessed_df is not None
         preprocessed_df[target_column] = y
         preprocessed_df[target_column] = preprocessed_df[target_column].astype(int)
 
     if weight_df is not None:
+        assert preprocessed_df is not None
         preprocessed_df[weight_column] = weight_df
 
     return preprocessed_df, drop_vals, numerical_pipeline

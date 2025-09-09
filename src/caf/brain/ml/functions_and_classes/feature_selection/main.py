@@ -35,7 +35,7 @@ def main_feature_selection(
     train: pd.DataFrame = None,
     test: pd.DataFrame = None,
     initialised_model=None,
-    output: Path = None,
+    output: Path | None = None,
 ):
     """
     Feature selection function.
@@ -78,9 +78,10 @@ def main_feature_selection(
         return train, test, None
 
     if output is None:
-        output = os.path.join(paths.output_path, "output")
-        if not os.path.exists(output):
-            os.makedirs(output)
+        if paths.output_path is None:
+            raise ValueError("paths.output_path must not be None when output is not provided.")
+        output = Path(paths.output_path) / "output"
+        output.mkdir(parents=True, exist_ok=True)
 
     if train is None and test is None:
         LOG.info(

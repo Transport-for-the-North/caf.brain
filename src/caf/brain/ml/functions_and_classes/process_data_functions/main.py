@@ -29,7 +29,7 @@ def main_input_data(
     data_classification: PredictionModelInputs.DataClassificationInputs,
     transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
     output_path,
-) -> dict:
+):
     """
     Main function for processing input data for machine learning modelling.
 

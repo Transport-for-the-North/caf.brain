@@ -21,14 +21,14 @@ class BaseDataClass(ABC):
     def __init__(
         self,
         dataframe: pd.DataFrame,
-        custom_index: list = None,
-        target_column: str = None,
-        column_name_to_drop_rows: str = None,
-        value_in_row: Union[str, float, int] = None,
+        custom_index: list | None = None,
+        target_column: str | None = None,
+        column_name_to_drop_rows: str | None = None,
+        value_in_row: str | float | int | None = None,
     ):
 
         self.dataframe = dataframe
-        self.custom_index = custom_index
+        self.custom_index = list() if custom_index is None else custom_index
         self.target_column = target_column
         self.column_name_to_drop_rows = column_name_to_drop_rows
         self.value_in_row = value_in_row
@@ -63,7 +63,7 @@ class ValidateData(BaseDataClass):
         """
         Check if a custom index is used or if the default index is acceptable.
         """
-        if self.custom_index is not None:
+        if self.custom_index is not list():
 
             missing_columns = [
                 col for col in self.custom_index if col not in self.dataframe.index.names

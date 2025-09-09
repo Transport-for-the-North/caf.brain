@@ -25,11 +25,11 @@ LOG = logging.getLogger(__name__)
 def prediction(
     model,
     test: pd.DataFrame,
-    target_column: str,
+    target_column: str | None,
     output_folder: Path,
     validation: pd.DataFrame,
-    weight_column: str,
-    classification_prediction: tuple[int, ...],
+    weight_column: str | None,
+    classification_prediction: tuple[int, ...] | None,
     mse: pd.Series,
     drop_vals: pd.DataFrame,
     cols_dropped_by_feat_select: pd.DataFrame,
@@ -59,6 +59,13 @@ def prediction(
     predictions: Predicted values based on the test data and set to the same
                  index.
     """
+    if validation and not target_column:
+        raise ValueError(
+            "Please provide a target column for prediction as you \
+                          have passed a validation set of data. The target column \
+                          if a string of the column title."
+        )
+
     if target_column in test.columns:
         test = test.drop(columns=target_column)
 

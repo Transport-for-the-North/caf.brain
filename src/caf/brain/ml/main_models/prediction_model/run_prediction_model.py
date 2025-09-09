@@ -13,7 +13,7 @@ from caf.toolkit import LogHelper, ToolDetails
 
 # Local Imports
 from caf.brain.ml import Models, PredictionModelInputs
-from caf.brain.ml.main_models.prediction_model.__main__ import main
+from caf.brain.ml.main_models.prediction_model.prediction_model_main import main
 
 
 def model_setup():

@@ -29,7 +29,7 @@ def initialise_model(
     y_test: pd.DataFrame,
     output_folder: Path,
     model_initialised,
-    classification_prediction: tuple[int, ...],
+    classification_prediction: tuple[int, ...] | None,
     x_train_weight: pd.DataFrame = None,
 ):
     """
@@ -100,10 +100,10 @@ def initialise_model(
 def select_model(
     train: pd.DataFrame,
     output_folder: Path,
-    target_column: str,
-    weight_column: str,
+    target_column: str | None,
+    weight_column: str | None,
     models_to_test: list[Models],
-    classification_prediction: tuple[int, ...],
+    classification_prediction: tuple[int, ...] | None,
 ):
     """
     Quickly assess and select the best model from a list of candidates.
@@ -125,6 +125,11 @@ def select_model(
     -------
     best_model: Best performing model initialised.
     """
+    if not target_column or weight_column:
+        raise ValueError(
+            "Please make sure that target column and weight \
+                          column"
+        )
     weight = None
     y = train[target_column]
     x = train.drop(columns=target_column)
@@ -286,7 +291,7 @@ def calculate_model_coeff(
     x_test: pd.Series,
     y_test: pd.Series,
     residuals: pd.Series,
-    classification_prediction: tuple[int, ...],
+    classification_prediction: tuple[int, ...] | None,
     y_pred: pd.Series,
 ):
     """
@@ -380,8 +385,8 @@ def calculate_final_coefficients(
     training_mse: pd.Series,
     predictions: pd.Series,
     validation_data: pd.DataFrame,
-    target_column: str,
-    is_classification: tuple[int, ...],
+    target_column: str | None,
+    is_classification: tuple[int, ...] | None,
     drop_vals: pd.DataFrame,
     cols_dropped_by_feat_select: pd.DataFrame,
 ):
@@ -395,7 +400,9 @@ def calculate_final_coefficients(
     training_mse: Mean squared error of predictions based on training data.
     predictions: Predicted values based on the test data and set to the
                  same index.
-    validation_data: Validation data if available.
+    validation_data: Validation data if available. Must pass target column
+                     if passing validation data otherwise validation will not
+                     be used.
     target_column: String column name of value to predict.
     is_classification: List of integers that correspond to the target column.
                        The value(s) to predict in a classification problem.

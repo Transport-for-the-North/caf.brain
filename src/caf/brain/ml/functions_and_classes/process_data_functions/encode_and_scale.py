@@ -417,7 +417,7 @@ def process_data_pipeline(
     """
     preprocessed_df: Optional[pd.DataFrame] = None
 
-    if target_column in df.columns:
+    if target_column is not None and target_column in df.columns:
         x = df.drop(columns=[target_column])
         y = df[target_column]
     else:
@@ -427,7 +427,7 @@ def process_data_pipeline(
     weight_df = None
     drop_vals = None
 
-    if weight_column in df.columns:
+    if weight_column is not None and weight_column in df.columns:
         weight_df = df[weight_column]
         x = x.drop(columns=weight_column)
 
@@ -469,7 +469,7 @@ def process_data_pipeline(
                 weight_column=weight_column,
                 weight_df=weight_df,
             )
-            return test_final, None
+            return test_final, None, None
 
         categorical_df, drop_vals = preprocess_categorical_data(
             df=x,

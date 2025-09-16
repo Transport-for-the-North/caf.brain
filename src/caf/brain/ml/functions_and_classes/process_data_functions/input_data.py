@@ -24,7 +24,7 @@ class InitialDataProcessing:
     def __init__(
         self,
         file_path: Path | None,
-        folder_path: Path,
+        folder_path: Path | None,
         output_path: Path,
         target_column: str | None,
         custom_index: list[str] | None,

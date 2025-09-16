@@ -135,7 +135,7 @@ class Brain:
             LOG.info("Tidy data output as output path provided")
         return processed_df
 
-    def _transform_data(
+    def transform_data(
         self,
         sample_size_encode: bool | None = None,
         select_encode_values: bool | None = None,
@@ -194,6 +194,26 @@ class Brain:
         return preprocessed_df
 
     def data_analysis(self):
+        """
+        In theory, we want the simplest way possible to do statistical tests
+        on your data. This would include linearity, normality etc. In order to
+        do these tests, they require residuals based on user training data
+        split into x train, x test etc. I think that this function:
+        C:\Users\Liberty\Documents\GitHub\caf.brain\src\caf\brain\ml\functions_and_classes\data_analysis\main.py
+        already makes it as easy as possible. This function lets the user provide
+        very little and creates the models and data they need in order to run the
+        tests. All of these other functions wrap those "main" functions but in
+        this case i think the main function itself would be the API.
+
+        Apologies if this doesn't make sense, let me know if you have questions
+        and i can answer them. Also not bothered if this stays a class or
+        is functions but i do think these methods for the most part are how id
+        expect users to interact with caf.brain in its simplest form.
+        
+        Returns
+        -------
+
+        """
         # todo discuss with ben about this one. lot of functionality we cant get around
         # if not self.check_data():
         #     raise ValueError(
@@ -372,7 +392,7 @@ brain = Brain(
     categorical_features=["ns-sec", "car_ownership"],
     numerical_features=["age", "income"],
     classification_prediction=[0, 1],
-    output_path=Path("./outputs")
+    output_path=Path("/outputs")
 )
 
 brain.check_data()

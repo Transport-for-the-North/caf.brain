@@ -25,7 +25,7 @@ class InitialDataProcessing:
         self,
         file_path: Path | None,
         folder_path: Path | None,
-        output_path: Path,
+        output_path: Path | None,
         target_column: str | None,
         custom_index: list[str] | None,
         column_name_to_drop_rows: Optional[list[str]],

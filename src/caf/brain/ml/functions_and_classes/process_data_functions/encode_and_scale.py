@@ -12,6 +12,7 @@ from typing import List, Optional
 # Third Party
 import joblib
 import pandas as pd
+from pandas.core.dtypes.common import is_numeric_dtype
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -411,7 +412,7 @@ def process_data_pipeline(
 
     Returns
     -------
-    (numerical_df, categorical_df, preprocessed_df): Scaled and encoded dataframe.
+    Scaled and encoded dataframe.
     Drop_vals: Dataframe of columns removed during the encoding process.
     Numerical_pipeline: stored transformation pipeline for continuous variables
     """
@@ -487,7 +488,7 @@ def process_data_pipeline(
         return categorical_df, drop_vals, None
 
     # both categorical and numerical
-    if numerical_features and categorical_features is not None:
+    if numerical_features is not None and categorical_features is not None:
         x_cat = x.drop(columns=numerical_features)
         if test_data is True:
             numerical_df = preprocess_numerical_data(
@@ -534,7 +535,8 @@ def process_data_pipeline(
     if y is not None:
         assert preprocessed_df is not None
         preprocessed_df[target_column] = y
-        preprocessed_df[target_column] = preprocessed_df[target_column].astype(int)
+        if not is_numeric_dtype(preprocessed_df[target_column]):
+            raise ValueError(f"Target column '{target_column}' must be numeric")
 
     if weight_df is not None:
         assert preprocessed_df is not None

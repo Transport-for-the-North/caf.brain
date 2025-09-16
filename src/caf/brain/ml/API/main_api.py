@@ -4,6 +4,7 @@ Original author: Adil Zaheer
 """
 
 import logging
+import os.path
 from pathlib import Path
 from typing import Optional
 import pandas as pd
@@ -39,7 +40,7 @@ class Brain:
         categorical_features: list[str] | None,
         numerical_features: list[str] | None,
         classification_prediction: tuple[int, ...] | None,
-        output_path: Path,
+        output_path: Path | None,
     ):
         self.data = data
         self.data_path = data_path
@@ -129,6 +130,9 @@ class Brain:
         processor.df = dataframe
         processed = processor.data_already_split_pipeline(is_test_data=False)
         processed_df = list(processed.values())[0]
+        if self.output_path:
+            processed_df.to_csv(os.path.join(self.output_path, "tidy_data.csv"))
+            LOG.info("Tidy data output as output path provided")
         return processed_df
 
     def _transform_data(
@@ -164,7 +168,13 @@ class Brain:
                               full model flow or tidy_data method prior to \
                               data analysis."
             )
-        preprocessed_df = process_data_pipeline(
+        if not self.output_path:
+            raise ValueError(
+                "Please provide an output path to use the \
+                             _transform_data"
+            )
+
+        preprocessed_df, _, _ = process_data_pipeline(
             df=self.data,
             numerical_features=self.numerical_features,
             categorical_features=self.categorical_features,
@@ -179,6 +189,8 @@ class Brain:
             output_folder=self.output_path,
         )
 
+        preprocessed_df.to_csv(os.path.join(self.output_path, "transformed_data.csv"))
+        LOG.info("Transformed data output %s", self.output_path)
         return preprocessed_df
 
     def data_analysis(self):
@@ -272,6 +284,12 @@ class Brain:
                               full model flow or tidy_data method prior to \
                               data analysis."
             )
+        if not self.output_path:
+            raise ValueError(
+                "Please provide an output path to use \
+                             algorithim_evaluation"
+            )
+
         if not isinstance(model_choice, list):
             model = [model_choice]
         else:
@@ -305,6 +323,12 @@ class Brain:
         -------
         Initialised model with the best combination of hyperparameters.
         """
+        if not self.output_path:
+            raise ValueError(
+                "Please provide an output path to use \
+                             hparam_optim"
+            )
+
         if not isinstance(model_choice, list):
             model = [model_choice]
         else:
@@ -337,3 +361,28 @@ class Brain:
         )
 
         return best_model
+
+# example usage
+brain = Brain(
+    data=None,
+    data_path=Path("my_data.csv"),
+    target="label",
+    weight=None,
+    custom_index=None,
+    categorical_features=["ns-sec", "car_ownership"],
+    numerical_features=["age", "income"],
+    classification_prediction=[0, 1],
+    output_path=Path("./outputs")
+)
+
+brain.check_data()
+
+tidy_df = brain.tidy_data(column_name_to_drop_rows=None, value_in_row=None)
+
+transformed_df = brain._transform_data()
+
+selected_df = brain.feat_selection(is_encoded=True)
+
+best_model = brain.algorithim_evaluation(model_choice=[Models.RANDOM_FOREST_REGRESSOR, Models.EXTRA_TREES_REGRESSOR])
+
+optimised_model = brain.hparam_optim(model_choice=Models.RANDOM_FOREST_REGRESSOR, is_time_series=False)

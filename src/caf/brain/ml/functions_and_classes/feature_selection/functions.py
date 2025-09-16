@@ -331,7 +331,7 @@ def analyse_feature_importance(
     train_transformed: pd.DataFrame,
     target_column: str | None,
     weight_column: str | None,
-    output_path: Path,
+    output_path: Path | None,
 ) -> pd.DataFrame:
     """
     Simple feature selection through importance and correlation metrics with
@@ -348,6 +348,9 @@ def analyse_feature_importance(
     -------
     filtered_data: Training data post feature selection.
     """
+    if not output_path:
+        raise ValueError("Please provide an output path")
+
     # pd.set_option("display.float_format", lambda x: "%.10f" % x)
     pd.set_option("display.float_format", lambda z: f"{z:.10f}")
 

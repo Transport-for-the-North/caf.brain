@@ -174,7 +174,7 @@ class Brain:
                              _transform_data"
             )
 
-        preprocessed_df, _, _ = process_data_pipeline(
+        preprocessed_df, _, _, = process_data_pipeline(
             df=self.data,
             numerical_features=self.numerical_features,
             categorical_features=self.categorical_features,
@@ -203,11 +203,11 @@ class Brain:
         already makes it as easy as possible. This function lets the user provide
         very little and creates the models and data they need in order to run the
         tests. All of these other functions wrap those "main" functions but in
-        this case i think the main function itself would be the API.
+        this case I think the main function itself would be the API.
 
         Apologies if this doesn't make sense, let me know if you have questions
-        and i can answer them. Also not bothered if this stays a class or
-        is functions but i do think these methods for the most part are how id
+        and I can answer them. Also, not bothered if this stays a class or
+        is functions but, I do think these methods for the most part are how id
         expect users to interact with caf.brain in its simplest form.
         
         Returns
@@ -272,7 +272,7 @@ class Brain:
         )
 
         if not is_encoded:
-            df = self._transform_data()
+            df = self.transform_data()
         else:
             df = self.data
 
@@ -368,7 +368,7 @@ class Brain:
 
         selected_model = model[0].get_model()
 
-        best_model = select_param(
+        final_model = select_param(
             train_final=self.data,
             target_column=self.target,
             model_instance=selected_model,
@@ -380,7 +380,8 @@ class Brain:
             is_time_series=is_time_series,
         )
 
-        return best_model
+        return final_model
+
 
 # example usage
 brain = Brain(
@@ -399,7 +400,7 @@ brain.check_data()
 
 tidy_df = brain.tidy_data(column_name_to_drop_rows=None, value_in_row=None)
 
-transformed_df = brain._transform_data()
+transformed_df = brain.transform_data()
 
 selected_df = brain.feat_selection(is_encoded=True)
 

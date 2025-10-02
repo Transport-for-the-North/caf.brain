@@ -33,8 +33,7 @@ jobs:
 
       - name: Lint with PyLint
         run: |
-          pylint ml
-      # modified linting to run only on ml due to resource constraints
+          pylint
 
       - name: Lint with MyPy
         run: |

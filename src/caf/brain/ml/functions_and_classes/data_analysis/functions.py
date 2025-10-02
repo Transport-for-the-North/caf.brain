@@ -37,9 +37,7 @@ from statsmodels.tools.sm_exceptions import MissingDataError
 from caf.brain.ml.functions_and_classes.process_data_functions.encode_and_scale import (
     preprocess_numerical_data,
 )
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
-    PredictionModelInputs,
-)
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
 
 LOG = logging.getLogger(__name__)
 

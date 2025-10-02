@@ -24,9 +24,7 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 # Local Imports
-from caf.brain.ml.functions_and_classes.feature_selection.functions import (
-    get_cv_class,
-)
+from caf.brain.ml.functions_and_classes.feature_selection.functions import get_cv_class
 from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
     ModelGrids,
     get_model_grid_from_type,

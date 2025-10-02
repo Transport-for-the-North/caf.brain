@@ -20,9 +20,7 @@ from caf.brain.ml.functions_and_classes.feature_selection.functions import (
 from caf.brain.ml.functions_and_classes.process_data_functions.main import (
     main_input_data,
 )
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
-    PredictionModelInputs,
-)
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
 
 LOG = logging.getLogger(__name__)
 

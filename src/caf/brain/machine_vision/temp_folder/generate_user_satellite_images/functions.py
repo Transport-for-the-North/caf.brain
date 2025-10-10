@@ -97,8 +97,8 @@ def euclidean_distance(df_a: pd.DataFrame, df_b: pd.DataFrame) -> pd.DataFrame:
     return result_df
 
 
-def user_path_finder(image_folder: Path,
-                     user_coordinate_data: pd.DataFrame) -> list[Path]:
+def user_image_path_finder(image_folder: Path,
+                           user_coordinate_data: pd.DataFrame) -> list[Path]:
     """
     Find image paths for each of the user provided coordinates.
 

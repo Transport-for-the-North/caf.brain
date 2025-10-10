@@ -25,22 +25,22 @@ def image_info_generation(output_path: Path,
 
     Returns
     -------
-    image_metadata: Satellite image metadata containing tile names, midpoints
-                    and path locations.
+    satellite_image_metadata: Satellite image metadata containing tile names,
+                              midpoints and path locations.
 
     """
     df_filename = os.path.join(output_path, 'satellite_image_metadata.csv')
     if os.path.exists(df_filename):
         LOG.info('Satellite image metadata already exists and is being read in')
-        image_metadata = pd.read_csv(df_filename)
+        satellite_image_metadata = pd.read_csv(df_filename)
     else:
         image_xml_df = satellite_xml_processor(image_folder_path=image_folder_path,
                                                output_path=output_path)
 
         image_path_df = image_path_name_finder(folder_path=image_folder_path)
 
-        image_metadata = pd.merge(image_xml_df, image_path_df, on='box_boundary', how='left')
-        image_metadata.to_csv(df_filename, index=False)
+        satellite_image_metadata = pd.merge(image_xml_df, image_path_df, on='box_boundary', how='left')
+        satellite_image_metadata.to_csv(df_filename, index=False)
         LOG.info('Satellite image metadata saved here: %s', df_filename)
 
-    return image_metadata
+    return satellite_image_metadata

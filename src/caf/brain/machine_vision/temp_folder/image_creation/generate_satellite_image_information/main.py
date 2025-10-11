@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 import os
 import pandas as pd
-from caf.brain.machine_vision.temp_folder.generate_satellite_image_information.functions import image_path_name_finder, satellite_xml_processor
+from caf.brain.machine_vision.temp_folder.image_creation.generate_satellite_image_information.functions import image_path_name_finder, satellite_xml_processor
 
 LOG = logging.getLogger(__name__)
 

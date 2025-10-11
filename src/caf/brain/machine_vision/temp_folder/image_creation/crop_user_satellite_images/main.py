@@ -15,7 +15,7 @@ import rasterio
 from rasterio.windows import Window
 from PIL import Image
 
-from caf.brain.machine_vision.temp_folder.crop_user_satellite_images.functions import (
+from caf.brain.machine_vision.temp_folder.image_creation.crop_user_satellite_images.functions import (
     _check_raster_file,
     _find_surrounding_images,
     _find_surrounding_names,
@@ -30,7 +30,7 @@ def image_crop(
     user_image_metadata: pd.DataFrame,
     output_path: Path,
     satellite_image_metadata: pd.DataFrame,
-) -> None:
+) -> str:
     """
     Function to locate, crop and where applicable merge images. This function
     creates images ready for labelling or use in a trained YOLO model.
@@ -45,7 +45,7 @@ def image_crop(
 
     Returns
     -------
-    None
+    output_dir: Location of saved processed images
     """
     base_name = os.path.basename(output_path)
     name, _ = os.path.splitext(base_name)
@@ -204,4 +204,4 @@ def image_crop(
         df = pd.DataFrame(invalid_images, columns=["invalid_junctions"])
         df.to_csv(os.path.join(output_dir, "failed_image_crops.csv"), index=False)
 
-        return
+        return output_dir

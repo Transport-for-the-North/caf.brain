@@ -2,6 +2,7 @@
 Created on: 9/25/2025
 Original author: Adil Zaheer
 """
+
 import os
 from pathlib import Path
 import pandas as pd
@@ -11,8 +12,8 @@ from scipy.spatial.distance import cdist
 import glob
 import logging
 from tqdm import tqdm
-LOG = logging.getLogger(__name__)
 
+LOG = logging.getLogger(__name__)
 
 
 def find_file_type(file_path: Path) -> str:
@@ -30,10 +31,10 @@ def find_file_type(file_path: Path) -> str:
     _, ext = os.path.splitext(file_path)
     ext = ext.lower()
 
-    if ext == '.csv':
-        return 'csv'
-    elif ext == '.shp':
-        return 'shp'
+    if ext == ".csv":
+        return "csv"
+    elif ext == ".shp":
+        return "shp"
     else:
         return None
 
@@ -52,10 +53,10 @@ def read_path(file_path: Path):
     type.
     """
     file_type = find_file_type(file_path)
-    if file_type == 'csv':
+    if file_type == "csv":
         df = pd.read_csv(file_path)
         return df, file_type
-    elif file_type == 'shp':
+    elif file_type == "shp":
         gdf = gpd.read_file(file_path)
         return gdf, file_type
     else:
@@ -78,27 +79,28 @@ def euclidean_distance(df_a: pd.DataFrame, df_b: pd.DataFrame) -> pd.DataFrame:
     result_df: users input dataframe with the name of the closest British
                National Grid image tile.
     """
-    coords_a = df_a[['tile_easting', 'tile_northing']].values
-    coords_b = df_b[['coordinates_easting', 'coordinates_northing']].values
+    coords_a = df_a[["tile_easting", "tile_northing"]].values
+    coords_b = df_b[["coordinates_easting", "coordinates_northing"]].values
 
     # Euclidean distance between each pair of points
-    distances = cdist(coords_b, coords_a, metric='euclidean')
+    distances = cdist(coords_b, coords_a, metric="euclidean")
 
     closest_indices = np.argmin(distances, axis=1)
-    closest_boundaries = df_a.iloc[closest_indices]['box_boundary'].values
+    closest_boundaries = df_a.iloc[closest_indices]["box_boundary"].values
 
     result_df = df_b.copy()
-    result_df['box_boundary'] = closest_boundaries
+    result_df["box_boundary"] = closest_boundaries
 
     # satellites = result_df['box_boundary'].unique()
     # satellites = pd.DataFrame(satellites, columns=['BNG_tile_names'])
-    result_df['box_boundary'] = result_df['box_boundary'].astype(str)
+    result_df["box_boundary"] = result_df["box_boundary"].astype(str)
 
     return result_df
 
 
-def user_image_path_finder(image_folder: Path,
-                           user_coordinate_data: pd.DataFrame) -> list[Path]:
+def user_image_path_finder(
+    image_folder: Path, user_coordinate_data: pd.DataFrame
+) -> list[Path]:
     """
     Find image paths for each of the user provided coordinates.
 
@@ -115,13 +117,17 @@ def user_image_path_finder(image_folder: Path,
     """
 
     counter = 0
-    paths = glob.glob(os.path.join(image_folder) + '/**/*.jpg', recursive=True)
+    paths = glob.glob(os.path.join(image_folder) + "/**/*.jpg", recursive=True)
 
-    user_coordinate_data['box_boundary'] = user_coordinate_data['box_boundary'].astype(str)
-    reference_set = set(user_coordinate_data['box_boundary'].values)
+    user_coordinate_data["box_boundary"] = user_coordinate_data["box_boundary"].astype(str)
+    reference_set = set(user_coordinate_data["box_boundary"].values)
 
     path_dict = {}
-    LOG.info("Looking for %s unique reference values in %s image files", len(reference_set), len(paths))
+    LOG.info(
+        "Looking for %s unique reference values in %s image files",
+        len(reference_set),
+        len(paths),
+    )
 
     with tqdm(total=None) as pbar:
         for path in paths:
@@ -133,8 +139,12 @@ def user_image_path_finder(image_folder: Path,
             pbar.update(1)
             counter += 1
             if counter % 100 == 0:
-                LOG.info("Processed %s paths, found %s matches so far", (counter/len(paths)), len(path_list))
+                LOG.info(
+                    "Processed %s paths, found %s matches so far",
+                    (counter / len(paths)),
+                    len(path_list),
+                )
 
-    path_df = pd.DataFrame(list(path_dict.items()), columns=['box_boundary', 'paths'])
+    path_df = pd.DataFrame(list(path_dict.items()), columns=["box_boundary", "paths"])
 
     return path_df

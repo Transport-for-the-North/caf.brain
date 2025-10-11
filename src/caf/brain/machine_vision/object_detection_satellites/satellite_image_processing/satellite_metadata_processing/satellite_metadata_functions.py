@@ -2,6 +2,7 @@
 Created on: 7/22/2025
 Original author: Adil Zaheer
 """
+
 from pathlib import Path
 import pandas as pd
 import os
@@ -22,12 +23,12 @@ def create_satellite_image_metadata(folder_path: Path) -> pd.DataFrame:
     """
     meta_dict = {}
 
-    paths = glob.glob(os.path.join(folder_path) + '/**/*.jpg', recursive=True)
+    paths = glob.glob(os.path.join(folder_path) + "/**/*.jpg", recursive=True)
     for path in paths:
         directory, file_name = os.path.split(path)
         name = os.path.splitext(file_name)[0]
         meta_dict[name] = path
 
-    df = pd.DataFrame(list(meta_dict.items()), columns=['box_boundary', 'path'])
+    df = pd.DataFrame(list(meta_dict.items()), columns=["box_boundary", "path"])
 
     return df

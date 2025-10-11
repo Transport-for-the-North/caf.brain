@@ -2,6 +2,7 @@
 Created on: 9/17/2025
 Original author: Adil Zaheer
 """
+
 from pathlib import Path
 import re
 import logging
@@ -11,11 +12,11 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from pyproj import Transformer
 from tqdm import tqdm
+
 LOG = logging.getLogger(__name__)
 
 
-def satellite_xml_processor(image_folder_path: Path,
-                            output_path: Path) -> pd.DataFrame:
+def satellite_xml_processor(image_folder_path: Path, output_path: Path) -> pd.DataFrame:
     """
     Creates a dataframe of British National Grid satellite image xml data.
 
@@ -28,12 +29,12 @@ def satellite_xml_processor(image_folder_path: Path,
     -------
     final_data: Dataframe of xml information for evey file in the folder_path.
     """
-    LOG.info('XML processing beginning')
+    LOG.info("XML processing beginning")
     problem_html = []
 
     data_dict = {}
     counter = 0
-    paths = glob.glob(os.path.join(image_folder_path) + '/**/*.xml', recursive=True)
+    paths = glob.glob(os.path.join(image_folder_path) + "/**/*.xml", recursive=True)
     with tqdm(total=None) as pbar:
         for path in paths:
             df, name = extract_info_from_xml(html_file_path=path)
@@ -52,7 +53,7 @@ def satellite_xml_processor(image_folder_path: Path,
     problem_df = pd.DataFrame(problem_html)
     problem_df.to_csv(os.path.join(output_path, "problem_xml_files.csv"), index=False)
 
-    LOG.info('XML processing ending')
+    LOG.info("XML processing ending")
     return final_data
 
 
@@ -71,41 +72,47 @@ def extract_info_from_xml(html_file_path: str) -> tuple:
     """
     df = None
     location = None
-    with open(html_file_path, 'r', encoding='utf-8') as file:
+    with open(html_file_path, "r", encoding="utf-8") as file:
         xml_data = file.read()
 
-    soup = BeautifulSoup(xml_data, 'lxml-xml')
+    soup = BeautifulSoup(xml_data, "lxml-xml")
 
-    tile = soup.find('gmd:supplementalInformation')
+    tile = soup.find("gmd:supplementalInformation")
     if tile is not None:
-        string = tile.find('gco:CharacterString')
+        string = tile.find("gco:CharacterString")
         if string is not None:
             final_string = str(string.text)
 
             # tile = str(soup.find('gmd:supplementalInformation').find('gco:CharacterString').text)
-            west = float(soup.find('gmd:westBoundLongitude').find('gco:Decimal').text)
-            east = float(soup.find('gmd:eastBoundLongitude').find('gco:Decimal').text)
-            south = float(soup.find('gmd:southBoundLatitude').find('gco:Decimal').text)
-            north = float(soup.find('gmd:northBoundLatitude').find('gco:Decimal').text)
+            west = float(soup.find("gmd:westBoundLongitude").find("gco:Decimal").text)
+            east = float(soup.find("gmd:eastBoundLongitude").find("gco:Decimal").text)
+            south = float(soup.find("gmd:southBoundLatitude").find("gco:Decimal").text)
+            north = float(soup.find("gmd:northBoundLatitude").find("gco:Decimal").text)
 
-            df = pd.DataFrame({
-                'bng_location': final_string,
-                'box_boundary': ['West', 'East', 'South', 'North'],
-                'wgs84_lat_long_coordinate': [west, east, south, north]
-            })
+            df = pd.DataFrame(
+                {
+                    "bng_location": final_string,
+                    "box_boundary": ["West", "East", "South", "North"],
+                    "wgs84_lat_long_coordinate": [west, east, south, north],
+                }
+            )
 
-            string = df.at[0, 'bng_location']
-            substrings = re.findall(r'\w+', string)
+            string = df.at[0, "bng_location"]
+            substrings = re.findall(r"\w+", string)
             location = substrings[2]
-            df['bng_location'] = location
+            df["bng_location"] = location
 
             df = find_midpoint(df, location)
 
         else:
-            LOG.warning("Box boundary string was not found in the xml file for %s.", html_file_path)
+            LOG.warning(
+                "Box boundary string was not found in the xml file for %s.", html_file_path
+            )
 
     else:
-        LOG.warning("Box boundary string was not found in the xml file for %s.", html_file_path)
+        LOG.warning(
+            "Box boundary string was not found in the xml file for %s.", html_file_path
+        )
 
     return df, location
 
@@ -126,15 +133,19 @@ def find_midpoint(df: pd.DataFrame, location: str) -> pd.DataFrame:
     """
     df_1 = df.copy()
 
-    northing = df_1[df_1['box_boundary'].isin(['South', 'North'])]
-    easting = df_1[df_1['box_boundary'].isin(['West', 'East'])]
+    northing = df_1[df_1["box_boundary"].isin(["South", "North"])]
+    easting = df_1[df_1["box_boundary"].isin(["West", "East"])]
 
-    lat = northing['wgs84_lat_long_coordinate'].mean()
-    long = easting['wgs84_lat_long_coordinate'].mean()
+    lat = northing["wgs84_lat_long_coordinate"].mean()
+    long = easting["wgs84_lat_long_coordinate"].mean()
 
-    midpoint_df = pd.DataFrame({'box_boundary': location,
-                                'tile_latitude_wgs84': [lat],
-                                'tile_longitude_wgs84': [long]})
+    midpoint_df = pd.DataFrame(
+        {
+            "box_boundary": location,
+            "tile_latitude_wgs84": [lat],
+            "tile_longitude_wgs84": [long],
+        }
+    )
 
     result_df = coordinate_converter(df=midpoint_df)
 
@@ -158,14 +169,14 @@ def coordinate_converter(df: pd.DataFrame) -> pd.DataFrame:
     df_ = df.copy()
 
     transformer = Transformer.from_crs("EPSG:4326", "EPSG:27700", always_xy=True)
-    mid = (df_['tile_longitude_wgs84'][0], df_['tile_latitude_wgs84'][0])
+    mid = (df_["tile_longitude_wgs84"][0], df_["tile_latitude_wgs84"][0])
 
     mid_bng = transformer.transform(*mid)
     mid_bng = tuple(map(lambda x: isinstance(x, float) and round(x, 2) or x, mid_bng))
 
-    easting_northing_df = pd.DataFrame({'tile_easting': [mid_bng[0]],
-                                        'tile_northing': [mid_bng[1]]
-                                        })
+    easting_northing_df = pd.DataFrame(
+        {"tile_easting": [mid_bng[0]], "tile_northing": [mid_bng[1]]}
+    )
 
     final_df = pd.concat([df, easting_northing_df], axis=1)
 
@@ -186,12 +197,12 @@ def image_path_name_finder(folder_path: Path) -> pd.DataFrame:
     """
     meta_dict = {}
 
-    paths = glob.glob(os.path.join(folder_path) + '/**/*.jpg', recursive=True)
+    paths = glob.glob(os.path.join(folder_path) + "/**/*.jpg", recursive=True)
     for path in paths:
         _, file_name = os.path.split(path)
         name = os.path.splitext(file_name)[0]
         meta_dict[name] = path
 
-    df = pd.DataFrame(list(meta_dict.items()), columns=['box_boundary', 'path'])
+    df = pd.DataFrame(list(meta_dict.items()), columns=["box_boundary", "path"])
 
     return df

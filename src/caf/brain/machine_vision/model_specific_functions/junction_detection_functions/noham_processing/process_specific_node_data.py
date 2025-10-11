@@ -10,18 +10,19 @@ import pandas as pd
 from pathlib import Path
 
 
-def process_noham(file_path: Path,
-                  output_path: Path):
+def process_noham(file_path: Path, output_path: Path):
 
-    sheet_names = ['S Signal Zebra x Straight ahead',
-                   'S Classic Signalised (2+ arms)',
-                   'R',
-                   'PM Motorway (Straight on only)',
-                   'PM Motorway mergediverge',
-                   'ES (Signalised Rbout)',
-                   'EP (Giveway Rbout)',
-                   'P (Give way)',
-                   'M (Mini R)']
+    sheet_names = [
+        "S Signal Zebra x Straight ahead",
+        "S Classic Signalised (2+ arms)",
+        "R",
+        "PM Motorway (Straight on only)",
+        "PM Motorway mergediverge",
+        "ES (Signalised Rbout)",
+        "EP (Giveway Rbout)",
+        "P (Give way)",
+        "M (Mini R)",
+    ]
 
     for sheet in sheet_names:
         data = pd.read_excel(file_path, sheet_name=sheet)
@@ -31,9 +32,12 @@ def process_noham(file_path: Path,
     return
 
 
-
 if __name__ == "__main__":
     process_noham(
-        file_path=Path(r"E:\2025 work streams\caf.brAIn\machine vision\MVP work\input_image_processing\input\Junction types NoHAM 2018.xlsm"),
-        output_path=Path(r"E:\2025 work streams\caf.brAIn\machine vision\MVP work\input_image_processing\output\individual_junc_types")
+        file_path=Path(
+            r"E:\2025 work streams\caf.brAIn\machine vision\MVP work\input_image_processing\input\Junction types NoHAM 2018.xlsm"
+        ),
+        output_path=Path(
+            r"E:\2025 work streams\caf.brAIn\machine vision\MVP work\input_image_processing\output\individual_junc_types"
+        ),
     )

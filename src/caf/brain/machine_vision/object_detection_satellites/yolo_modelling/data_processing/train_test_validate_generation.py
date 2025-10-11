@@ -2,6 +2,7 @@
 Created on: 5/6/2025
 Original author: Adil Zaheer
 """
+
 import os
 from pathlib import Path
 import glob
@@ -10,13 +11,15 @@ import random
 import logging
 import joblib
 import pandas as pd
+
 LOG = logging.getLogger(__name__)
 
 
 class BuildImagesTT:
     """
-Need to fill out
+    Need to fill out
     """
+
     def __init__(self, output: Path, image_location: Path, image_dict: dict, split_ratio=0.15):
         self.output = output
         self.split_ratio = split_ratio
@@ -35,13 +38,13 @@ Need to fill out
         final_train, validation = self.split_dict(dictionary=train)
 
         if self.output is not None:
-            train_dict_name = os.path.join(self.output, 'train_dict.pkl')
+            train_dict_name = os.path.join(self.output, "train_dict.pkl")
             joblib.dump(final_train, train_dict_name)
 
-            val_dict_name = os.path.join(self.output, 'val_dict.pkl')
+            val_dict_name = os.path.join(self.output, "val_dict.pkl")
             joblib.dump(validation, val_dict_name)
 
-            test_dict_name = os.path.join(self.output, 'test_dict.pkl')
+            test_dict_name = os.path.join(self.output, "test_dict.pkl")
             joblib.dump(test, test_dict_name)
         else:
             raise ValueError("Please provide an output path.")
@@ -61,19 +64,18 @@ Need to fill out
         """
         label_list = []
         for _, value in image_dict.items():
-            with open(os.path.join(value), 'r', encoding='UTF-8') as file:
+            with open(os.path.join(value), "r", encoding="UTF-8") as file:
                 lines = file.readlines()
                 for line in lines:
                     label_list.append(line[0])
 
         counts = pd.Series(label_list).value_counts()
         final = counts.to_dict()
-        df = pd.DataFrame.from_dict(final, orient='index', columns=['occurrences'])
-        df = df.reset_index().rename(columns={'index': 'labels'})
-        df.to_csv(os.path.join(self.output, 'label_occurrence_info.csv'), index=False)
+        df = pd.DataFrame.from_dict(final, orient="index", columns=["occurrences"])
+        df = df.reset_index().rename(columns={"index": "labels"})
+        df.to_csv(os.path.join(self.output, "label_occurrence_info.csv"), index=False)
 
         return df
-
 
     def create_dict(self):
         """
@@ -86,11 +88,11 @@ Need to fill out
         # value: bounding box path
         dictionary = {}
         img_dir = os.path.join(self.image_location)
-        image_paths = glob.glob(os.path.join(img_dir) + '/**/*.jpg', recursive=True)
+        image_paths = glob.glob(os.path.join(img_dir) + "/**/*.jpg", recursive=True)
 
         for image_path in image_paths:
             base_name = os.path.basename(image_path)
-            txt_name = base_name.replace('.jpg', '.txt')
+            txt_name = base_name.replace(".jpg", ".txt")
 
             txt_path = os.path.join(os.path.dirname(image_path), txt_name)
             if os.path.exists(txt_path):
@@ -98,7 +100,6 @@ Need to fill out
                 print(f"Found image-label pair: {image_path} -> {txt_path}")
 
         return dictionary
-
 
     def split_dict(self, dictionary):
         """
@@ -124,7 +125,6 @@ Need to fill out
 
         return train, test
 
-
     def generate_folders(self, dictionary, folder_name):
         """
 
@@ -139,7 +139,7 @@ Need to fill out
         """
         counter = 0
         for key, value in dictionary.items():
-            new_img_dir = os.path.join(self.output, f'{folder_name}')
+            new_img_dir = os.path.join(self.output, f"{folder_name}")
             os.makedirs(new_img_dir, exist_ok=True)
 
             base_name = os.path.basename(key)
@@ -171,11 +171,11 @@ def ensure_labels(folder_path):
     -------
 
     """
-    txt_paths = glob.glob(os.path.join(folder_path, '**/*.txt'), recursive=True)
+    txt_paths = glob.glob(os.path.join(folder_path, "**/*.txt"), recursive=True)
     for txt_file in txt_paths:
         if os.path.getsize(txt_file) == 0:
             base_name = os.path.splitext(txt_file)[0]
-            jpg_path = base_name + '.jpg'
+            jpg_path = base_name + ".jpg"
 
             if os.path.exists(jpg_path):
                 os.remove(txt_file)

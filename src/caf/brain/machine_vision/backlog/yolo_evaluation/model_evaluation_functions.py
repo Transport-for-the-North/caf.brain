@@ -9,13 +9,13 @@ import tensorflow as tf
 import torch
 import logging
 from collections import Counter
+
 LOG = logging.getLogger(__name__)
 
 
-def iou_validation(box_predictions: tf.Tensor,
-                   box_truth: tf.Tensor,
-                   box_format: str,
-                   model_package: str):
+def iou_validation(
+    box_predictions: tf.Tensor, box_truth: tf.Tensor, box_format: str, model_package: str
+):
     """
     Intersection over Union to validate image segmentation. Able to process
     YOLO/COCO (0.1, 0.5, 0.4 etc.) and PASCAL VOC format (100, 300, 200 etc.)
@@ -59,7 +59,6 @@ def iou_validation(box_predictions: tf.Tensor,
         box2_x2 = box_truth[..., 2:3]
         box2_y2 = box_truth[..., 3:4]
 
-
     if model_package == "pytorch":
         x1 = torch.max(box1_x1, box2_x1)
         y1 = torch.max(box1_y1, box2_y1)
@@ -83,22 +82,28 @@ def iou_validation(box_predictions: tf.Tensor,
     if intersection is not None:
         result = intersection / (box1_area + box2_area - intersection + 1e-6)
     else:
-        LOG.error("Bounding box intersection is still None. Either \
+        LOG.error(
+            "Bounding box intersection is still None. Either \
                    PyTorch or TensorFlow must be used to compute \
-                   intersection over union. Please evaluate results.")
-        raise ValueError("Bounding box intersection is still None. Either \
+                   intersection over union. Please evaluate results."
+        )
+        raise ValueError(
+            "Bounding box intersection is still None. Either \
                           PyTorch or TensorFlow must be used to compute \
-                          intersection over union. Please evaluate results.")
+                          intersection over union. Please evaluate results."
+        )
 
     return result
 
-# todo set box_format to None by default
-def nms(predicted_bboxes: list,
-        probability_threshold: int,
-        iou_threshold: int,
-        box_format: str,
-        model_package: str):
 
+# todo set box_format to None by default
+def nms(
+    predicted_bboxes: list,
+    probability_threshold: int,
+    iou_threshold: int,
+    box_format: str,
+    model_package: str,
+):
     """
     Non-max suppression bounding box evaluation. This functions uses the
     iou_validation function.
@@ -130,14 +135,18 @@ def nms(predicted_bboxes: list,
     """
 
     if type(predicted_bboxes) is not list:
-        LOG.error("bbox must be a list that contains the bounding box \
+        LOG.error(
+            "bbox must be a list that contains the bounding box \
                    information. This can be in the form of \
                    [class, probability, x1, y1, x2, y2] for PASCAL VOC or \
-                   [class, probability, x1, y1, W, H] for YOLO/COCO.")
-        raise TypeError("bbox must be a list that contains the bounding box \
+                   [class, probability, x1, y1, W, H] for YOLO/COCO."
+        )
+        raise TypeError(
+            "bbox must be a list that contains the bounding box \
                          information. This can be in the form of \
                          [class, probability, x1, y1, x2, y2] for PASCAL VOC or \
-                         [class, probability, x1, y1, W, H] for YOLO/COCO.")
+                         [class, probability, x1, y1, W, H] for YOLO/COCO."
+        )
 
     if model_package is None:
         model_package = "tensorflow"
@@ -150,29 +159,37 @@ def nms(predicted_bboxes: list,
     # sort so the largest probability bbox is what we are working with
     bboxes = sorted(bboxes, key=lambda x: x[1], reverse=True)
 
-
     while bboxes:
         selected_bbox = bboxes.pop(0)
 
         # first check if box and comparison box are of the same class
         # if bbox of the same class, compare (using iou). If less than threshold, then append.
-        bboxes = [box for box in bboxes if box[0] != selected_bbox[0]
-                  or iou_validation(box_predictions=torch.tensor(selected_bbox[2:]),
-                                    box_truth=torch.tensor(box[2:]),
-                                    box_format=box_format,
-                                    model_package=model_package) < iou_threshold]
+        bboxes = [
+            box
+            for box in bboxes
+            if box[0] != selected_bbox[0]
+            or iou_validation(
+                box_predictions=torch.tensor(selected_bbox[2:]),
+                box_truth=torch.tensor(box[2:]),
+                box_format=box_format,
+                model_package=model_package,
+            )
+            < iou_threshold
+        ]
 
         bboxes_post_nms.append(selected_bbox)
 
     return bboxes_post_nms
 
 
-def mean_average_precision(prediction_bboxes: list,
-                           box_truth: list,
-                           iou_threshold: int,
-                           box_format: str,
-                           num_classes: int,
-                           model_package):
+def mean_average_precision(
+    prediction_bboxes: list,
+    box_truth: list,
+    iou_threshold: int,
+    box_format: str,
+    num_classes: int,
+    model_package,
+):
     """
     Mean Average Precision for a single iou threshold.
 
@@ -181,7 +198,6 @@ def mean_average_precision(prediction_bboxes: list,
 
     """
     average_precisions = []
-
 
     for c in range(num_classes):
         detections = []
@@ -196,7 +212,6 @@ def mean_average_precision(prediction_bboxes: list,
             if true_box[1] == c:
                 ground_truths.append(true_box)
 
-
         # need to keep track of target bboxes covered so far
         # only first bbox that covers target is correct
         # cant have multiple pred for one bounding box and count that as correct. only one per target
@@ -207,7 +222,6 @@ def mean_average_precision(prediction_bboxes: list,
         # create tensors of zeros that represent no. bboxes per image
         for key, val in amount_bboxes.items():
             amount_bboxes[key] = torch.zeros(val)
-
 
         # sorting over prob scores hence x[2]
         detections.sort(key=lambda x: x[2], reverse=True)
@@ -226,10 +240,12 @@ def mean_average_precision(prediction_bboxes: list,
 
             # going through all the gt bboxes for this image
             for idx, gt in enumerate(ground_truth_img):
-                iou = iou_validation(box_predictions=torch.tensor(detection[3:]),
-                                     box_truth=torch.tensor(gt[3:]),
-                                     box_format=box_format,
-                                     model_package=model_package)
+                iou = iou_validation(
+                    box_predictions=torch.tensor(detection[3:]),
+                    box_truth=torch.tensor(gt[3:]),
+                    box_format=box_format,
+                    model_package=model_package,
+                )
 
                 if iou > best_iou:
                     best_iou = iou
@@ -254,11 +270,12 @@ def mean_average_precision(prediction_bboxes: list,
                 # means iou was not over threshold so not a true positive
                 false_positives[detection_idx] = 1
 
-
         true_positives_cumsum = torch.cumsum(true_positives, dim=0)
         false_positives_cumsum = torch.cumsum(false_positives, dim=0)
         recalls = true_positives_cumsum / (total_true_bboxes + 1e-6)
-        precisions = torch.divide(true_positives_cumsum, (true_positives_cumsum + false_positives_cumsum + 1e-6))
+        precisions = torch.divide(
+            true_positives_cumsum, (true_positives_cumsum + false_positives_cumsum + 1e-6)
+        )
 
         # need to add 1 to precisions as need to start at point (0,1) for numerical integration
         # add 0 for recalls as this is x-axis. Precisions is y.

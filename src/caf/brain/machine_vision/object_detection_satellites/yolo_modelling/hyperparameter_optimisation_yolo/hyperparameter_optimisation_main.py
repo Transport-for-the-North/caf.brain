@@ -9,8 +9,11 @@ import os.path
 import pandas as pd
 import yaml
 import time
-from caf.brain.machine_vision.object_detection_satellites.yolo_modelling.hyperparameter_optimisation_yolo.moderate_hyp_optim import moderate_optimisation
+from caf.brain.machine_vision.object_detection_satellites.yolo_modelling.hyperparameter_optimisation_yolo.moderate_hyp_optim import (
+    moderate_optimisation,
+)
 import logging
+
 LOG = logging.getLogger(__name__)
 
 
@@ -38,34 +41,38 @@ def main_hyperparameter_optimisation(basemodel, config, hyperparameter_optimisat
     """
     start_time = time.time()
 
-    hyperparameter_dir = os.path.join(output, 'hyperparameter_results')
+    hyperparameter_dir = os.path.join(output, "hyperparameter_results")
     os.makedirs(hyperparameter_dir, exist_ok=True)
 
-    if hyperparameter_optimisation == 'moderate' or None:
+    if hyperparameter_optimisation == "moderate" or None:
         LOG.info("Moderate hyperparamter optimisation is running")
-        hyperparameter_dict = moderate_optimisation(config=config, output_dir=hyperparameter_dir, model=basemodel)
+        hyperparameter_dict = moderate_optimisation(
+            config=config, output_dir=hyperparameter_dir, model=basemodel
+        )
 
     else:
         LOG.info("Simple hyperparamter optimisation is running")
         # torch.set_num_threads(8)
-        hyperparameter_dict = basemodel.tune(config,
-                                             project=hyperparameter_dir,
-                                             epochs=30,
-                                             iterations=300,
-                                             imgsz=640,
-                                             workers=8,
-                                             optimizer="AdamW",
-                                             plots=True,
-                                             save=True,
-                                             val=True,
-                                             use_ray=True)
+        hyperparameter_dict = basemodel.tune(
+            config,
+            project=hyperparameter_dir,
+            epochs=30,
+            iterations=300,
+            imgsz=640,
+            workers=8,
+            optimizer="AdamW",
+            plots=True,
+            save=True,
+            val=True,
+            use_ray=True,
+        )
 
         custom_yaml_path = os.path.join(hyperparameter_dir, "best_hyperparameters.yaml")
-        with open(custom_yaml_path, 'w') as f:
+        with open(custom_yaml_path, "w") as f:
             yaml.dump(hyperparameter_dict, f)
 
     df_flat = pd.json_normalize(hyperparameter_dict)
-    df_flat.to_csv(os.path.join(hyperparameter_dir, 'best_hyperparameters.csv'), index=False)
+    df_flat.to_csv(os.path.join(hyperparameter_dir, "best_hyperparameters.csv"), index=False)
 
     end_time = time.time()
     LOG.info(f"Total hyperparamter optimisation run time: {end_time - start_time:.2f} seconds")

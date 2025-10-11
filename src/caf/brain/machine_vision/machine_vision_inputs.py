@@ -51,6 +51,7 @@ class ObjectDetectionSatellitesInputs(BaseConfig):
     """
     Main inputs for object detection using satellite images.
     """
+
     output_path: Optional[Path] = None
     image_folder_path: Optional[Path] = None
     satellite_image_metadata: Optional[Path] = None

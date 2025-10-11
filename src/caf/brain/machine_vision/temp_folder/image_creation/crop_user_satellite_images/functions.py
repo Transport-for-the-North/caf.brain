@@ -2,6 +2,7 @@
 Created on: 10/6/2025
 Original author: Adil Zaheer
 """
+
 import os
 import logging
 import pandas as pd
@@ -11,15 +12,18 @@ from pathlib import Path
 from PIL import Image
 from rasterio.merge import merge
 from rasterio.errors import MergeError, RasterioIOError
+
 LOG = logging.getLogger(__name__)
 
 
-def _find_surrounding_images(col_start: int,
-                             row_start: int,
-                             col_end: int,
-                             row_end: int,
-                             image_width: int,
-                             image_height: int) -> list:
+def _find_surrounding_images(
+    col_start: int,
+    row_start: int,
+    col_end: int,
+    row_end: int,
+    image_width: int,
+    image_height: int,
+) -> list:
     """
     Helper function for finding which British National Grid tiles are required
     to create a full cropped image.
@@ -84,19 +88,19 @@ def _find_surrounding_names(file_name: str) -> dict:
 
     # west to east, south to north
     grid_letters = [
-        ['SV', 'SW', 'SX', 'SY', 'SZ', 'TV', 'TW'],
-        ['SQ', 'SR', 'SS', 'ST', 'SU', 'TQ', 'TR'],
-        ['SL', 'SM', 'SN', 'SO', 'SP', 'TL', 'TM'],
-        ['SF', 'SG', 'SH', 'SJ', 'SK', 'TF', 'TG'],
-        ['SA', 'SB', 'SC', 'SD', 'SE', 'TA', 'TB'],
-        ['NV', 'NW', 'NX', 'NY', 'NZ', 'OV', 'OW'],
-        ['NQ', 'NR', 'NS', 'NT', 'NU', 'OQ', 'OR'],
-        ['NL', 'NM', 'NN', 'NO', 'NP', 'OL', 'OM'],
-        ['NF', 'NG', 'NH', 'NJ', 'NK', 'OF', 'OG'],
-        ['NA', 'NB', 'NC', 'ND', 'NE', 'OA', 'OB'],
-        ['HV', 'HW', 'HX', 'HY', 'HZ', 'JV', 'JW'],
-        ['HQ', 'HR', 'HS', 'HT', 'HU', 'JQ', 'JR'],
-        ['HL', 'HM', 'HN', 'HO', 'HP', 'JL', 'JM']
+        ["SV", "SW", "SX", "SY", "SZ", "TV", "TW"],
+        ["SQ", "SR", "SS", "ST", "SU", "TQ", "TR"],
+        ["SL", "SM", "SN", "SO", "SP", "TL", "TM"],
+        ["SF", "SG", "SH", "SJ", "SK", "TF", "TG"],
+        ["SA", "SB", "SC", "SD", "SE", "TA", "TB"],
+        ["NV", "NW", "NX", "NY", "NZ", "OV", "OW"],
+        ["NQ", "NR", "NS", "NT", "NU", "OQ", "OR"],
+        ["NL", "NM", "NN", "NO", "NP", "OL", "OM"],
+        ["NF", "NG", "NH", "NJ", "NK", "OF", "OG"],
+        ["NA", "NB", "NC", "ND", "NE", "OA", "OB"],
+        ["HV", "HW", "HX", "HY", "HZ", "JV", "JW"],
+        ["HQ", "HR", "HS", "HT", "HU", "JQ", "JR"],
+        ["HL", "HM", "HN", "HO", "HP", "JL", "JM"],
     ]
 
     prefix = file_name[:2]
@@ -121,7 +125,9 @@ def _find_surrounding_names(file_name: str) -> dict:
     if prefix_row is None or prefix_col is None:
         raise ValueError("Prefix %s not found in the grid letters map", prefix)
 
-    def _get_adjusted_reference(row_change: int, col_change: int, east_change: int, north_change: int):
+    def _get_adjusted_reference(
+        row_change: int, col_change: int, east_change: int, north_change: int
+    ):
         """
         Calculates the adjusted British National Grid tile name based on
         directional shifts. This is calculated  by applying changes to the row,
@@ -168,23 +174,23 @@ def _find_surrounding_names(file_name: str) -> dict:
             return None  # gone off the edge of our defined grid
 
     image_layout_dict = {
-        'centre_image': file_name,
-        'north': _get_adjusted_reference(0, 0, 0, 1),
-        'south': _get_adjusted_reference(0, 0, 0, -1),
-        'east': _get_adjusted_reference(0, 0, 1, 0),
-        'west': _get_adjusted_reference(0, 0, -1, 0),
-        'northeast': _get_adjusted_reference(0, 0, 1, 1),
-        'northwest': _get_adjusted_reference(0, 0, -1, 1),
-        'southeast': _get_adjusted_reference(0, 0, 1, -1),
-        'southwest': _get_adjusted_reference(0, 0, -1, -1)
+        "centre_image": file_name,
+        "north": _get_adjusted_reference(0, 0, 0, 1),
+        "south": _get_adjusted_reference(0, 0, 0, -1),
+        "east": _get_adjusted_reference(0, 0, 1, 0),
+        "west": _get_adjusted_reference(0, 0, -1, 0),
+        "northeast": _get_adjusted_reference(0, 0, 1, 1),
+        "northwest": _get_adjusted_reference(0, 0, -1, 1),
+        "southeast": _get_adjusted_reference(0, 0, 1, -1),
+        "southwest": _get_adjusted_reference(0, 0, -1, -1),
     }
 
     return image_layout_dict
 
 
-def _surrounding_img_path_finder(image_layout_dict: dict,
-                                 list_of_needed_tiles: list,
-                                 satellite_metadata: pd.DataFrame) -> list:
+def _surrounding_img_path_finder(
+    image_layout_dict: dict, list_of_needed_tiles: list, satellite_metadata: pd.DataFrame
+) -> list:
     """
     Locates paths of images required for the final image crop based on what
     surrounding image tiles are available.
@@ -214,9 +220,9 @@ def _surrounding_img_path_finder(image_layout_dict: dict,
                 images_to_concat.append(val)
 
     for item in images_to_concat:
-        if item in satellite_metadata['box_boundary'].values:
-            row_data = satellite_metadata[satellite_metadata['box_boundary'] == item]
-            path = row_data['path'].values[0]
+        if item in satellite_metadata["box_boundary"].values:
+            row_data = satellite_metadata[satellite_metadata["box_boundary"] == item]
+            path = row_data["path"].values[0]
             final_images_to_concat.append(path)
 
     if len(images_to_concat) != len(final_images_to_concat):
@@ -272,17 +278,19 @@ def _estimate_memory_of_mosaic(image_paths) -> float:
         # memory requirement in bytes, then gigabytes
         bytes_per_element = np.dtype(np.uint8).itemsize
         est_memory_bytes = est_width * est_height * num_bands * bytes_per_element
-        est_memory_gb = est_memory_bytes / (1024 ** 3)
+        est_memory_gb = est_memory_bytes / (1024**3)
 
         return est_memory_gb
 
 
-def create_new_image(image_paths_to_concat: list,
-                     centre_image_path: str,
-                     focal_point_easting: float | int,
-                     focal_point_northing: float | int,
-                     output_dir: Path,
-                     file_name: str) -> None:
+def create_new_image(
+    image_paths_to_concat: list,
+    centre_image_path: str,
+    focal_point_easting: float | int,
+    focal_point_northing: float | int,
+    output_dir: Path,
+    file_name: str,
+) -> None:
     """
     Function to create the new image with cropped surrounding tiles around
     the user specified focal point.
@@ -305,7 +313,9 @@ def create_new_image(image_paths_to_concat: list,
     """
     est_mem = _estimate_memory_of_mosaic(image_paths=image_paths_to_concat)
     if est_mem is None:
-        LOG.error("Issue with one or all paths required for mosaic. Image expansion not possible.")
+        LOG.error(
+            "Issue with one or all paths required for mosaic. Image expansion not possible."
+        )
         return
     if est_mem > 30:
         LOG.error(f"Could not create mosaic for {centre_image_path} due to memory allocation")
@@ -327,7 +337,9 @@ def create_new_image(image_paths_to_concat: list,
         return
 
     if mosaic is None or mosaic.size == 0:
-        LOG.error(f"Mosaic creation failed for {centre_image_path} - empty or null mosaic returned")
+        LOG.error(
+            f"Mosaic creation failed for {centre_image_path} - empty or null mosaic returned"
+        )
         return
 
     # Convert junction coordinates (in map space) to pixel
@@ -341,8 +353,12 @@ def create_new_image(image_paths_to_concat: list,
     col_end = int(col + half_size)
     row_end = int(row + half_size)
 
-    if (col_start < 0 or row_start < 0 or
-        col_end > mosaic.shape[2] or row_end > mosaic.shape[1]):
+    if (
+        col_start < 0
+        or row_start < 0
+        or col_end > mosaic.shape[2]
+        or row_end > mosaic.shape[1]
+    ):
         LOG.warning(f"{centre_image_path} crop extends beyond mosaic boundaries:")
         LOG.warning(f" Mosaic shape: {mosaic.shape}")
         LOG.warning(f" Crop window: ({row_start}:{row_end}, {col_start}:{col_end})")

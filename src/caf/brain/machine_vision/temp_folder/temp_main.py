@@ -4,19 +4,20 @@ Original author: Adil Zaheer
 """
 import logging
 
-from caf.brain.machine_vision.temp_folder.temp_inputs import object_detection_inputs
-from caf.brain.machine_vision.temp_folder.image_creation.crop_user_satellite_images.main import \
+from src.caf.brain.machine_vision.temp_folder.temp_inputs import object_detection_inputs
+from src.caf.brain.machine_vision.temp_folder.image_creation.crop_user_satellite_images.main import \
     image_crop
-from caf.brain.machine_vision.temp_folder.image_creation.generate_satellite_image_information.main import \
+from src.caf.brain.machine_vision.temp_folder.image_creation.generate_satellite_image_information.main import \
     image_info_generation
-from caf.brain.machine_vision.temp_folder.image_creation.generate_user_satellite_images.main import \
+from src.caf.brain.machine_vision.temp_folder.image_creation.generate_user_satellite_images.main import \
     locate_user_coordinates
 
 LOG = logging.getLogger(__name__)
 
 # generate images for training
 # generate images for using the model
-
+# todo also need to check how i did the process of separating out images based on classes
+# todo may need to keep that functionality in permanently
 
 def main(params: object_detection_inputs):
     if params.image_generation_inputs.generate_images:

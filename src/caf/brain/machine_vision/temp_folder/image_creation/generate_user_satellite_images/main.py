@@ -7,7 +7,7 @@ import os
 import pandas as pd
 from pathlib import Path
 import logging
-from caf.brain.machine_vision.temp_folder.image_creation.generate_user_satellite_images.functions import (
+from src.caf.brain.machine_vision.temp_folder.image_creation.generate_user_satellite_images.functions import (
     read_path,
     euclidean_distance,
     user_image_path_finder,

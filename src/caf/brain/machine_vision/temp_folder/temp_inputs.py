@@ -26,7 +26,7 @@ class object_detection_inputs(BaseConfig):
         """"""
 
         build_model: Optional[bool] = False
-        training_images_path: Optional[Path] = None
+        user_images_folder_path: Optional[Path] = None
         classification_names: Optional[list[str]] = None
         hyperparameter_optimisation: Optional[bool] = False
 

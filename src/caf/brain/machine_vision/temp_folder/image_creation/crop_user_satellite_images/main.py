@@ -3,8 +3,7 @@ Created on: 10/6/2025
 Original author: Adil Zaheer
 """
 
-# todo also need to check how i did the process of separating out images based on classes
-# todo may need to keep that functionality in permanently
+
 import logging
 from pathlib import Path
 import os
@@ -15,7 +14,7 @@ import rasterio
 from rasterio.windows import Window
 from PIL import Image
 
-from caf.brain.machine_vision.temp_folder.image_creation.crop_user_satellite_images.functions import (
+from src.caf.brain.machine_vision.temp_folder.image_creation.crop_user_satellite_images.functions import (
     _check_raster_file,
     _find_surrounding_images,
     _find_surrounding_names,

@@ -3,15 +3,15 @@ Created on: 10/6/2025
 Original author: Adil Zaheer
 """
 
+from pathlib import Path
 import os
 import logging
 import pandas as pd
 import numpy as np
 import rasterio
-from pathlib import Path
 from PIL import Image
 from rasterio.merge import merge
-from rasterio.errors import MergeError, RasterioIOError
+from rasterio.errors import MergeError, RasterioIOError, RasterioError
 
 LOG = logging.getLogger(__name__)
 
@@ -108,7 +108,7 @@ def _find_surrounding_names(file_name: str) -> dict:
 
     if len(nums_str) != 4:
         LOG.error("Expected 4-digit number after prefix, got %s for %s.", nums_str, file_name)
-        raise ValueError("Expected 4-digit number after prefix, got %s", nums_str)
+        raise ValueError(f"Expected 4-digit number after prefix, got {nums_str}")
 
     easting_major = int(nums_str[0:2])
     northing_major = int(nums_str[2:4])
@@ -123,7 +123,7 @@ def _find_surrounding_names(file_name: str) -> dict:
             break
 
     if prefix_row is None or prefix_col is None:
-        raise ValueError("Prefix %s not found in the grid letters map", prefix)
+        raise ValueError(f"Prefix {prefix} not found in the grid letters map")
 
     def _get_adjusted_reference(
         row_change: int, col_change: int, east_change: int, north_change: int
@@ -170,8 +170,8 @@ def _find_surrounding_names(file_name: str) -> dict:
         if 0 <= new_row < len(grid_letters) and 0 <= new_col < len(grid_letters[0]):
             new_prefix = grid_letters[new_row][new_col]
             return f"{new_prefix}{new_easting:02d}{new_northing:02d}"
-        else:
-            return None  # gone off the edge of our defined grid
+
+        return None  # gone off the edge of our defined grid
 
     image_layout_dict = {
         "centre_image": file_name,
@@ -233,7 +233,7 @@ def _surrounding_img_path_finder(
     return final_images_to_concat
 
 
-def _estimate_memory_of_mosaic(image_paths) -> float:
+def _estimate_memory_of_mosaic(image_paths) -> float | None:
     """
     Estimates the approximate memory allocation (gigabytes) of the full sized
     mosaic prior to cropping.
@@ -257,33 +257,35 @@ def _estimate_memory_of_mosaic(image_paths) -> float:
 
     if paths_not_fine:
         return None
-    else:
-        for path in image_paths:
-            with rasterio.open(path) as ds:
-                bounds_list.append(ds.bounds)
-                if len(bounds_list) == 1:
-                    res_x, res_y = ds.res
-                    num_bands = ds.count
 
-        # total bounds
-        min_left = min(bound.left for bound in bounds_list)
-        min_bottom = min(bound.bottom for bound in bounds_list)
-        max_right = max(bound.right for bound in bounds_list)
-        max_top = max(bound.top for bound in bounds_list)
+    with rasterio.open(image_paths[0]) as ds:
+        res_x, res_y = ds.res
+        num_bands = ds.count
+        bounds_list.append(ds.bounds)
 
-        # dimensions in pixels
-        est_width = int((max_right - min_left) / res_x)
-        est_height = int((max_top - min_bottom) / res_y)
+    for path in image_paths[1:]:
+        with rasterio.open(path) as ds:
+            bounds_list.append(ds.bounds)
 
-        # memory requirement in bytes, then gigabytes
-        bytes_per_element = np.dtype(np.uint8).itemsize
-        est_memory_bytes = est_width * est_height * num_bands * bytes_per_element
-        est_memory_gb = est_memory_bytes / (1024**3)
+    # total bounds
+    min_left = min(bound.left for bound in bounds_list)
+    min_bottom = min(bound.bottom for bound in bounds_list)
+    max_right = max(bound.right for bound in bounds_list)
+    max_top = max(bound.top for bound in bounds_list)
 
-        return est_memory_gb
+    # dimensions in pixels
+    est_width = int((max_right - min_left) / res_x)
+    est_height = int((max_top - min_bottom) / res_y)
+
+    # memory requirement in bytes, then gigabytes
+    bytes_per_element = np.dtype(np.uint8).itemsize
+    est_memory_bytes = est_width * est_height * num_bands * bytes_per_element
+    est_memory_gb = est_memory_bytes / (1024**3)
+
+    return est_memory_gb
 
 
-def create_new_image(
+def _create_new_image(
     image_paths_to_concat: list,
     centre_image_path: str,
     focal_point_easting: float | int,
@@ -318,7 +320,7 @@ def create_new_image(
         )
         return
     if est_mem > 30:
-        LOG.error(f"Could not create mosaic for {centre_image_path} due to memory allocation")
+        LOG.error("Could not create mosaic for %s due to memory allocation", centre_image_path)
         return
 
     datasets = []
@@ -333,12 +335,12 @@ def create_new_image(
     try:
         mosaic, mosaic_transform = merge(datasets)
     except MergeError as e:
-        print(f"Error merging mosaic: {e}")
+        LOG.error("Error merging mosaic: %s", e)
         return
 
     if mosaic is None or mosaic.size == 0:
         LOG.error(
-            f"Mosaic creation failed for {centre_image_path} - empty or null mosaic returned"
+            "Mosaic creation failed for %s - empty or null mosaic returned", centre_image_path
         )
         return
 
@@ -359,9 +361,9 @@ def create_new_image(
         or col_end > mosaic.shape[2]
         or row_end > mosaic.shape[1]
     ):
-        LOG.warning(f"{centre_image_path} crop extends beyond mosaic boundaries:")
-        LOG.warning(f" Mosaic shape: {mosaic.shape}")
-        LOG.warning(f" Crop window: ({row_start}:{row_end}, {col_start}:{col_end})")
+        LOG.warning("%s crop extends beyond mosaic boundaries", centre_image_path)
+        LOG.warning("Mosaic shape: %s", mosaic.shape)
+        LOG.warning("Crop window: (%s:%s, %s:%s)", row_start, row_end, col_start, col_end)
         return
 
     # mosaic has shape (bands, height, width)
@@ -369,9 +371,9 @@ def create_new_image(
 
     expected_shape = (mosaic.shape[0], crop_size_pixels, crop_size_pixels)
     if cropped_img.shape != expected_shape:
-        LOG.warning(f" {centre_image_path }cropped image has unexpected dimensions:")
-        LOG.warning(f" Expected: {expected_shape}")
-        LOG.warning(f" Actual: {cropped_img.shape}")
+        LOG.warning("%s cropped image has unexpected dimensions", centre_image_path)
+        LOG.warning("Expected: %s", expected_shape)
+        LOG.warning("Actual: %s", cropped_img.shape)
         return
 
     # Convert the image: move bands to the last axis and cast to uint8 for JPEG
@@ -401,8 +403,8 @@ def _check_raster_file(path: Path) -> bool:
         with rasterio.open(path) as _:
             return True
     except RasterioIOError as e:
-        print(f"Error opening file {path}: {e}")
+        print("Error opening file %s: %s", path, e)
         return False
-    except Exception as e:
-        print(f"Unexpected error with {path}: {e}")
+    except RasterioError as e:
+        print("Unexpected error with %s: %s", path, e)
         return False

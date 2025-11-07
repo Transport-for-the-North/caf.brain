@@ -7,9 +7,9 @@ import logging
 from pathlib import Path
 import os
 import pandas as pd
-from src.caf.brain.machine_vision.temp_folder.image_creation.generate_satellite_image_information.functions import (
-    image_path_name_finder,
-    satellite_xml_processor,
+from caf.brain.machine_vision.src_object_detection.image_creation.generate_satellite_image_information.functions import (
+    _image_path_name_finder,
+    _satellite_xml_processor,
 )
 
 LOG = logging.getLogger(__name__)
@@ -32,16 +32,20 @@ def image_info_generation(output_path: Path, image_folder_path: Path) -> pd.Data
                               midpoints and path locations.
 
     """
-    df_filename = os.path.join(output_path, "satellite_image_metadata.csv")
+    output_path = Path(output_path)
+    image_folder_path = Path(image_folder_path)
+
+    df_filename = output_path / "satellite_image_metadata.csv"
+
     if os.path.exists(df_filename):
         LOG.info("Satellite image metadata already exists and is being read in")
         satellite_image_metadata = pd.read_csv(df_filename)
     else:
-        image_xml_df = satellite_xml_processor(
+        image_xml_df = _satellite_xml_processor(
             image_folder_path=image_folder_path, output_path=output_path
         )
 
-        image_path_df = image_path_name_finder(folder_path=image_folder_path)
+        image_path_df = _image_path_name_finder(folder_path=image_folder_path)
 
         satellite_image_metadata = pd.merge(
             image_xml_df, image_path_df, on="box_boundary", how="left"

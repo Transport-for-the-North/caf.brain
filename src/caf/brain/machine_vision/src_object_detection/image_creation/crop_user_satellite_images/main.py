@@ -3,7 +3,6 @@ Created on: 10/6/2025
 Original author: Adil Zaheer
 """
 
-
 import logging
 from pathlib import Path
 import os
@@ -14,12 +13,12 @@ import rasterio
 from rasterio.windows import Window
 from PIL import Image
 
-from src.caf.brain.machine_vision.temp_folder.image_creation.crop_user_satellite_images.functions import (
+from caf.brain.machine_vision.src_object_detection.image_creation.crop_user_satellite_images.functions import (
     _check_raster_file,
     _find_surrounding_images,
     _find_surrounding_names,
     _surrounding_img_path_finder,
-    create_new_image,
+    _create_new_image,
 )
 
 LOG = logging.getLogger(__name__)
@@ -29,7 +28,7 @@ def image_crop(
     user_image_metadata: pd.DataFrame,
     output_path: Path,
     satellite_image_metadata: pd.DataFrame,
-) -> str:
+) -> Path:
     """
     Function to locate, crop and where applicable merge images. This function
     creates images ready for labelling or use in a trained YOLO model.
@@ -46,10 +45,9 @@ def image_crop(
     -------
     output_dir: Location of saved processed images
     """
-    base_name = os.path.basename(output_path)
-    name, _ = os.path.splitext(base_name)
-    output_dir = os.path.join(output_path, f"{name}_images_for_machine_vision")
-    os.makedirs(output_dir, exist_ok=True)
+    output_path = Path(output_path)
+    output_dir = output_path / "images_for_machine_vision"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     count = 0
     invalid_count = 0
@@ -59,12 +57,10 @@ def image_crop(
         for path in user_image_metadata["paths"]:
             base_name = os.path.basename(path)
             file_name = os.path.splitext(base_name)[0]
-            output_filename = os.path.join(output_dir, f"{file_name}_cropped.jpg")
-            output_filename_extended = os.path.join(
-                output_dir, f"{file_name}_cropped_extended.jpg"
-            )
+            output_filename = output_dir / f"{file_name}_cropped.jpg"
+            output_filename_extended = output_dir / f"{file_name}_cropped_extended.jpg"
 
-            if os.path.exists(output_filename) or os.path.exists(output_filename_extended):
+            if output_filename.exists() or output_filename_extended.exists():
                 LOG.info(
                     "Skipping image processing as final cropped image already exists in \
                           output directory."
@@ -128,7 +124,7 @@ def image_crop(
                             invalid_images.append(name)
                             continue
 
-                        create_new_image(
+                        _create_new_image(
                             image_paths_to_concat=image_paths_to_concat,
                             centre_image_path=path,
                             focal_point_easting=focal_point_easting,
@@ -201,6 +197,6 @@ def image_crop(
                 continue
 
         df = pd.DataFrame(invalid_images, columns=["invalid_junctions"])
-        df.to_csv(os.path.join(output_dir, "failed_image_crops.csv"), index=False)
+        df.to_csv(output_dir / "failed_image_crops.csv", index=False)
 
         return output_dir

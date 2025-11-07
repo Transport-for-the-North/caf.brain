@@ -16,7 +16,7 @@ from tqdm import tqdm
 LOG = logging.getLogger(__name__)
 
 
-def satellite_xml_processor(image_folder_path: Path, output_path: Path) -> pd.DataFrame:
+def _satellite_xml_processor(image_folder_path: Path, output_path: Path) -> pd.DataFrame:
     """
     Creates a dataframe of British National Grid satellite image xml data.
 
@@ -37,7 +37,7 @@ def satellite_xml_processor(image_folder_path: Path, output_path: Path) -> pd.Da
     paths = glob.glob(os.path.join(image_folder_path) + "/**/*.xml", recursive=True)
     with tqdm(total=None) as pbar:
         for path in paths:
-            df, name = extract_info_from_xml(html_file_path=path)
+            df, name = _extract_info_from_xml(html_file_path=path)
             if df is None or df.empty:
                 LOG.warning("Skipping file %s due to missing or empty data.", path)
                 problem_html.append(path)
@@ -57,7 +57,7 @@ def satellite_xml_processor(image_folder_path: Path, output_path: Path) -> pd.Da
     return final_data
 
 
-def extract_info_from_xml(html_file_path: str) -> tuple:
+def _extract_info_from_xml(html_file_path: str) -> tuple:
     """
     Extracting key information from British National Grid xml files.
 
@@ -102,7 +102,7 @@ def extract_info_from_xml(html_file_path: str) -> tuple:
             location = substrings[2]
             df["bng_location"] = location
 
-            df = find_midpoint(df, location)
+            df = _find_midpoint(df, location)
 
         else:
             LOG.warning(
@@ -117,7 +117,7 @@ def extract_info_from_xml(html_file_path: str) -> tuple:
     return df, location
 
 
-def find_midpoint(df: pd.DataFrame, location: str) -> pd.DataFrame:
+def _find_midpoint(df: pd.DataFrame, location: str) -> pd.DataFrame:
     """
     Finding the midpoint of a British National Grid image tile.
 
@@ -147,12 +147,12 @@ def find_midpoint(df: pd.DataFrame, location: str) -> pd.DataFrame:
         }
     )
 
-    result_df = coordinate_converter(df=midpoint_df)
+    result_df = _coordinate_converter(df=midpoint_df)
 
     return result_df
 
 
-def coordinate_converter(df: pd.DataFrame) -> pd.DataFrame:
+def _coordinate_converter(df: pd.DataFrame) -> pd.DataFrame:
     """
     Converts coordinates between systems (latitude & longitude to easting &
     northing).
@@ -183,7 +183,7 @@ def coordinate_converter(df: pd.DataFrame) -> pd.DataFrame:
     return final_df
 
 
-def image_path_name_finder(folder_path: Path) -> pd.DataFrame:
+def _image_path_name_finder(folder_path: Path) -> pd.DataFrame:
     """
     Helper function for finding satellite image names and path locations.
 

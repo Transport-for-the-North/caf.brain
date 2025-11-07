@@ -1,15 +1,13 @@
-# -*- coding: utf-8 -*-
-# pylint: disable=import-error,wrong-import-position
-# pylint: enable=import-error,wrong-import-position
 """
 Created on: 5/12/2025
 Original author: Adil Zaheer
 """
+
 import os.path
 import pandas as pd
 import yaml
 import time
-from caf.brain.machine_vision.object_detection_satellites.yolo_modelling.hyperparameter_optimisation_yolo.moderate_hyp_optim import (
+from src.caf.brain.machine_vision.object_detection_satellites.yolo_modelling.hyperparameter_optimisation_yolo.moderate_hyp_optim import (
     moderate_optimisation,
 )
 import logging

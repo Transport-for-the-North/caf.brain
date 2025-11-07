@@ -16,7 +16,7 @@ from tqdm import tqdm
 LOG = logging.getLogger(__name__)
 
 
-def find_file_type(file_path: Path) -> str:
+def _find_file_type(file_path: Path) -> str | None:
     """
     Helper function for finding file types.
 
@@ -26,7 +26,7 @@ def find_file_type(file_path: Path) -> str:
 
     Returns
     -------
-    String with file ending e.g. csv, shp
+    String with file ending e.g. csv, shp or None.
     """
     _, ext = os.path.splitext(file_path)
     ext = ext.lower()
@@ -39,7 +39,7 @@ def find_file_type(file_path: Path) -> str:
         return None
 
 
-def read_path(file_path: Path):
+def _read_path(file_path: Path):
     """
     Function to read in files based on their file types.
 
@@ -52,7 +52,7 @@ def read_path(file_path: Path):
     Either a dataframe or geo-dataframe of your data along with their file
     type.
     """
-    file_type = find_file_type(file_path)
+    file_type = _find_file_type(file_path)
     if file_type == "csv":
         df = pd.read_csv(file_path)
         return df, file_type
@@ -63,7 +63,7 @@ def read_path(file_path: Path):
         raise ValueError("Unsupported file type.")
 
 
-def euclidean_distance(df_a: pd.DataFrame, df_b: pd.DataFrame) -> pd.DataFrame:
+def _euclidean_distance(df_a: pd.DataFrame, df_b: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate the Euclidean distance between the user provided locations and
     the center points of the British National Grid tiles.
@@ -98,11 +98,14 @@ def euclidean_distance(df_a: pd.DataFrame, df_b: pd.DataFrame) -> pd.DataFrame:
     return result_df
 
 
-def user_image_path_finder(
+def _user_image_path_finder(
     image_folder: Path, user_coordinate_data: pd.DataFrame
-) -> list[Path]:
+) -> pd.DataFrame:
     """
     Find image paths for each of the user provided coordinates.
+    Each row in user_coordinate_data has a box_boundary identifier.
+    This function searches the image folder (recursively) for .jpg files
+    whose filename (without extension) matches one of those identifiers.
 
     Parameters
     ----------
@@ -129,7 +132,7 @@ def user_image_path_finder(
         len(paths),
     )
 
-    with tqdm(total=None) as pbar:
+    with tqdm(total=len(paths)) as pbar:
         for path in paths:
             _, file_name = os.path.split(path)
             name = os.path.splitext(file_name)[0]
@@ -140,9 +143,10 @@ def user_image_path_finder(
             counter += 1
             if counter % 100 == 0:
                 LOG.info(
-                    "Processed %s paths, found %s matches so far",
-                    (counter / len(paths)),
-                    len(path_list),
+                    "Processed %s/%s paths, found %s matches so far",
+                    counter,
+                    len(paths),
+                    len(path_dict),
                 )
 
     path_df = pd.DataFrame(list(path_dict.items()), columns=["box_boundary", "paths"])

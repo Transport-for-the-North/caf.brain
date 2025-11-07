@@ -8,7 +8,7 @@ from caf.brain.machine_vision.object_detection_satellites.yolo_modelling.model_c
     baseline_model,
     final_model,
 )
-from caf.brain.machine_vision.object_detection_satellites.yolo_modelling.hyperparameter_optimisation_yolo.hyperparameter_optimisation_main import (
+from src.caf.brain.machine_vision.object_detection_satellites.yolo_modelling.hyperparameter_optimisation_yolo.hyperparameter_optimisation_main import (
     main_hyperparameter_optimisation,
 )
 

@@ -1,8 +1,10 @@
 """
-Created on: 5/12/2025
+Created on: 03/11/2025
 Original author: Adil Zaheer
 """
 
+from pathlib import Path
+import time
 import os
 import yaml
 import optuna
@@ -13,7 +15,7 @@ import logging
 LOG = logging.getLogger(__name__)
 
 
-def moderate_optimisation(config: str | Path, output_dir: str | Path, model: YOLO) -> dict:
+def _moderate_optimisation(config: str | Path, output_dir: str | Path, model: YOLO) -> dict:
     """
     Run moderate hyperparameter optimisation for YOLO object detection
     using Optuna.
@@ -37,7 +39,6 @@ def moderate_optimisation(config: str | Path, output_dir: str | Path, model: YOL
     - "performance_metrics": dict of evaluation metrics (mAP, precision, recall).
     - "trial_details": dict with best trial ID and value
     """
-    start_time = time.time()
 
     device = 0 if torch.cuda.is_available() else "cpu"
     if device == 0:
@@ -60,19 +61,19 @@ def moderate_optimisation(config: str | Path, output_dir: str | Path, model: YOL
         load_if_exists=True,
     )
 
-    def track_progress(study, trial):
-        LOG.info(f"Trial {trial.number} finished with value: {trial.value}")
-        LOG.info(f"Best value so far: {study.best_value}")
+    def _track_progress(study, trial):
+        LOG.info("Trial %s finished with value: %s", trial.number, trial.value)
+        LOG.info("Best value so far: %s", study.best_value)
 
     if os.path.exists(best_hyp_path):
-        LOG.info(f"Study already completed. Skipping optimisation.")
-        LOG.info(f"Best trial: {study.best_trial.number}, Best value: {study.best_value}")
+        LOG.info("Study already completed. Skipping optimisation.")
+        LOG.info("Best trial: %s, Best value: %s", study.best_trial.number, study.best_value)
     else:
-        LOG.info(f"Conducting optimisation")
+        LOG.info("Conducting optimisation")
         study.optimize(
-            lambda trial: optuna_objective_func(trial, config, output_dir, model, device),
+            lambda trial: _optuna_objective_func(trial, config, output_dir, model, device),
             n_trials=100,
-            callbacks=[track_progress],
+            callbacks=[_track_progress],
             show_progress_bar=True,
         )
 
@@ -91,8 +92,8 @@ def moderate_optimisation(config: str | Path, output_dir: str | Path, model: YOL
                 "precision": metrics.box.mp,
                 "recall": metrics.box.mr,
             }
-            LOG.info(f"Successfully extracted metrics: {performance_metrics}")
-        except Exception as e:
+            LOG.info("Successfully extracted metrics: %s", performance_metrics)
+        except (RuntimeError, OSError, ValueError) as e:
             LOG.error(f"Error extracting metrics: {e}")
             performance_metrics = {
                 "mAP50": study.best_value,
@@ -101,7 +102,7 @@ def moderate_optimisation(config: str | Path, output_dir: str | Path, model: YOL
                 "recall": None,
             }
     else:
-        LOG.warning(f"Best weights not found at {best_weights}")
+        LOG.warning("Best weights not found at %s", best_weights)
         performance_metrics = {
             "mAP50": study.best_value,
             "mAP50-95": None,
@@ -121,7 +122,7 @@ def moderate_optimisation(config: str | Path, output_dir: str | Path, model: YOL
     return optimisation_results
 
 
-def optuna_objective_func(
+def _optuna_objective_func(
     trial: optuna.Trial,
     config: str | Path,
     output: str | Path,
@@ -162,7 +163,7 @@ def optuna_objective_func(
     optimiser = trial.suggest_categorical("optimizer", ["SGD", "Adam", "AdamW"])
 
     try:
-        results = model.train(
+        _ = model.train(
             data=config,
             epochs=30,
             imgsz=640,
@@ -179,16 +180,16 @@ def optuna_objective_func(
 
         best_weights = os.path.join(output, "train", "weights", "best.pt")
         if not os.path.exists(best_weights):
-            LOG.warning(f"Best weights not found for trial {trial.number}")
+            LOG.warning("Best weights not found for trial %s", trial.number)
             return 0.0
 
-        metrics = YOLO(best_weights).val(data=config)
+        metrics = YOLO(best_weights).val(data=config, device=device)
         map50_95 = metrics.box.map
 
         trial.report(map50_95, step=30)
 
         return map50_95
 
-    except Exception as e:
-        LOG.error(f"Error in trial {trial.number}: {str(e)}")
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        LOG.error("Error in trial %s: %s", trial.number, str(e))
         return 0.0

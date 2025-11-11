@@ -7,7 +7,7 @@ Original author: Adil Zaheer
 import logging
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 # Third Party
 import joblib
@@ -26,7 +26,8 @@ def preprocess_numerical_data(
     is_test_data: bool,
     numerical_pipeline_train=None,
     output_folder=None,
-) -> pd.DataFrame:
+) -> Union[pd.DataFrame, tuple[pd.DataFrame, Pipeline]]:
+
     """
     Scales data via SciKitLearns standard scalar. Separates logic for train and
     test but ensures that the same transformations applied to train are applied
@@ -149,7 +150,7 @@ def preprocess_categorical_data(
     sample_size_encode: bool | None,
     select_encode_values: bool | None,
     encode_values_to_drop: list[str] | None,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Encodes categorical variables via a choice of methods. Standard
     encoding where the first in each category is dropped is default,
@@ -181,12 +182,12 @@ def preprocess_categorical_data(
     """
     df.columns = df.columns.astype(str)
 
-    if sample_size_encode is True:
+    if sample_size_encode:
         categorical_df, drop_vals = sample_size_encode_(
             df=df, categorical_features=categorical_features
         )
         return categorical_df, drop_vals
-    if select_encode_values is True:
+    if select_encode_values:
         if not encode_values_to_drop:
             raise ValueError("")
         categorical_df, drop_vals = custom_sample_encode(
@@ -208,7 +209,7 @@ def preprocess_categorical_data(
     return categorical_df, drop_vals
 
 
-def sample_size_encode_(df: pd.DataFrame, categorical_features: List[str]) -> pd.DataFrame:
+def sample_size_encode_(df: pd.DataFrame, categorical_features: List[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Encodes variables based on sample size. The value that appears most often
     in each of the categorical variables is used as the reference and therefore
@@ -257,7 +258,7 @@ def sample_size_encode_(df: pd.DataFrame, categorical_features: List[str]) -> pd
 
 def custom_sample_encode(
     df: pd.DataFrame, categorical_features: list[str], drop_values: list[str]
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Encodes variables based on user specified values. The values should be
     specified in the order that the variables are listed in categorical_features.
@@ -318,7 +319,7 @@ def custom_sample_encode(
 def encode_test_data(
     test_df: pd.DataFrame,
     categorical_features: List[str],
-    train_encoded: pd.DataFrame,
+    train_encoded: Optional[pd.DataFrame],
     target_column: str | None,
     weight_column: str | None,
     weight_df: pd.DataFrame,
@@ -341,6 +342,8 @@ def encode_test_data(
     -------
     test_encoded: Encoded test data.
     """
+    if train_encoded is None:
+        raise ValueError("train_encoded is required")
     if target_column in train_encoded.columns:
         train_encoded = train_encoded.drop(columns=[target_column])
     if weight_column in train_encoded.columns:
@@ -370,11 +373,11 @@ def process_data_pipeline(
     sample_size_encode: bool | None,
     select_encode_values: bool | None,
     encode_values_to_drop: list[str] | None,
-    train_encoded: pd.DataFrame,
+    train_encoded: Optional[pd.DataFrame],
     test_data: bool,
     numerical_pipeline,
     output_folder: Path,
-):
+) -> tuple[pd.DataFrame, Optional[pd.DataFrame], Optional[Pipeline]]:
     """
     Pipeline to process input data via encoding and scaling transformations.
 
@@ -434,8 +437,8 @@ def process_data_pipeline(
 
     # just numerical data
     if numerical_features is not None and categorical_features is None:
-        if test_data is True:
-            numerical_df = preprocess_numerical_data(
+        if test_data:
+            numerical_df, _ = preprocess_numerical_data(
                 df=x,
                 numerical_features=numerical_features,
                 is_test_data=True,
@@ -461,7 +464,7 @@ def process_data_pipeline(
 
     # just categorical data
     if categorical_features is not None and numerical_features is None:
-        if test_data is True:
+        if test_data:
             test_final = encode_test_data(
                 test_df=x,
                 categorical_features=categorical_features,
@@ -490,8 +493,8 @@ def process_data_pipeline(
     # both categorical and numerical
     if numerical_features is not None and categorical_features is not None:
         x_cat = x.drop(columns=numerical_features)
-        if test_data is True:
-            numerical_df = preprocess_numerical_data(
+        if test_data:
+            numerical_df, _ = preprocess_numerical_data(
                 df=x,
                 numerical_features=numerical_features,
                 is_test_data=True,

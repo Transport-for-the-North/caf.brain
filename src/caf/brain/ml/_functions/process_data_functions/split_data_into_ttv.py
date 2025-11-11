@@ -13,10 +13,10 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 # Local Imports
-from caf.brain.ml.functions_and_classes.process_data_functions.input_data import (
+from caf.brain.ml._functions.process_data_functions.input_data import (
     InitialDataProcessing,
 )
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml._inputs_and_baseclasses.ml_inputs import PredictionModelInputs
 
 
 def split_data(
@@ -25,7 +25,7 @@ def split_data(
     data_classification: PredictionModelInputs.DataClassificationInputs,
     transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
     output_path,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame, Optional[pd.DataFrame]]:
     """
     Function to split data into training and test if not already done by the
     user.
@@ -83,7 +83,7 @@ def stratified_split_with_categories(
     validation_path: Optional[Path],
     index_columns: Optional[list[str]],
     output_path: Path,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame, Optional[pd.DataFrame]]:
     """
     Split data into train, test, and validate sets using stratification.
 
@@ -158,7 +158,7 @@ def split_by_column_value(
     target_column: Optional[str],
     validation_path: Optional[Path],
     output_path: Path,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame, Optional[pd.DataFrame]]:
     """
     Split data into train, test, and validate sets by a specific column value.
 

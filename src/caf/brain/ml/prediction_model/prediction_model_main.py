@@ -12,27 +12,16 @@ from pathlib import Path
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml.functions_and_classes.data_analysis.main import (
-    main_evaluate_input_data,
-)
-from caf.brain.ml.functions_and_classes.feature_selection.main import (
-    main_feature_selection,
-)
-from caf.brain.ml.functions_and_classes.hparam_optimisation.main import (
-    main_hyperparameter_optimisation,
-)
-from caf.brain.ml.functions_and_classes.model_selection.functions import (
-    initialise_model,
-)
-from caf.brain.ml.functions_and_classes.model_selection.main import main_model_selection
-from caf.brain.ml.functions_and_classes.prediction.main import main_prediction
-from caf.brain.ml.functions_and_classes.process_data_functions.main import (
-    main_input_data,
-)
-from caf.brain.ml.functions_and_classes.process_data_functions.split_data_into_ttv import (
-    simple_train_test_split,
-)
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml._functions.data_analysis.main import main_evaluate_input_data
+
+from caf.brain.ml._functions.feature_selection.main import main_feature_selection
+from caf.brain.ml._functions.hparam_optimisation.main import main_hyperparameter_optimisation
+from caf.brain.ml._functions.model_selection.functions import initialise_model
+from caf.brain.ml._functions.model_selection.main import main_model_selection
+from caf.brain.ml._functions.prediction.main import main_prediction
+from caf.brain.ml._functions.process_data_functions.main import main_input_data
+from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import simple_train_test_split
+from caf.brain.ml._inputs_and_baseclasses.ml_inputs import PredictionModelInputs
 
 LOG = logging.getLogger(__name__)
 
@@ -72,17 +61,6 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
     validate = None
     if data_dict["validate"] is not None and len(data_dict["validate"]) > 0:
         validate = pd.DataFrame.from_dict(data_dict["validate"])
-
-    # is_statsmodel = any(
-    #     base.__module__.startswith("statsmodels")
-    #     for base in params.modelling.model_choice.__class__.__mro__
-    # )
-    # if is_statsmodel:
-    #     main_stats_model(
-    #         model_choice=params.modelling.model_choice,
-    #         train=train_scaled,
-    #         target_column=params.data_classification.target_column,
-    #         weight_column=params.data_classification.weight_column)
 
     selected_model = main_model_selection(
         paths=params.paths,

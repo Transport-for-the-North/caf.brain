@@ -11,20 +11,20 @@ import pandas as pd
 
 # Local Imports
 from caf.brain.ml import Models
-from caf.brain.ml.functions_and_classes.feature_selection.functions import (
+from caf.brain.ml._functions.feature_selection.functions import (
     analyse_feature_importance,
 )
-from caf.brain.ml.functions_and_classes.hparam_optimisation.functions import (
+from caf.brain.ml._functions.hparam_optimisation.functions import (
     select_param,
 )
-from caf.brain.ml.functions_and_classes.model_selection.functions import select_model
-from caf.brain.ml.functions_and_classes.process_data_functions.encode_and_scale import (
+from caf.brain.ml._functions.model_selection.functions import select_model
+from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
     process_data_pipeline,
 )
-from caf.brain.ml.functions_and_classes.process_data_functions.input_data import (
+from caf.brain.ml._functions.process_data_functions.input_data import (
     InitialDataProcessing,
 )
-from caf.brain.ml.inputs_and_baseclasses.baseclasses import ValidateData
+from caf.brain.ml._inputs_and_baseclasses.baseclasses import ValidateData
 
 LOG = logging.getLogger(__name__)
 
@@ -305,7 +305,7 @@ def feat_selection(
     return df_final
 
 
-def algorithim_evaluation(
+def algorithm_evaluation(
     model_choice: list[Models],
     data: pd.DataFrame,
     output_path: Path,
@@ -346,7 +346,7 @@ def algorithim_evaluation(
     if not output_path:
         raise ValueError(
             "Please provide an output path to use \
-                         algorithim_evaluation"
+                         algorithm_evaluation"
         )
 
     if not isinstance(model_choice, list):
@@ -364,8 +364,12 @@ def algorithim_evaluation(
     )
 
     return selected_model
+# TODO
+# link used functions in docs
+# imports of these functions in the inits higher up to be easier to import for user
+# make things private by default (where applicable), maybe folders private? think about this 
 
-
+# write accompanying docs for yaml full model flow
 def hparam_optim(
     model_choice: Models,
     is_time_series: bool | None,
@@ -376,7 +380,7 @@ def hparam_optim(
     classification_prediction: tuple[int, ...] | None,
 ):
     """
-    Hyperparamter optimisation for your selected algorithim. Algorithim must
+    Hyperparameter optimisation for your selected algorithm. Algorithm must
     be part of the Models enum class.
 
     Parameters

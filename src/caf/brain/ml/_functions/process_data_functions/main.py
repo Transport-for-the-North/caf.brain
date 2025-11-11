@@ -10,16 +10,16 @@ import pathlib
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml.functions_and_classes.process_data_functions.encode_and_scale import (
+from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
     process_data_pipeline,
 )
-from caf.brain.ml.functions_and_classes.process_data_functions.input_data import (
+from caf.brain.ml._functions.process_data_functions.input_data import (
     InitialDataProcessing,
 )
-from caf.brain.ml.functions_and_classes.process_data_functions.split_data_into_ttv import (
+from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
     split_data,
 )
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml._inputs_and_baseclasses.ml_inputs import PredictionModelInputs
 
 LOG = logging.getLogger(__name__)
 

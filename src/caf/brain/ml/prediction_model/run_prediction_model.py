@@ -13,7 +13,7 @@ from caf.toolkit import LogHelper, ToolDetails
 
 # Local Imports
 from caf.brain.ml import Models, PredictionModelInputs
-from caf.brain.ml.main_models.prediction_model.prediction_model_main import main
+from caf.brain.ml.prediction_model.prediction_model_main import main
 
 
 def model_setup():
@@ -22,7 +22,7 @@ def model_setup():
     for the caf.brAIn prediction model config run.
     """
 
-    yaml_path = pathlib.Path("src/caf/brain/ml/main_models/prediction_model/empty_config.yaml")
+    yaml_path = pathlib.Path("src/caf/brain/ml/main_models/prediction_model/run_config.yaml")
     with open(yaml_path, "r", encoding="UTF-8") as file:
         config_data = yaml.safe_load(file)
 

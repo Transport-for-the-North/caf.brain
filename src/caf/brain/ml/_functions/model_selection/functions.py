@@ -17,7 +17,7 @@ from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import cross_val_score
 
 # Local Imports
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import Models
+from caf.brain.ml._inputs_and_baseclasses.ml_inputs import Models
 
 LOG = logging.getLogger(__name__)
 
@@ -25,8 +25,8 @@ LOG = logging.getLogger(__name__)
 def initialise_model(
     x_train: pd.DataFrame,
     x_test: pd.DataFrame,
-    y_train: pd.DataFrame,
-    y_test: pd.DataFrame,
+    y_train: pd.Series,
+    y_test: pd.Series,
     output_folder: Path,
     model_initialised,
     classification_prediction: tuple[int, ...] | None,
@@ -43,10 +43,10 @@ def initialise_model(
     x_test:  pd.DataFrame of x test values from SciKit-Learns
              train_test_split (simple_train_test_split can be used to
              generate this)
-    y_train: pd.DataFrame of y train values from SciKit-Learns
+    y_train: pd.Series of y train values from SciKit-Learns
              train_test_split (simple_train_test_split can be used to
              generate this)
-    y_test:  pd.DataFrame of y test values from SciKit-Learns
+    y_test:  pd.Series of y test values from SciKit-Learns
              train_test_split (simple_train_test_split can be used to
              generate this)
     output_folder: Path to output location.

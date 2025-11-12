@@ -5,22 +5,21 @@ Original author: Adil Zaheer
 
 # Built-Ins
 import logging
-import os
 from pathlib import Path
 
 # Third Party
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml._functions.feature_selection.functions import (
+from caf.brain.ml.functions.feature_selection.functions import (
     analyse_feature_importance,
     combine_results,
     rf_feature_selection,
 )
-from caf.brain.ml._functions.process_data_functions.main import (
+from caf.brain.ml.functions.process_data_functions.main import (
     main_input_data,
 )
-from caf.brain.ml._inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
 
 LOG = logging.getLogger(__name__)
 

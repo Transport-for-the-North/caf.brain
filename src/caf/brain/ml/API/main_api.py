@@ -11,25 +11,25 @@ import pandas as pd
 
 # Local Imports
 from caf.brain.ml import Models
-from caf.brain.ml._functions.feature_selection.functions import (
+from caf.brain.ml.functions.feature_selection.functions import (
     analyse_feature_importance,
 )
-from caf.brain.ml._functions.hparam_optimisation.functions import (
+from caf.brain.ml.functions.hparam_optimisation.functions import (
     select_param,
 )
-from caf.brain.ml._functions.model_selection.functions import select_model
-from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
+from caf.brain.ml.functions.model_selection.functions import select_model
+from caf.brain.ml.functions.process_data_functions.encode_and_scale import (
     process_data_pipeline,
 )
-from caf.brain.ml._functions.process_data_functions.input_data import (
+from caf.brain.ml.functions.process_data_functions.input_data import (
     InitialDataProcessing,
 )
-from caf.brain.ml._inputs_and_baseclasses.baseclasses import ValidateData
+from caf.brain.ml.inputs_and_baseclasses.baseclasses import ValidateData
 
 LOG = logging.getLogger(__name__)
 
 
-def _load_data(data: pd.DataFrame | None, data_path: Path | None) -> pd.DataFrame:
+def _load_data(data: Optional[pd.DataFrame], data_path: Path | None) -> pd.DataFrame:
     """
     Loads data into a pandas dataframe.
 
@@ -89,7 +89,7 @@ def tidy_data(
     column_name_to_drop_rows: Optional[list[str]],
     value_in_row: list[str | float | int] | None,
     data_path: Path | None,
-    data: pd.DataFrame | None = None,
+    data: Optional[pd.DataFrame] = None,
 ) -> pd.DataFrame:
     """
     Converts semi-structured data into structured inline with machine
@@ -199,7 +199,7 @@ def transform_data(
             "Please provide an output path to use the \
                          _transform_data"
         )
-    # TODO unpacking the variables returned from this is causing linting errors
+
     preprocessed_df, _, _ = process_data_pipeline(
         df=data,
         numerical_features=numerical_features,
@@ -364,12 +364,8 @@ def algorithm_evaluation(
     )
 
     return selected_model
-# TODO
-# link used functions in docs
-# imports of these functions in the inits higher up to be easier to import for user
-# make things private by default (where applicable), maybe folders private? think about this 
 
-# write accompanying docs for yaml full model flow
+
 def hparam_optim(
     model_choice: Models,
     is_time_series: bool | None,

@@ -6,7 +6,6 @@ Original author: Adil Zaheer
 # Built-Ins
 import warnings
 from abc import ABC, abstractmethod
-from typing import Union
 
 # Third Party
 import pandas as pd

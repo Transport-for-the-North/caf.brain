@@ -12,16 +12,18 @@ from pathlib import Path
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml._functions.data_analysis.main import main_evaluate_input_data
+from caf.brain.ml.functions.data_analysis.main import main_evaluate_input_data
 
-from caf.brain.ml._functions.feature_selection.main import main_feature_selection
-from caf.brain.ml._functions.hparam_optimisation.main import main_hyperparameter_optimisation
-from caf.brain.ml._functions.model_selection.functions import initialise_model
-from caf.brain.ml._functions.model_selection.main import main_model_selection
-from caf.brain.ml._functions.prediction.main import main_prediction
-from caf.brain.ml._functions.process_data_functions.main import main_input_data
-from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import simple_train_test_split
-from caf.brain.ml._inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml.functions.feature_selection.main import main_feature_selection
+from caf.brain.ml.functions.hparam_optimisation.main import main_hyperparameter_optimisation
+from caf.brain.ml.functions.model_selection.functions import initialise_model
+from caf.brain.ml.functions.model_selection.main import main_model_selection
+from caf.brain.ml.functions.prediction.main import main_prediction
+from caf.brain.ml.functions.process_data_functions.main import main_input_data
+from caf.brain.ml.functions.process_data_functions.split_data_into_ttv import (
+    simple_train_test_split,
+)
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
 
 LOG = logging.getLogger(__name__)
 

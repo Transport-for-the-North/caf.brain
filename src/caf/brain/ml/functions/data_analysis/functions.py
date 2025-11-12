@@ -34,10 +34,10 @@ from statsmodels.tools.sm_exceptions import MissingDataError
 
 # Local Imports
 # from sklearn.decomposition import PCA
-from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
+from caf.brain.ml.functions.process_data_functions.encode_and_scale import (
     preprocess_numerical_data,
 )
-from caf.brain.ml._inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
 
 LOG = logging.getLogger(__name__)
 
@@ -132,21 +132,6 @@ def pre_forecast_data_analysis(
             name in str(model_fit.__class__) for name in ["OLS", "GLM", "Logit", "MNLogit"]
         )
     )
-
-    # if is_statsmodel:
-    #     X_with_const = add_constant(x_test)
-    #     model_for_tests = model
-    # else:
-    #     # scikit models, convert to stats
-    #     X_with_const_train = add_constant(x_train)
-    #     if is_classification:
-    #         # classification
-    #         model_for_tests = sm.Logit(y_train, X_with_const_train).fit(disp=0)
-    #     else:
-    #         # regression
-    #         model_for_tests = sm.OLS(y_train, X_with_const_train).fit()
-    #     residuals = model_for_tests.resid
-    #     X_with_const = add_constant(x_test)
 
     # multicolinearity
     if train_scaled is not None and not train_scaled.empty:

@@ -13,14 +13,14 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 # Local Imports
-from caf.brain.ml._functions.process_data_functions.input_data import (
+from caf.brain.ml.functions.process_data_functions.input_data import (
     InitialDataProcessing,
 )
-from caf.brain.ml._inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
 
 
 def split_data(
-    processed_dataframes: dict,
+    processed_dataframes: dict | pd.DataFrame,
     paths: PredictionModelInputs.Paths,
     data_classification: PredictionModelInputs.DataClassificationInputs,
     transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,

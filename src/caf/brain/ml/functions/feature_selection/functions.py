@@ -49,7 +49,7 @@ def rf_feature_selection(
     data: Transformed input data split into training set.
     target_column: String column name of value to predict.
     cv: Cross validation method passed as a string. Any popular
-        SciKitlearn methods are suitable with KFold being default if
+        SciKitLearn methods are suitable with KFold being default if
         left as None.
     regression_method: Initialised model algorithm from Models enum class.
     weight_column: Optional string column value to be used as weight.
@@ -303,7 +303,7 @@ def get_cv_class(
     Initialised cross validation method.
 
     """
-    if is_time_series is True:
+    if is_time_series:
         return TimeSeriesSplit(n_splits=splits if splits else 5)
     if cv_method:
         if cv_method.lower() == "kfold":
@@ -536,7 +536,6 @@ def create_importance_plots(results_df: pd.DataFrame, output_path: Path) -> None
         data=results_plot,
         x="importance_mean_perm",
         y="feature",
-        # xerr=results_plot['importance_std_perm']
     )
     plt.title("Top 10 Features by Permutation Importance")
     plt.tight_layout()

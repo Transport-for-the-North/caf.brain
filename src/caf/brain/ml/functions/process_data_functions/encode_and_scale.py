@@ -27,7 +27,6 @@ def preprocess_numerical_data(
     numerical_pipeline_train=None,
     output_folder=None,
 ) -> Union[pd.DataFrame, tuple[pd.DataFrame, Pipeline]]:
-
     """
     Scales data via SciKitLearns standard scalar. Separates logic for train and
     test but ensures that the same transformations applied to train are applied
@@ -209,7 +208,9 @@ def preprocess_categorical_data(
     return categorical_df, drop_vals
 
 
-def sample_size_encode_(df: pd.DataFrame, categorical_features: List[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
+def sample_size_encode_(
+    df: pd.DataFrame, categorical_features: List[str]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Encodes variables based on sample size. The value that appears most often
     in each of the categorical variables is used as the reference and therefore
@@ -415,12 +416,10 @@ def process_data_pipeline(
 
     Returns
     -------
-    Scaled and encoded dataframe.
-    Drop_vals: Dataframe of columns removed during the encoding process.
-    Numerical_pipeline: stored transformation pipeline for continuous variables
+    final_df: Scaled and encoded dataframe.
+    drop_vals: Dataframe of columns removed during the encoding process.
+    pipeline_out: stored transformation pipeline for continuous variables
     """
-    preprocessed_df: Optional[pd.DataFrame] = None
-
     if target_column is not None and target_column in df.columns:
         x = df.drop(columns=[target_column])
         y = df[target_column]
@@ -428,8 +427,10 @@ def process_data_pipeline(
         x = df
         y = None
 
+    final_df = None
     weight_df = None
     drop_vals = None
+    pipeline_out = None
 
     if weight_column is not None and weight_column in df.columns:
         weight_df = df[weight_column]
@@ -438,15 +439,18 @@ def process_data_pipeline(
     # just numerical data
     if numerical_features is not None and categorical_features is None:
         if test_data:
-            numerical_df, _ = preprocess_numerical_data(
+            final_df, _ = preprocess_numerical_data(
                 df=x,
                 numerical_features=numerical_features,
                 is_test_data=True,
                 numerical_pipeline_train=numerical_pipeline,
                 output_folder=output_folder,
             )
+
+            if weight_df is not None:
+                final_df[weight_column] = weight_df
         else:
-            numerical_df, numerical_pipeline = preprocess_numerical_data(
+            final_df, pipeline_out = preprocess_numerical_data(
                 df=x,
                 numerical_features=numerical_features,
                 is_test_data=False,
@@ -454,18 +458,16 @@ def process_data_pipeline(
                 output_folder=output_folder,
             )
 
-        if y is not None:
-            numerical_df[target_column] = y
+            if y is not None:
+                final_df[target_column] = y
 
-        if weight_df is not None:
-            numerical_df[weight_column] = weight_df
-
-        return numerical_df, drop_vals, numerical_pipeline
+            if weight_df is not None:
+                final_df[weight_column] = weight_df
 
     # just categorical data
     if categorical_features is not None and numerical_features is None:
         if test_data:
-            test_final = encode_test_data(
+            final_df = encode_test_data(
                 test_df=x,
                 categorical_features=categorical_features,
                 train_encoded=train_encoded,
@@ -473,22 +475,22 @@ def process_data_pipeline(
                 weight_column=weight_column,
                 weight_df=weight_df,
             )
-            return test_final, None, None
 
-        categorical_df, drop_vals = preprocess_categorical_data(
-            df=x,
-            categorical_features=categorical_features,
-            sample_size_encode=sample_size_encode,
-            select_encode_values=select_encode_values,
-            encode_values_to_drop=encode_values_to_drop,
-        )
-        if y is not None:
-            categorical_df[target_column] = y
+            if weight_df is not None:
+                final_df[weight_column] = weight_df
+        else:
+            final_df, drop_vals = preprocess_categorical_data(
+                df=x,
+                categorical_features=categorical_features,
+                sample_size_encode=sample_size_encode,
+                select_encode_values=select_encode_values,
+                encode_values_to_drop=encode_values_to_drop,
+            )
+            if y is not None:
+                final_df[target_column] = y
 
-        if weight_df is not None:
-            categorical_df[weight_column] = weight_df
-
-        return categorical_df, drop_vals, None
+            if weight_df is not None:
+                final_df[weight_column] = weight_df
 
     # both categorical and numerical
     if numerical_features is not None and categorical_features is not None:
@@ -511,38 +513,34 @@ def process_data_pipeline(
                 weight_df=weight_df,
             )
 
-            preprocessed_df = pd.concat([numerical_df, test_final], axis=1)
+            final_df = pd.concat([numerical_df, test_final], axis=1)
 
             if weight_df is not None:
-                preprocessed_df[weight_column] = weight_df
+                final_df[weight_column] = weight_df
+        else:
+            numerical_df, pipeline_out = preprocess_numerical_data(
+                df=x,
+                numerical_features=numerical_features,
+                is_test_data=False,
+                numerical_pipeline_train=numerical_pipeline,
+                output_folder=output_folder,
+            )
 
-            return preprocessed_df, None, None
+            categorical_df, drop_vals = preprocess_categorical_data(
+                df=x_cat,
+                categorical_features=categorical_features,
+                sample_size_encode=sample_size_encode,
+                select_encode_values=select_encode_values,
+                encode_values_to_drop=encode_values_to_drop,
+            )
+            final_df = pd.concat([numerical_df, categorical_df], axis=1)
 
-        numerical_df, numerical_pipeline = preprocess_numerical_data(
-            df=x,
-            numerical_features=numerical_features,
-            is_test_data=False,
-            numerical_pipeline_train=numerical_pipeline,
-            output_folder=output_folder,
-        )
+            if y is not None:
+                final_df[target_column] = y
+                if not is_numeric_dtype(final_df[target_column]):
+                    raise ValueError(f"Target column '{target_column}' must be numeric")
 
-        categorical_df, drop_vals = preprocess_categorical_data(
-            df=x_cat,
-            categorical_features=categorical_features,
-            sample_size_encode=sample_size_encode,
-            select_encode_values=select_encode_values,
-            encode_values_to_drop=encode_values_to_drop,
-        )
-        preprocessed_df = pd.concat([numerical_df, categorical_df], axis=1)
+            if weight_df is not None:
+                final_df[weight_column] = weight_df
 
-    if y is not None:
-        assert preprocessed_df is not None
-        preprocessed_df[target_column] = y
-        if not is_numeric_dtype(preprocessed_df[target_column]):
-            raise ValueError(f"Target column '{target_column}' must be numeric")
-
-    if weight_df is not None:
-        assert preprocessed_df is not None
-        preprocessed_df[weight_column] = weight_df
-
-    return preprocessed_df, drop_vals, numerical_pipeline
+    return final_df, drop_vals, pipeline_out

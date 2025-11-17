@@ -74,7 +74,8 @@ def main(params: ObjectDetectionInputs, output_path: Path) -> None:
         main_output_folder.mkdir(parents=True, exist_ok=True)
 
         train, test, validation = main_ttv_creation(
-            user_images_folder_path=params.build_model_inputs.user_images_folder_path
+            user_images_folder_path=params.build_model_inputs.user_images_folder_path,
+            output_path=main_output_folder
         )
 
         generate_folders(dictionary=train, folder_name="train", output=main_output_folder)

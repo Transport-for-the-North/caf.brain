@@ -1,5 +1,5 @@
 """
-Module for model selection functions. Used to select and initialise a
+Module for model selection _functions. Used to select and initialise a
 SciKit-Learn algorithm.
 """
 
@@ -17,7 +17,7 @@ from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import cross_val_score
 
 # Local Imports
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import Models
+from caf.brain.ml._functions._ml_inputs import Models
 
 LOG = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ def select_model(
     weight_column: Optional string column value to be used as weight.
     models_to_test: List or one algorithm to use as the base of the model.
                     Available algorithms can be seen in
-                    ml_inputs.py or __info__.py.
+                    _ml_inputs.py or __info__.py.
     classification_prediction: List of integers that correspond to the
                                target column. The value(s) to predict
                                in a classification problem.

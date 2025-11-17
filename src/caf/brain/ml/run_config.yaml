@@ -1,0 +1,49 @@
+paths:
+    file_path: null
+    folder_path: null
+    output_path: null
+    validation_path: null
+
+data_classification:
+    target_column: null
+    custom_index:
+      - null
+    categorical_features:
+        - null
+    numerical_features:
+        - null
+    weight_column: null
+    is_time_series: False
+
+transforming_inputs:
+    column_name_to_drop_rows: null
+    value_in_row: null
+    classification_prediction: null
+    split_by_value: null
+    split_size: null
+    sample_size_encode: False
+    select_encode_values: False
+    encode_values_to_drop: null
+
+modelling:
+    model_choice:
+        - null
+    full_transformations: False
+    cv: null
+    skip_feature_selection: False
+    intensive_feature_selection: False
+
+# TODO fix tuple imbalance here: src/caf/brain/ml/_functions/data_analysis/main.py pre_forecast_data_analysis
+# check no data / nothing we cant share DONE
+# is it actually usable. not a hassle for us to run
+# .toml is set up (make sure pip install works)
+# github actions (work flows work)
+# make sure docs build
+# workflows (pypi, read the docs) (take from toolkit)
+# make sure requirements are sound
+# adding its conda forge (make new repo and request caf.brain gets added)
+
+# in brain init, move imports in there. so all the api things that are relevant DONE
+
+# argparse, set up parser. parser.addargument to set up command line so all you do is run ml and provide a path to the yaml DONE
+# maybe deault to a config existing in current working directioary or maybe their output folder?

@@ -79,7 +79,7 @@ class PredictionModelInputs(BaseConfig):
 
     class ModellingInputs(BaseConfig):
         """
-        Inputs that control the machine learning modelling pipeline and functions.
+        Inputs that control the machine learning modelling pipeline and _functions.
         """
 
         model_choice: Optional[List[Any]] = None

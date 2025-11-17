@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml.functions.prediction.functions import prediction
+from caf.brain.ml._functions.prediction.functions import prediction
 
 
 def main_prediction(

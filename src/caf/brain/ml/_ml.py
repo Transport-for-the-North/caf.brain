@@ -11,20 +11,20 @@ import pandas as pd
 
 # Local Imports
 from caf.brain.ml import Models
-from caf.brain.ml.functions.feature_selection.functions import (
+from caf.brain.ml._functions.feature_selection.functions import (
     analyse_feature_importance,
 )
-from caf.brain.ml.functions.hparam_optimisation.functions import (
+from caf.brain.ml._functions.hparam_optimisation.functions import (
     select_param,
 )
-from caf.brain.ml.functions.model_selection.functions import select_model
-from caf.brain.ml.functions.process_data_functions.encode_and_scale import (
+from caf.brain.ml._functions.model_selection.functions import select_model
+from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
     process_data_pipeline,
 )
-from caf.brain.ml.functions.process_data_functions.input_data import (
+from caf.brain.ml._functions.process_data_functions.input_data import (
     InitialDataProcessing,
 )
-from caf.brain.ml.inputs_and_baseclasses.baseclasses import ValidateData
+from caf.brain.ml._functions._baseclasses import ValidateData
 
 LOG = logging.getLogger(__name__)
 
@@ -321,7 +321,7 @@ def algorithm_evaluation(
     Parameters
     ----------
     model_choice: List or one algorithm to use as the base of the model.
-                  Available algorithms can be seen in ml_inputs.py or __info__.py.
+                  Available algorithms can be seen in _ml_inputs.py or __info__.py.
     data: Pandas Dataframe of your data. Structured or semi-structured
           tabular format.
     output_path: Path to output location.
@@ -383,7 +383,7 @@ def hparam_optim(
     ----------
     model_choice: List or one algorithm to use as the base of the model.
                 Available algorithms can be seen in
-                ml_inputs.py or __info__.py.
+                _ml_inputs.py or __info__.py.
     is_time_series: If true then data must be time series. Time series
                 based characteristics are taken into consideration
                 during function execution.
@@ -415,7 +415,7 @@ def hparam_optim(
     if len(model) > 1:
         LOG.warning(
             "More than one model selected. The first model will be \
-        optimised. To find the best performing model, call algorithim_evaluation or \
+        optimised. To find the best performing model, call algorithm_evaluation or \
                     main_model_selection"
         )
 

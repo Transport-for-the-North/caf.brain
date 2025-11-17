@@ -1,4 +1,3 @@
 """Simplify module imports"""
 
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import Models
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml._ml import validation, tidy_data, transform_data, feat_selection, algorithm_evaluation, hparam_optim

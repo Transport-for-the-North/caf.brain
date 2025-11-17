@@ -11,15 +11,15 @@ from pathlib import Path
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml.functions.feature_selection.functions import (
+from caf.brain.ml._functions.feature_selection.functions import (
     analyse_feature_importance,
     combine_results,
     rf_feature_selection,
 )
-from caf.brain.ml.functions.process_data_functions.main import (
+from caf.brain.ml._functions.process_data_functions.main import (
     main_input_data,
 )
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml._functions._ml_inputs import PredictionModelInputs
 
 LOG = logging.getLogger(__name__)
 
@@ -41,22 +41,22 @@ def main_feature_selection(
     ----------
     paths: Path inputs from the PredictionModelInputs class. These inputs
            define paths to external files. See
-           caf/brain/ml/main_models/prediction_model/ml_inputs.py
+           caf/brain/ml/main_models/prediction_model/_ml_inputs.py
            for available options.
     data_classification: Data classification inputs from the PredictionModelInputs
                          class. These inputs help define and outline the
                          structure of the input data. See
-                         caf/brain/ml/main_models/prediction_model/ml_inputs.py
+                         caf/brain/ml/main_models/prediction_model/_ml_inputs.py
                          for available options.
     transforming_inputs: Transforming inputs from the PredictionModelInputs
                          class. These inputs dictate how the data is transformed
                          for machine learning modelling. See
-                         caf/brain/ml/main_models/prediction_model/ml_inputs.py
+                         caf/brain/ml/main_models/prediction_model/_ml_inputs.py
                          for available options.
     modelling: Modelling inputs from the PredictionModelInputs
                class. These inputs control the machine learning modelling
-               pipeline and functions. See
-               caf/brain/ml/main_models/prediction_model/ml_inputs.py
+               pipeline and _functions. See
+               caf/brain/ml/main_models/prediction_model/_ml_inputs.py
                for available options.
     train: Transformed input data split into training set.
     test: Transformed input data split into training set.

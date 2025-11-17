@@ -24,8 +24,8 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 # Local Imports
-from caf.brain.ml.functions.feature_selection.functions import get_cv_class
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import (
+from caf.brain.ml._functions.feature_selection.functions import get_cv_class
+from caf.brain.ml._functions._ml_inputs import (
     ModelGrids,
     get_model_grid_from_type,
 )
@@ -53,7 +53,7 @@ def select_param(
     target_column: String column name of value to predict.
     model_instance: Initialised model algorithm from Models enum class.
     model_name: List or one algorithm to use as the base of the model.
-                Available algorithms can be seen in ml_inputs.py.
+                Available algorithms can be seen in _ml_inputs.py.
     classification_prediction: List of integers that correspond to the
                                target column. The value(s) to predict
                                in a classification problem.

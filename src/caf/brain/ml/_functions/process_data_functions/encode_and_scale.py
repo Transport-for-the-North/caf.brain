@@ -7,7 +7,7 @@ Original author: Adil Zaheer
 import logging
 import os
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional
 
 # Third Party
 import joblib
@@ -26,7 +26,7 @@ def preprocess_numerical_data(
     is_test_data: bool,
     numerical_pipeline_train=None,
     output_folder=None,
-) -> Union[pd.DataFrame, tuple[pd.DataFrame, Pipeline]]:
+) -> tuple[pd.DataFrame, Optional[Pipeline]]:
     """
     Scales data via SciKitLearns standard scalar. Separates logic for train and
     test but ensures that the same transformations applied to train are applied
@@ -112,7 +112,7 @@ def preprocess_numerical_data(
         numerical_data = numerical_pipeline.transform(df[numerical_features])
         numerical_df = pd.DataFrame(numerical_data, columns=numerical_features, index=df.index)
 
-        return numerical_df
+        return numerical_df, None
 
     LOG.info("Processing training data - fitting new transformations")
     if output_folder is None:

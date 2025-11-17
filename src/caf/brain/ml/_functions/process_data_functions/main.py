@@ -10,16 +10,16 @@ import pathlib
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml.functions.process_data_functions.encode_and_scale import (
+from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
     process_data_pipeline,
 )
-from caf.brain.ml.functions.process_data_functions.input_data import (
+from caf.brain.ml._functions.process_data_functions.input_data import (
     InitialDataProcessing,
 )
-from caf.brain.ml.functions.process_data_functions.split_data_into_ttv import (
+from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
     split_data,
 )
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml._functions._ml_inputs import PredictionModelInputs
 
 LOG = logging.getLogger(__name__)
 
@@ -37,17 +37,17 @@ def main_input_data(
     ----------
     paths: Path inputs from the PredictionModelInputs class. These inputs
            define paths to external files. See
-           caf/brain/ml/main_models/prediction_model/ml_inputs.py
+           caf/brain/ml/main_models/prediction_model/_ml_inputs.py
            for available options.
     data_classification: Data classification inputs from the PredictionModelInputs
                          class. These inputs help define and outline the
                          structure of the input data. See
-                         caf/brain/ml/main_models/prediction_model/ml_inputs.py
+                         caf/brain/ml/main_models/prediction_model/_ml_inputs.py
                          for available options.
     transforming_inputs: Transforming inputs from the PredictionModelInputs
                          class. These inputs dictate how the data is transformed
                          for machine learning modelling. See
-                         caf/brain/ml/main_models/prediction_model/ml_inputs.py
+                         caf/brain/ml/main_models/prediction_model/_ml_inputs.py
                          for available options.
     output_path: Path to output location.
 

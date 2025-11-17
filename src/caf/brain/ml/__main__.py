@@ -5,15 +5,28 @@ Original author: Adil Zaheer
 
 # Built-Ins
 import os
-import pathlib
+import argparse
+from pathlib import Path
 
 # Third Party
 import yaml
 from caf.toolkit import LogHelper, ToolDetails
 
 # Local Imports
-from caf.brain.ml import Models, PredictionModelInputs
-from caf.brain.ml.prediction_model.prediction_model_main import main
+from caf.brain.ml._functions._ml_inputs import Models, PredictionModelInputs
+from caf.brain.ml._functions.prediction_model_main import main
+
+
+def load_yaml(config_path: Path) -> dict:
+    if config_path is None:
+        config_path = Path.cwd() / "config.yaml"
+    if not config_path.exists():
+        raise FileNotFoundError(f"No config file found at {config_path}")
+
+    with open(config_path, "r", encoding="UTF-8") as file:
+        config_data = yaml.safe_load(file)
+
+    return config_data
 
 
 def model_setup():
@@ -21,10 +34,13 @@ def model_setup():
     Function to set up logging files, output folders and input data
     for the caf.brAIn prediction model config run.
     """
+    parser = argparse.ArgumentParser(description="Run caf.brAIn prediction model.")
+    parser.add_argument("--config", type=Path, default=None,
+                        help="Path to YAML config file that follows \
+                        INSERT PATH TO GUIDANCE DOC ") # todo
+    args = parser.parse_args()
 
-    yaml_path = pathlib.Path("src/caf/brain/ml/main_models/prediction_model/run_config.yaml")
-    with open(yaml_path, "r", encoding="UTF-8") as file:
-        config_data = yaml.safe_load(file)
+    config_data = load_yaml(args.config_path)
 
     params = PredictionModelInputs(**config_data)
 

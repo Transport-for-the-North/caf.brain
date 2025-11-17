@@ -1,12 +1,13 @@
 """
-This module contains functions to conduct data analysis prior to machine
-learning model. Data transformation functions are used if issues are present
+This module contains _functions to conduct data analysis prior to machine
+learning model. Data transformation _functions are used if issues are present
 and the user permits.
 """
 
 # Built-Ins
 import logging
 from pathlib import Path
+from typing import Optional
 
 # Third Party
 import numpy as np
@@ -25,6 +26,7 @@ from sklearn.linear_model import (
     Ridge,
 )
 from sklearn.multiclass import OneVsRestClassifier
+from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeClassifier
 from statsmodels.stats.diagnostic import het_breuschpagan, het_white
 from statsmodels.stats.outliers_influence import variance_inflation_factor
@@ -33,11 +35,10 @@ from statsmodels.tools import add_constant
 from statsmodels.tools.sm_exceptions import MissingDataError
 
 # Local Imports
-# from sklearn.decomposition import PCA
-from caf.brain.ml.functions.process_data_functions.encode_and_scale import (
+from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
     preprocess_numerical_data,
 )
-from caf.brain.ml.inputs_and_baseclasses.ml_inputs import PredictionModelInputs
+from caf.brain.ml._functions._ml_inputs import PredictionModelInputs
 
 LOG = logging.getLogger(__name__)
 
@@ -55,8 +56,8 @@ def pre_forecast_data_analysis(
     test_scaled: pd.DataFrame,
     train_unscaled: pd.DataFrame,
     test_unscaled: pd.DataFrame,
-    numerical_pipeline,
-):
+    numerical_pipeline: Optional[Pipeline],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Function to conduct basic data analysis and fix where and if
     applicable.
@@ -66,12 +67,12 @@ def pre_forecast_data_analysis(
     data_classification: Data classification inputs from the PredictionModelInputs
                          class. These inputs help define and outline the
                          structure of the input data. See
-                         caf/brain/ml/main_models/prediction_model/ml_inputs.py
+                         caf/brain/ml/main_models/prediction_model/_ml_inputs.py
                          for available options.
     modelling: Modelling inputs from the PredictionModelInputs
                class. These inputs control the machine learning modelling
-               pipeline and functions. See
-               caf/brain/ml/main_models/prediction_model/ml_inputs.py
+               pipeline and _functions. See
+               caf/brain/ml/main_models/prediction_model/_ml_inputs.py
                for available options.
     residuals: Truth values form the train_test_split against the predictions.
     model_fit: Fitted model on train_test_split test data.
@@ -203,11 +204,13 @@ def pre_forecast_data_analysis(
         except (ValueError, MissingDataError) as e:
             LOG.warning("Durbin-Watson test failed: %s", e)
 
+    train_out, test_out = train_scaled, test_scaled
     issues_df = pd.DataFrame(list(issues.items()), columns=["test", "result"])
+
     if any(issues.values()):
         LOG.warning("Data issue present: %s", issues_df)
-
         issues_df.to_csv(output_folder / "data_issues_present.csv", index=False)
+
         if (
             modelling.full_transformations
             and data_classification.numerical_features
@@ -216,29 +219,29 @@ def pre_forecast_data_analysis(
         ):
 
             LOG.info("Transformations applied to numerical data to fix the issues")
-            train_final = transform_data(
+            train_out = transform_data(
                 df=train_unscaled,
                 is_test_data=False,
                 numerical_pipeline=numerical_pipeline,
                 output_folder=output_folder,
                 data_classification=data_classification,
             )
-            test_final = transform_data(
+            test_out = transform_data(
                 df=test_unscaled,
                 is_test_data=True,
                 numerical_pipeline=numerical_pipeline,
                 output_folder=output_folder,
                 data_classification=data_classification,
             )
-            return train_final, test_final
+        else:
+            LOG.warning(
+                "Data issue present but no numerical features are present or full transformations have \
+                 not been permitted so transformations can't occur"
+            )
+    else:
+        LOG.info("No data issues present.")
 
-        LOG.warning(
-            "Data issue present but no numerical features are present or full transformations have \
-             not been permitted so transformations can't occur"
-        )
-        return train_scaled, test_scaled
-    LOG.info("No data issues present.")
-    return train_scaled, test_scaled
+    return train_out, test_out
 
 
 def transform_data(
@@ -247,7 +250,7 @@ def transform_data(
     numerical_pipeline,
     output_folder: Path,
     data_classification,
-):
+) -> pd.DataFrame:
     """
     Function to apply data transformations.
 
@@ -262,7 +265,7 @@ def transform_data(
     data_classification: Data classification inputs from the PredictionModelInputs
                          class. These inputs help define and outline the
                          structure of the input data. See
-                         caf/brain/ml/main_models/prediction_model/ml_inputs.py
+                         caf/brain/ml/main_models/prediction_model/_ml_inputs.py
                          for available options.
     Returns
     -------
@@ -286,39 +289,19 @@ def transform_data(
 
     # log
     numerical_transformed = np.log1p(numerical_data)
-    # numerical_transformed = numerical_data.apply(lambda x: np.log1p(x))  # log1p = log(1+x)
-    # numerical_transformed = numerical_data.apply(lambda x: np.log(x + 1))
 
     # force fixing any issues post log transformations
     numerical_transformed = numerical_transformed.replace([np.inf, -np.inf], np.nan)
     numerical_transformed = numerical_transformed.fillna(numerical_transformed.mean())
 
     # scale
-    if is_test_data:
-        numerical_scaled = preprocess_numerical_data(
-            df=numerical_transformed,
-            numerical_features=data_classification.numerical_features,
-            is_test_data=is_test_data,
-            numerical_pipeline_train=numerical_pipeline,
-            output_folder=output_folder,
-        )
-    else:
-        numerical_scaled, _ = preprocess_numerical_data(
-            df=numerical_transformed,
-            numerical_features=data_classification.numerical_features,
-            is_test_data=is_test_data,
-            numerical_pipeline_train=numerical_pipeline,
-            output_folder=output_folder,
-        )
-
-    # pca
-    # pca = PCA()
-    # numerical_pca = pd.DataFrame(
-    #     pca.fit_transform(numerical_scaled),
-    #     columns=numerical_features,
-    #     index=original_index)
-    #
-    # transformed_data.append(numerical_pca)
+    numerical_scaled, _ = preprocess_numerical_data(
+        df=numerical_transformed,
+        numerical_features=data_classification.numerical_features,
+        is_test_data=is_test_data,
+        numerical_pipeline_train=numerical_pipeline,
+        output_folder=output_folder,
+    )
 
     transformed_data.append(numerical_scaled)
 

@@ -1,5 +1,5 @@
 """
-Input data functions used to tidy semi-structured / structured numeric data.
+Input data _functions used to tidy semi-structured / structured numeric data.
 """
 
 # Built-Ins
@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 # Local Imports
-from caf.brain.ml.inputs_and_baseclasses.baseclasses import ValidateData
+from caf.brain.ml._functions._baseclasses import ValidateData
 
 LOG = logging.getLogger(__name__)
 

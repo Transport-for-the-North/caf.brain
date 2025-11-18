@@ -6,10 +6,14 @@ keras>=2.10.0
 rasterio>=1.4.3
 Pillow>=11.1.0
 caf.toolkit>=0.9.0
-numpy>=1.23.3
+numpy>=1.26.4
 pandas>=2.2.3
 tqdm>=4.66.2
 pyproj>=3.6.1,<3.7
 numpy>=1.23.3
 scipy>=1.15.1
 PyYAML>=6.0.2
+optuna==4.1.0
+torch==2.3.1+cu118 # TODO potential upgrade required for this and below if CUDA driver upgraded
+torchvision==0.18.1+cu118
+ultralytics==8.3.228

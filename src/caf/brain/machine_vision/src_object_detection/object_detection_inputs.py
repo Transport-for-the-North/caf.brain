@@ -35,7 +35,7 @@ class ObjectDetectionInputs(BaseConfig):
         build_model: Optional[bool] = False
         user_images_folder_path: Optional[Path] = None
         classification_names: Optional[list[str]] = None
-        hyperparameter_optimisation: Optional[bool] = False
+        hyperparameter_optimisation: Optional[str] = None
 
     class PredictionInputs(BaseConfig):
         """

@@ -5,8 +5,8 @@ Original author: Adil Zaheer
 
 import time
 import logging
-import shutil
 import os
+import shutil
 from pathlib import Path
 import pandas as pd
 from ultralytics import YOLO
@@ -50,10 +50,10 @@ def _baseline_model(output: Path, config_path: Path) -> YOLO:
         print(f"Loading existing model from {best_weights}")
         model = YOLO(best_weights)
     else:
-        model = YOLO("../yolo11n.pt")
+        model = YOLO("../yolo11m.pt")
         model.train(
             data=config_path,
-            epochs=50,
+            epochs=150,
             imgsz=640,
             batch=16,
             patience=10,
@@ -103,6 +103,10 @@ def _final_model(output: Path, config_path: Path) -> None:
     None
     """
     LOG.info("Final model running")
+
+    model_dir = os.path.join(output, "final_model_results")
+    os.makedirs(model_dir, exist_ok=True)
+
     start_time = time.time()
 
     device = 0 if torch.cuda.is_available() else "cpu"
@@ -140,7 +144,7 @@ def _final_model(output: Path, config_path: Path) -> None:
     ]:
         learning_params.pop(param, None)
 
-    final = YOLO("../yolo11n.pt")
+    final = YOLO("../yolo11m.pt")
     _ = final.train(
         data=config_path,
         epochs=150,
@@ -148,17 +152,14 @@ def _final_model(output: Path, config_path: Path) -> None:
         imgsz=640,
         batch=16,
         workers=8,
-        project=output,
+        project=model_dir,
         name="final_model",
         exist_ok=True,
         device=device,
         **learning_params,
     )
 
-    best_weights = os.path.join(output, "final_model", "weights", "best.pt")
-    final_model_path = os.path.join(output, "best.pt")
-    shutil.copy(best_weights, final_model_path)
-    print(f"Final model saved to {final_model_path}")
+    best_weights = os.path.join(model_dir, "final", "weights", "best.pt")
 
     metrics = YOLO(best_weights).val(data=config_path, device=device)
 
@@ -170,10 +171,45 @@ def _final_model(output: Path, config_path: Path) -> None:
         "recall": metrics.box.mr,
     }
 
-    pd.DataFrame([final_training_results]).to_csv(
-        os.path.join(output, "final_training_results.csv"), index=False
-    )
+    results_path = os.path.join(model_dir, "final_model_results.csv")
+    if not os.path.exists(results_path):
+        df = pd.DataFrame([final_training_results])
+        df.to_csv(results_path, index=False)
 
     end_time = time.time()
     LOG.info("Total final model run time: %.2f seconds", end_time - start_time)
     LOG.info("Final model finished")
+
+
+def _model_comparison(output: Path) -> None:
+    """
+    Runs a comparison between the baseline and final models to determine
+    which should be used for prediction.
+
+    Parameters
+    ----------
+    output: Directory where model results from baseline and fine are stored.
+
+    Returns
+    -------
+    None
+    """
+    baseline_csv = Path(output) / "baseline_model_results" / "base_model_results.csv"
+    final_csv = Path(output) / "final_model_results" / "final_model_results.csv"
+
+    baseline = pd.read_csv(baseline_csv).iloc[0]
+    final = pd.read_csv(final_csv).iloc[0]
+
+    if final["map50_95"] >= baseline["map50_95"]:
+        LOG.info("Final model outperforms baseline")
+        best_model_path = Path(final["model_path"])
+        best_metrics = final
+    else:
+        LOG.info("Baseline model outperforms final")
+        best_model_path = Path(baseline["model_path"])
+        best_metrics = baseline
+
+    optimal_dir = Path(output) / "optimal_model"
+    optimal_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy(best_model_path, optimal_dir / "best.pt")
+    pd.DataFrame([best_metrics]).to_csv(optimal_dir / "optimal_model_results.csv", index=False)

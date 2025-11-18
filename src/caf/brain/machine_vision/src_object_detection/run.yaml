@@ -1,0 +1,26 @@
+output_path: "C:\\caf.brAIn\\Object Detection\\output_v2_more_epochs"
+user_locations_csv_path: null
+
+build_model_inputs:
+  build_model: true
+  user_images_folder_path: "C:\\caf.brAIn\\Object Detection\\training_images\\Object detection FINISHED"
+  classification_names:
+    - PMM
+    - PM
+    - RS
+    - RP
+    - M
+    - P
+    - X
+    - S
+  hyperparameter_optimisation: "moderate"
+
+image_generation_inputs:
+  generate_images: false
+  image_folder_path: null
+  x_coordinate: null
+  y_coordinate: null
+
+prediction_inputs:
+  prediction_object_detection: false
+  trained_model: null

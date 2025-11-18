@@ -14,7 +14,7 @@ from ultralytics import YOLO
 
 from caf.brain.machine_vision.src_object_detection.model_building.build_model_functions import (
     _baseline_model,
-    _final_model,
+    _final_model, _model_comparison,
 )
 from caf.brain.machine_vision.src_object_detection.model_building.hyper_optim_functions import (
     _moderate_optimisation,
@@ -74,7 +74,7 @@ def main_hyperparameter_optimisation(
         hyperparameter_dict = basemodel.tune(
             config,
             project=hyperparameter_dir,
-            epochs=30,
+            epochs=150,
             iterations=300,
             imgsz=640,
             workers=8,
@@ -141,3 +141,5 @@ def main_model_build(output: Path, hyperparameter_optimisation: str | None = "ba
     )
 
     _final_model(output=model_dir, config_path=config_path)
+
+    _model_comparison(output=model_dir)

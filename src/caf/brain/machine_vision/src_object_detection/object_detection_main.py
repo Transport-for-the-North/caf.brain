@@ -5,6 +5,7 @@ Original author: Adil Zaheer
 
 import logging
 from pathlib import Path
+import time
 from caf.brain.machine_vision.src_object_detection.model_building.build_model_data_functions import (
     main_ttv_creation,
     generate_folders,
@@ -70,6 +71,8 @@ def main(params: ObjectDetectionInputs, output_path: Path) -> None:
         return
 
     if params.build_model_inputs.build_model:
+        LOG.info("Running model build")
+        start_time = time.time()
         main_output_folder = Path(output_path) / "ModelBuildingOutputs"
         main_output_folder.mkdir(parents=True, exist_ok=True)
 
@@ -102,6 +105,10 @@ def main(params: ObjectDetectionInputs, output_path: Path) -> None:
                 output=main_output_folder,
                 hyperparameter_optimisation=params.build_model_inputs.hyperparameter_optimisation,
             )
+
+        end_time = time.time()
+        LOG.info("Total run time: %.2f seconds", end_time - start_time)
+        LOG.info("Finished model build")
 
         return
 

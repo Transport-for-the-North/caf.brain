@@ -21,7 +21,7 @@ def model_setup():
     -------
     None
     """
-    with open("run_config.yaml", "r", encoding="utf-8") as file:
+    with open("run.yaml", "r", encoding="utf-8") as file:
         config_data = yaml.safe_load(file)
 
     params = ObjectDetectionInputs(**config_data)

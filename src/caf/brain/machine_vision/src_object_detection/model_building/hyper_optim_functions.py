@@ -4,7 +4,6 @@ Original author: Adil Zaheer
 """
 
 from pathlib import Path
-import time
 import os
 import yaml
 import optuna
@@ -76,43 +75,11 @@ def _moderate_optimisation(config: str | Path, output_dir: str | Path, model: YO
             callbacks=[_track_progress],
             show_progress_bar=True,
         )
-
-    best_weights = os.path.join(output_dir, "train", "weights", "best.pt")
-    best_weight_pt = torch.load(best_weights)
-    hypparams = best_weight_pt["train_args"]
-    with open(best_hyp_path, "w") as f:
-        yaml.dump(hypparams, f)
-
-    if os.path.exists(best_weights):
-        try:
-            metrics = YOLO(best_weights).val(data=config, device=device)
-            performance_metrics = {
-                "mAP50": metrics.box.map50,
-                "mAP50-95": metrics.box.map,
-                "precision": metrics.box.mp,
-                "recall": metrics.box.mr,
-            }
-            LOG.info("Successfully extracted metrics: %s", performance_metrics)
-        except (RuntimeError, OSError, ValueError) as e:
-            LOG.error(f"Error extracting metrics: {e}")
-            performance_metrics = {
-                "mAP50": study.best_value,
-                "mAP50-95": None,
-                "precision": None,
-                "recall": None,
-            }
-    else:
-        LOG.warning("Best weights not found at %s", best_weights)
-        performance_metrics = {
-            "mAP50": study.best_value,
-            "mAP50-95": None,
-            "precision": None,
-            "recall": None,
-        }
+        with open(best_hyp_path, "w") as f:
+            yaml.dump(study.best_params, f)
 
     optimisation_results = {
         "best_hyperparameters": study.best_params,
-        "performance_metrics": performance_metrics,
         "trial_details": {
             "trial_id": study.best_trial.number,
             "last_result": study.best_trial.value,
@@ -150,22 +117,31 @@ def _optuna_objective_func(
     The mAP50-95 score for the trained model.
     """
 
-    reduced_search_space = {
-        "lr0": trial.suggest_float("lr0", 0.005, 0.02),
-        "lrf": trial.suggest_float("lrf", 0.1, 0.3),
-        "momentum": trial.suggest_float("momentum", 0.8, 0.95),
-        "weight_decay": trial.suggest_float("weight_decay", 1e-5, 1e-4, log=True),
-        "warmup_epochs": trial.suggest_int("warmup_epochs", 1, 3),
-        "mosaic": trial.suggest_float("mosaic", 0.5, 1.0),
-        "scale": trial.suggest_float("scale", 0.3, 0.7),
-    }
+    # reduced_search_space = {
+    #     "lr0": trial.suggest_float("lr0", 0.005, 0.02),
+    #     "lrf": trial.suggest_float("lrf", 0.1, 0.3),
+    #     "momentum": trial.suggest_float("momentum", 0.8, 0.95),
+    #     "weight_decay": trial.suggest_float("weight_decay", 1e-5, 1e-4, log=True),
+    #     "warmup_epochs": trial.suggest_int("warmup_epochs", 1, 3),
+    #     "mosaic": trial.suggest_float("mosaic", 0.5, 1.0),
+    #     "scale": trial.suggest_float("scale", 0.3, 0.7),
+    # }
 
+    reduced_search_space = {
+        "lr0": trial.suggest_float("lr0", 0.008, 0.012),
+        "lrf": trial.suggest_float("lrf", 0.15, 0.25),
+        "momentum": trial.suggest_float("momentum", 0.88, 0.93),
+        "weight_decay": trial.suggest_float("weight_decay", 1e-5, 5e-5, log=True),
+        "mosaic": trial.suggest_float("mosaic", 0.7, 0.9),
+        "scale": trial.suggest_float("scale", 0.4, 0.6),
+
+    }
     optimiser = trial.suggest_categorical("optimizer", ["SGD", "Adam", "AdamW"])
 
     try:
         _ = model.train(
             data=config,
-            epochs=30,
+            epochs=150,
             imgsz=640,
             batch=16,
             patience=7,

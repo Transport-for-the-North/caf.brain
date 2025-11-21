@@ -7,6 +7,8 @@ Original author: Adil Zaheer
 import logging
 import os
 from pathlib import Path
+import time
+from typing import Union
 
 # Third Party
 import numpy as np
@@ -321,8 +323,8 @@ def get_cv_class(
         if cv_method.lower() == "timeseriessplit":
             return TimeSeriesSplit(n_splits=splits if splits else 5)
     else:
-        LOG.error("Invalid cross-validation method: %s", cv_method)
-        raise ValueError(f"Invalid cross-validation method: {cv_method}")
+        LOG.warning("Invalid cross-validation method: %s", cv_method)
+        LOG.warning("Using default cross validation method: kfold")
 
     return KFold(n_splits=5, shuffle=True)
 
@@ -346,7 +348,11 @@ def analyse_feature_importance(
 
     Returns
     -------
-    filtered_data: Training data post feature selection.
+    pd.DataFrame
+        - If important features are found: the training data filtered to include
+          only selected features plus the target/weight columns.
+        - If no features meet importance thresholds: the original training data
+          is returned unchanged.
     """
     if not output_path:
         raise ValueError("Please provide an output path")
@@ -362,11 +368,89 @@ def analyse_feature_importance(
     )
     y = train_transformed[target_column]
 
-    is_classification = len(np.unique(train_transformed[target_column])) <= 2
+    is_classification = y.dtype == "object" or y.dtype.name == "category" or y.nunique() <= 20
     if is_classification:
-        rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
-    else:
         rf = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
+    else:
+        rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
+
+    n_rows, n_cols = x.shape
+    if n_rows > 500000:
+        LOG.warning(
+            "Data is very large and may cause memory issues. To fix \n"
+                     "this, a random sample has been taken. If your data is \n"
+                     "time series then this random sample may destroy time \n"
+                     "observed trends. It is therefore recommended to \n"
+                     "evaluate your data and rerun this function or use \n"
+                     "main_feature_selection / full model flow."
+        )
+        sample = train_transformed.sample(n=500000, random_state=42)
+        x_sample = sample.drop(
+            columns=[target_column] + ([weight_column] if weight_column else [])
+        )
+        y_sample = sample[target_column]
+
+        results_df = _analyse_feat_importance_helper(x_sample, y_sample, rf, -1, 3)
+    else:
+        # 10, -1
+        results_df = _analyse_feat_importance_helper(x, y, rf, -1, 10)
+
+    importance_metrics, filtered_data = filtering_results(
+        results_df=results_df,
+        target_column=target_column,
+        weight_column=weight_column,
+        original_data=train_transformed,
+    )
+
+    if importance_metrics.empty:
+        LOG.warning(
+            "All feature importance metrics are zero or near-zero. "
+            "This likely indicates insufficient data or data quality issues. "
+            "Returning original dataset without feature selection."
+        )
+        return train_transformed
+
+    if output_path:
+        create_importance_plots(results_df=importance_metrics, output_path=output_path)
+        results_df.to_csv(
+            os.path.join(output_path, "feature_importances.csv"), float_format="%.10f"
+        )
+
+    return filtered_data
+
+
+def _analyse_feat_importance_helper(
+    x: pd.DataFrame,
+    y: pd.Series,
+    rf: Union[RandomForestClassifier, RandomForestRegressor],
+    n_jobs: int,
+    n_repeats: int
+) -> pd.DataFrame:
+    """
+    This helper function trains the provided RandomForest model on the given
+    feature matrix and target vector, then calculates:
+      - Random Forest feature importances
+      - Permutation importances (mean and standard deviation)
+      - Correlation of each feature with the target
+
+    Parameters
+    ----------
+    x: Feature matrix used for training and importance calculation.
+    y: Target vector corresponding to `x`.
+    rf: A scikit-learn RandomForest model instance to fit and evaluate.
+    n_jobs: Number of parallel jobs to use for permutation importance.
+            (Use -1 to run on all available cores).
+    n_repeats: Number of random shuffles to perform for permutation importance.
+
+    Returns
+    -------
+    DataFrame indexed by feature name containing:
+        - importance_rf : RandomForest feature importance scores
+        - importance_mean_perm : Mean permutation importance
+        - importance_std_perm : Standard deviation of permutation importance
+        - correlation : Absolute correlation with the target
+    """
+    start_time = time.time()
 
     rf.fit(x, y)
     results = {}
@@ -379,8 +463,9 @@ def analyse_feature_importance(
 
     # Permutation importance
     perm_importance = permutation_importance(
-        rf, x, y, n_repeats=10, random_state=42, n_jobs=-1
+        rf, x, y, n_repeats=n_repeats, random_state=42, n_jobs=n_jobs
     )
+
     perm_importance_df = pd.DataFrame(
         {
             "feature": x.columns,
@@ -407,36 +492,17 @@ def analyse_feature_importance(
         axis=1,
     )
 
-    importance_metrics, filtered_data = filtering_results(
-        results_df=results_df,
-        target_column=target_column,
-        weight_column=weight_column,
-        original_data=train_transformed,
-    )
-
-    if importance_metrics.empty:
-        LOG.warning(
-            "All feature importance metrics are zero or near-zero. "
-            "This likely indicates insufficient data or data quality issues. "
-            "Returning original dataset without feature selection."
-        )
-        return train_transformed
-
-    if output_path:
-        create_importance_plots(results_df=importance_metrics, output_path=output_path)
-        results_df.to_csv(
-            os.path.join(output_path, "feature_importances.csv"), float_format="%.10f"
-        )
-
-    return filtered_data
+    end_time = time.time()
+    print("elapsed time:", end_time - start_time)
+    return results_df
 
 
 def filtering_results(
     results_df: pd.DataFrame,
     target_column: str,
-    weight_column: pd.DataFrame,
+    weight_column: str | None,
     original_data: pd.DataFrame,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Helper function for analyse_feature_importance. Results are analysed and
     applied to input data.
@@ -474,7 +540,7 @@ def combine_results(
     target_column: str | None,
     weight_column: str | None,
     test: pd.DataFrame,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Function to apply feature selection results to training data.
 

@@ -6,12 +6,14 @@ SciKit-Learn algorithm.
 # Built-Ins
 import logging
 from pathlib import Path
+from typing import Optional
 
 # Third Party
 import joblib
 import numpy as np
 import pandas as pd
 from scipy import stats
+from sklearn.base import BaseEstimator
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.model_selection import cross_val_score
@@ -28,10 +30,10 @@ def initialise_model(
     y_train: pd.Series,
     y_test: pd.Series,
     output_folder: Path,
-    model_initialised,
+    model_initialised: BaseEstimator,
     classification_prediction: tuple[int, ...] | None,
     x_train_weight: pd.DataFrame = None,
-):
+) -> tuple[BaseEstimator, pd.Series, float | None]:
     """
     Fit the initialised model and evaluate its initial performance.
 
@@ -104,7 +106,7 @@ def select_model(
     weight_column: str | None,
     models_to_test: list[Models],
     classification_prediction: tuple[int, ...] | None,
-):
+) -> BaseEstimator:
     """
     Quickly assess and select the best model from a list of candidates.
 
@@ -140,6 +142,22 @@ def select_model(
     acc = {}
     best_score = float("-inf")
     best_model = None
+
+    n_rows, n_cols = x.shape
+    if n_rows > 500000:
+        LOG.warning(
+            "Data is very large and may cause memory issues. To fix \n"
+            "this, a random sample has been taken. If your data is \n"
+            "time series then this random sample may destroy time \n"
+            "observed trends. It is therefore recommended to \n"
+            "evaluate your data and rerun this function or use \n"
+            "main_model_selection / full model flow."
+        )
+        sample = train.sample(n=500000, random_state=42)
+        x = sample.drop(
+            columns=[target_column] + ([weight_column] if weight_column else [])
+        )
+        y = sample[target_column]
 
     for model_enum in models_to_test:
         # scikit
@@ -287,13 +305,13 @@ def score_classification(
 
 def calculate_model_coeff(
     model,
-    x_train: pd.Series,
-    x_test: pd.Series,
+    x_train: pd.DataFrame,
+    x_test: pd.DataFrame,
     y_test: pd.Series,
     residuals: pd.Series,
     classification_prediction: tuple[int, ...] | None,
     y_pred: pd.Series,
-):
+) -> tuple[Optional[pd.DataFrame], Optional[float]]:
     """
     Calculate linear model coefficients and statistics.
 
@@ -389,7 +407,7 @@ def calculate_final_coefficients(
     is_classification: tuple[int, ...] | None,
     drop_vals: pd.DataFrame,
     cols_dropped_by_feat_select: pd.DataFrame,
-):
+) -> pd.DataFrame:
     """
     Calculate final model coefficients and statistics.
 

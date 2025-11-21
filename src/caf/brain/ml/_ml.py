@@ -8,9 +8,10 @@ from typing import Optional
 
 # Third Party
 import pandas as pd
+from sklearn.base import BaseEstimator
 
 # Local Imports
-from caf.brain.ml import Models
+from caf.brain.ml._functions._ml_inputs import Models
 from caf.brain.ml._functions.feature_selection.functions import (
     analyse_feature_importance,
 )
@@ -50,7 +51,7 @@ def _load_data(data: Optional[pd.DataFrame], data_path: Path | None) -> pd.DataF
     raise ValueError("No data or data_path provided")
 
 
-def validation(data: pd.DataFrame, custom_index: list[str], target: str) -> bool:
+def validation(data: pd.DataFrame, custom_index: list[str] | None, target: str) -> bool:
     """
     Validates data against baseclasses to ensure data is suitable for
     further processing.
@@ -80,15 +81,16 @@ def validation(data: pd.DataFrame, custom_index: list[str], target: str) -> bool
 
 
 def tidy_data(
+    data_path: Path | None,
     classification_prediction: tuple[int, ...] | None,
-    output_path: Path,
+    output_path: Path | str,
     categorical_features: list[str],
     numerical_features: list[str],
-    custom_index: list[str],
     target: str,
-    column_name_to_drop_rows: Optional[list[str]],
-    value_in_row: list[str | float | int] | None,
-    data_path: Path | None,
+    custom_index: list[str] | None = None,
+    weight: str | None = None,
+    column_name_to_drop_rows: Optional[list[str]] = None,
+    value_in_row: list[str | float | int] | None = None,
     data: Optional[pd.DataFrame] = None,
 ) -> pd.DataFrame:
     """
@@ -97,6 +99,7 @@ def tidy_data(
 
     Parameters
     ----------
+    data_path: Path to your structured or semi-structured tabular data.
     classification_prediction: List of integers that correspond to the
                                target column. The value(s) to predict
                                in a classification problem.
@@ -109,18 +112,20 @@ def tidy_data(
                   geography.
     target: Column in your data that is the target variable (Y, dependent
             variable), what you want to predict.
+    weight: Optional string column value to be used as weight.
     column_name_to_drop_rows: List of string column names that
                               contain values to drop.
     value_in_row: Corresponding values for column_name_to_drop_rows.
     data: Pandas Dataframe of your data. Structured or semi-structured
           tabular format.
-    data_path: Path to your structured or semi-structured tabular data.
 
     Returns
     -------
     Structured dataframe.
 
     """
+    output_path = Path(output_path)
+
     dataframe = _load_data(data=data, data_path=data_path)
     processor = InitialDataProcessing(
         file_path=None,
@@ -130,7 +135,7 @@ def tidy_data(
         custom_index=custom_index,
         column_name_to_drop_rows=column_name_to_drop_rows,
         value_in_row=value_in_row,
-        weight_column=None,
+        weight_column=weight,
         categorical_features=categorical_features,
         numerical_features=numerical_features,
         classification_prediction=classification_prediction,
@@ -146,11 +151,12 @@ def tidy_data(
 
 def transform_data(
     data: pd.DataFrame,
-    output_path: Path,
+    output_path: Path | str,
     categorical_features: list[str] | None,
     numerical_features: list[str] | None,
     target: str,
-    custom_index: list[str],
+    custom_index: list[str] | None = None,
+    weight: str | None = None,
     sample_size_encode: bool | None = None,
     select_encode_values: bool | None = None,
     encode_values_to_drop: list[str] | None = None,
@@ -171,6 +177,7 @@ def transform_data(
             variable), what you want to predict.
     custom_index: Columns in your data that are to be indexed e.g. year,
                   geography.
+    weight: Optional string column value to be used as weight.
     sample_size_encode: Optional bool. If true, the data will be split
                     based on sample size. Variables with the largest
                     sample size will be used as reference class.
@@ -188,16 +195,17 @@ def transform_data(
     Pandas dataframe of input data encoded and scaled.
 
     """
+    output_path = Path(output_path)
+
     if not validation(data=data, custom_index=custom_index, target=target):
         raise ValueError(
-            "Data not suitable for encoding and scaling. Please run \
-                          full model flow or tidy_data method prior to \
-                          data analysis."
+            "Data not suitable for encoding and scaling. Please run \n"
+                          "full model flow or tidy_data method prior to \n"
+                          "data analysis."
         )
     if not output_path:
         raise ValueError(
-            "Please provide an output path to use the \
-                         _transform_data"
+            "Please provide an output path to use the _transform_data"
         )
 
     preprocessed_df, _, _ = process_data_pipeline(
@@ -205,7 +213,7 @@ def transform_data(
         numerical_features=numerical_features,
         categorical_features=categorical_features,
         target_column=target,
-        weight_column=None,
+        weight_column=weight,
         sample_size_encode=sample_size_encode,
         select_encode_values=select_encode_values,
         encode_values_to_drop=encode_values_to_drop,
@@ -222,13 +230,13 @@ def transform_data(
 
 def feat_selection(
     data: pd.DataFrame,
-    output_path: Path,
+    output_path: Path | str,
+    categorical_features: list[str] | None,
+    numerical_features: list[str] | None,
     target: str,
-    weight: str | None,
-    custom_index: list[str],
+    custom_index: list[str] | None = None,
     is_encoded: bool = True,
-    categorical_features: list[str] | None = None,
-    numerical_features: list[str] | None = None,
+    weight: str | None = None,
     sample_size_encode: bool | None = None,
     select_encode_values: bool | None = None,
     encode_values_to_drop: list[str] | None = None,
@@ -248,7 +256,7 @@ def feat_selection(
     custom_index: Columns in your data that are to be indexed e.g. year,
                   geography.
     categorical_features: List of column names (strings) that are
-                              categorical variables.
+                          categorical variables.
     numerical_features: List of column names (strings) that are
                         continuous variables.
     sample_size_encode: Optional bool. If true, the data will be split
@@ -269,16 +277,18 @@ def feat_selection(
     test_final: feature selected test dataset.
     cols_dropped_by_feat_select: data removed due to feature selection.
     """
+    output_path = Path(output_path)
+
     if not validation(data=data, target=target, custom_index=custom_index):
         raise ValueError(
-            "Data not suitable for data analysis. Please run \
-                          full model flow or tidy_data method prior to \
-                          data analysis."
+            "Data not suitable for data analysis. Please run \n"
+                          "full model flow or tidy_data method prior to \n"
+                          "data analysis."
         )
 
     LOG.warning(
-        "Data should already been encoded and scaled where applicable \
-                 If this is not the case set is_encoded to false"
+        "Data should already been encoded and scaled where applicable \n"
+                 "If this is not the case set is_encoded to false"
     )
 
     if not is_encoded:
@@ -306,17 +316,21 @@ def feat_selection(
 
 
 def algorithm_evaluation(
-    model_choice: list[Models],
+    model_choice: list[Models] | Models,
     data: pd.DataFrame,
-    output_path: Path,
+    output_path: Path | str,
     target: str,
-    weight: str,
-    classification_prediction: tuple[int, ...] | None,
-    custom_index: list[str],
-):
+    custom_index: list[str] | None = None,
+    weight: str | None = None,
+    classification_prediction: tuple[int, ...] | None = None,
+) -> BaseEstimator:
     """
     Evaluate which algorithm is best performing. Algorithms must be from
-    the Models enum class.
+    the Models enum class. It is advised to ensure data is in an optimal
+    state in order to get accurate results. This means data is encoded
+    and scaled where applicable and feature selection is applied. This can be
+    done with:
+        from caf.brain.ml import feat_selection, transform_data, algorithm_evaluation
 
     Parameters
     ----------
@@ -337,16 +351,20 @@ def algorithm_evaluation(
     -------
     Initialised best performing model.
     """
+    output_path = Path(output_path)
+
+    LOG.warning("It is advised to run both transform_data and feat_selection \n"
+                "prior to algorithm_evaluation.")
+
     if not validation(data=data, target=target, custom_index=custom_index):
         raise ValueError(
-            "Data not suitable for data analysis. Please run \
-                          full model flow or tidy_data method prior to \
-                          data analysis."
+            "Data not suitable for data analysis. Please run \n"
+                          "full model flow or tidy_data method prior to \n"
+                          "data analysis."
         )
     if not output_path:
         raise ValueError(
-            "Please provide an output path to use \
-                         algorithm_evaluation"
+            "Please provide an output path to use algorithm_evaluation"
         )
 
     if not isinstance(model_choice, list):
@@ -368,13 +386,13 @@ def algorithm_evaluation(
 
 def hparam_optim(
     model_choice: Models,
-    is_time_series: bool | None,
     data: pd.DataFrame,
-    output_path: Path,
+    output_path: Path | str,
     target: str,
-    weight: str,
-    classification_prediction: tuple[int, ...] | None,
-):
+    is_time_series: bool | None = None,
+    weight: str | None = None,
+    classification_prediction: tuple[int, ...] | None = None,
+) -> BaseEstimator:
     """
     Hyperparameter optimisation for your selected algorithm. Algorithm must
     be part of the Models enum class.
@@ -403,9 +421,10 @@ def hparam_optim(
     """
     if not output_path:
         raise ValueError(
-            "Please provide an output path to use \
-                         hparam_optim"
+            "Please provide an output path to use hparam_optim"
         )
+
+    output_path = Path(output_path)
 
     if not isinstance(model_choice, list):
         model = [model_choice]
@@ -414,14 +433,14 @@ def hparam_optim(
 
     if len(model) > 1:
         LOG.warning(
-            "More than one model selected. The first model will be \
-        optimised. To find the best performing model, call algorithm_evaluation or \
-                    main_model_selection"
+            "More than one model selected. The first model will be \n"
+        "optimised. To find the best performing model, call algorithm_evaluation or \n"
+                    "main_model_selection"
         )
 
     LOG.warning(
-        "Data should be encoded and scaled where applicable. Call \
-    _transform_data to do this prior to hyperparameter optimisation"
+        "Data should be encoded and scaled where applicable. Call \n"
+    "_transform_data to do this prior to hyperparameter optimisation"
     )
 
     selected_model = model[0].get_model()

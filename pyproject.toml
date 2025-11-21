@@ -8,7 +8,7 @@ dynamic = ["version", "dependencies", "optional-dependencies"]
 description = "Common Analytical Framework package of Machine and Deep Learning tools."
 readme = "README.md"
 license = { "file" = "LICENSE" }
-requires-python = ">=3.9"
+requires-python = "==3.10.*"
 authors = [{ name = "Transport for the North" }]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
@@ -22,14 +22,12 @@ classifiers = [
 "Bug Tracker" = "https://github.com/transport-for-the-north/caf.brain/issues"
 Homepage = "https://github.com/transport-for-the-north/caf.brain"
 Source = "https://github.com/transport-for-the-north/caf.brain"
-
-[tool.setuptools.dynamic]
-dependencies = { "file" = "requirements.txt" }
+Documentation = "https://cafbrain.readthedocs.io/"
 
 [tool.setuptools.dynamic.optional-dependencies]
 dev = { "file" = "requirements_dev.txt" }
-docs = { "file" = "docs/requirements.txt" }
 vision = { "file" = "requirements_vision.txt" }
+ml = { "file" = "requirements_ml.txt" }
 
 # Dynamic versioning for editable installs
 [tool.setuptools.cmdclass]
@@ -61,8 +59,7 @@ disable = [
 good-names = ["df", "fn", "ca", "tp", "x", "i"]
 
 [tool.pylint.main]
-# Ignore machine_vision as it is WIP
-ignore = ["__init__.py", "_version.py", "machine_vision"]
+ignore = ["__init__.py", "_version.py"]
 
 [tool.pylint.design]
 max-args = 10
@@ -74,8 +71,6 @@ packages = ["caf.brain"]
 namespace_packages = true
 ignore_missing_imports = true
 allow_redefinition = true
-# Exclude machine vision as it is WIP
-exclude = "src/caf/brain/machine_vision/*"
 
 [tool.pydocstyle]
 convention = "numpy"
@@ -83,8 +78,6 @@ match = '(?!_test)(?!test_)(?!__init__).*\.py'
 add-ignore = [
     "D202", # Temporary compatibility with black
 ]
-# Exclude machine vision as it is WIP
-match-dir = "^(?!.*machine_vision).*"
 
 [tool.isort]
 profile = "black"
@@ -119,3 +112,6 @@ build-file = "caf/brain/_version.py"
 distance = "{base_version}+{distance}.{vcs}{rev}"
 dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
 distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+
+[project.scripts]
+caf-brain = "caf.brain.ml.__main__:model_setup"

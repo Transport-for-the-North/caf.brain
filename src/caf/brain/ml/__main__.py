@@ -35,9 +35,13 @@ def model_setup():
     for the caf.brAIn prediction model config run.
     """
     parser = argparse.ArgumentParser(description="Run caf.brAIn prediction model.")
-    parser.add_argument("--config", type=Path, default=None,
-                        help="Path to YAML config file that follows \
-                        INSERT PATH TO GUIDANCE DOC ") # todo
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help="Path to YAML config file that follows \
+                        INSERT PATH TO GUIDANCE DOC ",
+    )  # todo
     args = parser.parse_args()
 
     config_data = load_yaml(args.config_path)

@@ -81,10 +81,13 @@ def select_param(
     weight = train_final[weight_column].values.flatten() if weight_column else None
     cv = get_cv_class(cv_method=cv, splits=None, repeats=None, is_time_series=is_time_series)
 
-    if len(model_name) == 1:
-        param_grid = ModelGrids.get_grid(model_name[0])
+    if isinstance(model_name, list):
+        if len(model_name) == 1:
+            param_grid = ModelGrids.get_grid(model_name[0])
+        else:
+            param_grid = get_model_grid_from_type(type(model_instance))
     else:
-        param_grid = get_model_grid_from_type(type(model_instance))
+        param_grid = ModelGrids.get_grid(model_name)
 
     if isinstance(model_instance, LinearRegression):
         LOG.info(

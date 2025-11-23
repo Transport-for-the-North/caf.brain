@@ -1,4 +1,4 @@
-output_path: "C:\\caf.brAIn\\Object Detection\\output_v2_more_epochs"
+output_path: "C:\\caf.brAIn\\Object Detection\\output_v5_large_model_pm_img_removed_class_name_present_simple_hyp_optim_more_epochs"
 user_locations_csv_path: null
 
 build_model_inputs:
@@ -13,7 +13,7 @@ build_model_inputs:
     - P
     - X
     - S
-  hyperparameter_optimisation: "moderate"
+  hyperparameter_optimisation: "base"
 
 image_generation_inputs:
   generate_images: false

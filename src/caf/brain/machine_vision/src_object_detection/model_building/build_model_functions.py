@@ -50,13 +50,13 @@ def _baseline_model(output: Path, config_path: Path) -> YOLO:
         print(f"Loading existing model from {best_weights}")
         model = YOLO(best_weights)
     else:
-        model = YOLO("../yolo11m.pt")
+        model = YOLO("../yolo11l.pt")
         model.train(
             data=config_path,
-            epochs=150,
+            epochs=300,
             imgsz=640,
             batch=16,
-            patience=10,
+            patience=20,
             project=model_dir,
             name="baseline",
             exist_ok=True,
@@ -144,10 +144,10 @@ def _final_model(output: Path, config_path: Path) -> None:
     ]:
         learning_params.pop(param, None)
 
-    final = YOLO("../yolo11m.pt")
+    final = YOLO("../yolo11l.pt")
     _ = final.train(
         data=config_path,
-        epochs=150,
+        epochs=300,
         patience=20,
         imgsz=640,
         batch=16,
@@ -159,7 +159,7 @@ def _final_model(output: Path, config_path: Path) -> None:
         **learning_params,
     )
 
-    best_weights = os.path.join(model_dir, "final", "weights", "best.pt")
+    best_weights = os.path.join(model_dir, "final_model", "weights", "best.pt")
 
     metrics = YOLO(best_weights).val(data=config_path, device=device)
 

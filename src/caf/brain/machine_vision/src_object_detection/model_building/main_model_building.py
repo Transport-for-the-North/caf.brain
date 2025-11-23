@@ -72,18 +72,19 @@ def main_hyperparameter_optimisation(
             torch.set_num_threads(8)
 
         hyperparameter_dict = basemodel.tune(
-            config,
+            data=config,
             project=hyperparameter_dir,
-            epochs=150,
-            iterations=300,
+            epochs=300,
+            iterations=5,
             imgsz=640,
             workers=8,
             optimizer="AdamW",
             plots=True,
             save=True,
             val=True,
-            use_ray=True,
+            use_ray=False, # only one GPU so not needed
             device=device,
+            patience=20,
         )
 
         custom_yaml_path = os.path.join(hyperparameter_dir, "best_hyperparameters.yaml")

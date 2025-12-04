@@ -200,13 +200,11 @@ def transform_data(
     if not validation(data=data, custom_index=custom_index, target=target):
         raise ValueError(
             "Data not suitable for encoding and scaling. Please run \n"
-                          "full model flow or tidy_data method prior to \n"
-                          "data analysis."
+            "full model flow or tidy_data method prior to \n"
+            "data analysis."
         )
     if not output_path:
-        raise ValueError(
-            "Please provide an output path to use the _transform_data"
-        )
+        raise ValueError("Please provide an output path to use the _transform_data")
 
     preprocessed_df, _, _ = process_data_pipeline(
         df=data,
@@ -282,13 +280,13 @@ def feat_selection(
     if not validation(data=data, target=target, custom_index=custom_index):
         raise ValueError(
             "Data not suitable for data analysis. Please run \n"
-                          "full model flow or tidy_data method prior to \n"
-                          "data analysis."
+            "full model flow or tidy_data method prior to \n"
+            "data analysis."
         )
 
     LOG.warning(
         "Data should already been encoded and scaled where applicable \n"
-                 "If this is not the case set is_encoded to false"
+        "If this is not the case set is_encoded to false"
     )
 
     if not is_encoded:
@@ -353,19 +351,19 @@ def algorithm_evaluation(
     """
     output_path = Path(output_path)
 
-    LOG.warning("It is advised to run both transform_data and feat_selection \n"
-                "prior to algorithm_evaluation.")
+    LOG.warning(
+        "It is advised to run both transform_data and feat_selection \n"
+        "prior to algorithm_evaluation."
+    )
 
     if not validation(data=data, target=target, custom_index=custom_index):
         raise ValueError(
             "Data not suitable for data analysis. Please run \n"
-                          "full model flow or tidy_data method prior to \n"
-                          "data analysis."
+            "full model flow or tidy_data method prior to \n"
+            "data analysis."
         )
     if not output_path:
-        raise ValueError(
-            "Please provide an output path to use algorithm_evaluation"
-        )
+        raise ValueError("Please provide an output path to use algorithm_evaluation")
 
     if not isinstance(model_choice, list):
         model = [model_choice]
@@ -420,9 +418,7 @@ def hparam_optim(
 
     """
     if not output_path:
-        raise ValueError(
-            "Please provide an output path to use hparam_optim"
-        )
+        raise ValueError("Please provide an output path to use hparam_optim")
 
     output_path = Path(output_path)
 
@@ -434,13 +430,13 @@ def hparam_optim(
     if len(model) > 1:
         LOG.warning(
             "More than one model selected. The first model will be \n"
-        "optimised. To find the best performing model, call algorithm_evaluation or \n"
-                    "main_model_selection"
+            "optimised. To find the best performing model, call algorithm_evaluation or \n"
+            "main_model_selection"
         )
 
     LOG.warning(
         "Data should be encoded and scaled where applicable. Call \n"
-    "_transform_data to do this prior to hyperparameter optimisation"
+        "_transform_data to do this prior to hyperparameter optimisation"
     )
 
     selected_model = model[0].get_model()
@@ -458,3 +454,8 @@ def hparam_optim(
     )
 
     return final_model
+
+
+def evaluate_data():
+
+    return

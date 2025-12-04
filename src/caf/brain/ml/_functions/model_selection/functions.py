@@ -154,9 +154,7 @@ def select_model(
             "main_model_selection / full model flow."
         )
         sample = train.sample(n=500000, random_state=42)
-        x = sample.drop(
-            columns=[target_column] + ([weight_column] if weight_column else [])
-        )
+        x = sample.drop(columns=[target_column] + ([weight_column] if weight_column else []))
         y = sample[target_column]
 
     for model_enum in models_to_test:

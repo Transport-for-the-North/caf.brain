@@ -116,6 +116,7 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
         train=train_transformed,
         test=test_transformed,
         output=output_path,
+        initialised_model=selected_model
     )
 
     best_model = main_hyperparameter_optimisation(

@@ -8,13 +8,14 @@ import logging
 import os
 from pathlib import Path
 import time
-from typing import Union
+from typing import Union, Optional
 
 # Third Party
 import numpy as np
 import pandas as pd
 import seaborn as sb
 from matplotlib import pyplot as plt
+from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.feature_selection import RFE, SelectFromModel
 from sklearn.inspection import permutation_importance
@@ -37,7 +38,7 @@ def rf_feature_selection(
     data: pd.DataFrame,
     target_column: str | None,
     cv: str | None,
-    regression_method,
+    regression_method: BaseEstimator,
     weight_column: str | None,
     classification_prediction: tuple[int, ...] | None,
     is_time_series: bool | None,
@@ -70,8 +71,8 @@ def rf_feature_selection(
     """
     if not target_column:
         raise ValueError(
-            "Please provide a target column for feature selection. \
-                          This is a column title passed as a string."
+            "Please provide a target column for feature selection. \n"
+            "This is a column title passed as a string."
         )
 
     if isinstance(regression_method, LogisticRegression):
@@ -83,9 +84,30 @@ def rf_feature_selection(
     weight = data[weight_column].values.flatten() if weight_column else None
     weight_df = data[weight_column] if weight_column else None
 
+    n_rows = len(x)
+    use_sampling = n_rows > 500000
+    if use_sampling:
+        LOG.warning(
+            "Dataset has %d rows. Sampling 500,000 rows for memory efficiency.",
+            n_rows
+        )
+
+        if is_time_series:
+            sample_indices = x.index[-500000:]
+        else:
+            sample_indices = x.sample(n=500000, random_state=42).index
+
+        x_sample = x.loc[sample_indices]
+        y_sample = y.loc[sample_indices]
+        weight_sample = weight[x.index.get_indexer(sample_indices)] if weight is not None else None
+    else:
+        x_sample = x
+        y_sample = y
+        weight_sample = weight
+
     if classification_prediction:
         model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
-        n_unique_classes = len(pd.unique(y))
+        n_unique_classes = len(pd.unique(y_sample))
         score_threshold = 0.6
         if n_unique_classes <= 2:
             # binary
@@ -99,7 +121,7 @@ def rf_feature_selection(
         scoring = "neg_mean_squared_error"
 
     with tqdm(total=1, desc="Fitting Random Forest") as pbar:
-        model.fit(x, y, sample_weight=weight)
+        model.fit(x_sample, y_sample, sample_weight=weight_sample)
         pbar.update(1)
 
     selector = SelectFromModel(model, prefit=True)
@@ -113,60 +135,69 @@ def rf_feature_selection(
     for _, row in feature_importance.iterrows():
         LOG.info("%s: %s", row["feature"], row["importance"])
 
-    n_splits = cv.n_splits if hasattr(cv, "n_splits") else cv
-    fold_scores = []
-    with tqdm(total=n_splits, desc="Cross-validation") as pbar:
-        for _ in range(n_splits):
-            score = cross_val_score(
-                regression_method,
-                x[selected_features],
-                y,
-                cv=cv,
-                scoring=scoring,
-                n_jobs=-1,
-                verbose=0,
-            )[0]
-            fold_scores.append(score)
-            pbar.update(1)
-
-    mean_score = np.mean(fold_scores)
-    std_score = np.std(fold_scores)
-
     LOG.info("Number of features selected: %s", len(selected_features))
-    LOG.info("Cross-validated ROC AUC score: %s %s", mean_score, std_score)
+    if len(selected_features) == 0:
+        raise ValueError(
+            "No features selected by Random Forest importance threshold. \n"
+            "You should evaluate your data as it is likely to be irrelevant for your prediction \n"
+            "Running evaluate_data can help diagnose the problem"
+        )
 
-    needs_intensive = (
-        (mean_score < score_threshold)
-        if classification_prediction
-        else (mean_score > score_threshold)
+    params = {"sample_weight": weight_sample} if weight_sample is not None else {}
+    scores = cross_val_score(
+        regression_method,
+        x_sample[selected_features],
+        y_sample,
+        cv=cv,
+        scoring=scoring,
+        n_jobs=-1,
+        verbose=0,
+        params=params,
     )
+
+    mean_score = np.mean(scores)
+    std_score = np.std(scores)
+
+    LOG.info("Cross-validated %s score: %.4f (+/- %.4f)", scoring, mean_score, std_score)
+
+    if classification_prediction:
+        needs_intensive = mean_score < score_threshold  # Low accuracy = bad
+    else:
+        needs_intensive = mean_score > score_threshold
 
     if needs_intensive:
         LOG.warning(
             "Initial feature selection attempt was inaccurate, trying alternative method"
         )
-        dataframe_final = feature_selection_intensive(
-            x=x,
-            y=y,
+        result_sample = feature_selection_intensive(
+            x=x_sample,
+            y=y_sample,
             cv=cv,
             regression_method=regression_method,
-            weight=weight,
-            weight_df=weight_df,
+            weight=weight_sample,
+            weight_df=None,
             classification_prediction=classification_prediction,
         )
+        intensive_features = [col for col in result_sample.columns if col != target_column]
+
+        dataframe_final = pd.concat([x[intensive_features], y], axis=1)
+        if weight_df is not None:
+            dataframe_final = pd.concat([dataframe_final, weight_df], axis=1)
     else:
         dataframe_final = pd.concat([x[selected_features], y], axis=1)
-        dataframe_final = pd.concat([dataframe_final, weight_df], axis=1)
+        if weight_df is not None:
+            dataframe_final = pd.concat([dataframe_final, weight_df], axis=1)
+
     return dataframe_final
 
 
 def feature_selection_intensive(
     x: pd.DataFrame,
-    y: pd.DataFrame,
+    y: pd.Series,
     cv: BaseCrossValidator,
     regression_method,
-    weight: pd.Series,
-    weight_df: pd.DataFrame,
+    weight: Optional[np.ndarray],
+    weight_df: Optional[pd.DataFrame],
     classification_prediction: tuple[int, ...] | None,
 ) -> pd.DataFrame:
     """
@@ -189,44 +220,58 @@ def feature_selection_intensive(
     -------
     result: Training data post feature selection.
     """
-    original_index = x.index
 
     if classification_prediction:
         selected_features = _classification_feature_selection(x, y, weight)
+        score_threshold = 0.5
     else:
         selected_features = _regression_feature_selection(x, y, weight)
+        score_threshold = -1.0  # For negative MSE scores
+
+    if len(selected_features) == 0:
+        raise ValueError(
+            "No features selected by intensive methods. Please \n"
+            "Reevaluate your data and what you are trying to predict."
+        )
 
     scores = []
-    with tqdm(total=cv.n_splits, desc="Cross-validation") as pbar:
+    n_splits = getattr(cv, "n_splits", 5)
+    with tqdm(total=n_splits, desc="Cross-validation") as pbar:
         for train_index, test_index in cv.split(x):
             x_train, x_test = x.iloc[train_index], x.iloc[test_index]
             y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+            w_train = weight[train_index] if weight is not None else None
 
-            regression_method.fit(x_train[selected_features], y_train)
+            if w_train is not None:
+                regression_method.fit(
+                    x_train[selected_features], y_train, sample_weight=w_train
+                )
+            else:
+                regression_method.fit(x_train[selected_features], y_train)
             score = regression_method.score(x_test[selected_features], y_test)
             scores.append(score)
             pbar.update(1)
-
-    LOG.info("Number of features selected: %s", len(selected_features))
-    LOG.info("Cross-validated score: %s", np.mean(scores))
-
     cv_score = np.mean(scores)
-    if cv_score < 0.5:
+    LOG.info("Number of features selected: %s", len(selected_features))
+    LOG.info("Cross-validated score: %s", cv_score)
+
+    if classification_prediction:
+        use_all_features = cv_score < score_threshold  # Low score = bad
+    else:
+        use_all_features = cv_score > score_threshold  # High negative = bad
+
+    if use_all_features:
         LOG.warning("CV score is still not optimal, feature selection is being ignored")
         result = pd.concat([x, y], axis=1)
-        if weight_df is not None:
-            result = pd.concat([result, weight_df], axis=1)
-        return result.set_index(original_index)
+    else:
+        result = pd.concat([x[selected_features], y], axis=1)
 
-    result = pd.concat([x[selected_features], y], axis=1)
-    if weight_df is not None:
-        result = pd.concat([result, weight_df], axis=1)
-    return result.set_index(original_index)
+    return result
 
 
 def _classification_feature_selection(
-    x: pd.DataFrame, y: pd.DataFrame, weight: pd.Series
-) -> list:
+    x: pd.DataFrame, y: pd.Series, weight: np.ndarray
+) -> list[str]:
     """
     Feature selection algorithms for classification problems.
 
@@ -234,27 +279,35 @@ def _classification_feature_selection(
     ----------
     x: Training data split into explanatory variables only.
     y: Training data split only into the target variable.
-    weight: Weight values in series form.
+    weight: Weight values as numpy array.
 
     Returns
     -------
     List of selected features based on both algorithms used.
     """
     rfe = RFE(
-        estimator=LogisticRegression(random_state=42, max_iter=2000), n_features_to_select=10
+        estimator=LogisticRegression(random_state=42, max_iter=2000),
+        n_features_to_select=min(10, x.shape[1]),
     )
-    rfe.fit(x, y, sample_weight=weight)
+    rfe.fit(x, y)
     rfe_selected = x.columns[rfe.support_].tolist()
 
-    logit_lasso = LogisticRegression(penalty="l1", solver="saga", random_state=42)
-    logit_lasso.fit(x, y, sample_weight=weight)
+    logit_lasso = LogisticRegression(
+        penalty="l1", solver="saga", random_state=42, max_iter=2000
+    )
+    if weight is not None:
+        logit_lasso.fit(x, y, sample_weight=weight)
+    else:
+        logit_lasso.fit(x, y)
     l1_selected = x.columns[abs(logit_lasso.coef_[0]) > 0].tolist()
 
     final_features = list(set(rfe_selected + l1_selected))
     return final_features
 
 
-def _regression_feature_selection(x: pd.DataFrame, y: pd.DataFrame, weight: pd.Series) -> list:
+def _regression_feature_selection(
+    x: pd.DataFrame, y: pd.Series, weight: np.ndarray
+) -> list[str]:
     """
     Feature selection algorithms for regression problems.
 
@@ -262,18 +315,24 @@ def _regression_feature_selection(x: pd.DataFrame, y: pd.DataFrame, weight: pd.S
     ----------
     x: Training data split into explanatory variables only.
     y: Training data split only into the target variable.
-    weight: Weight values in series form.
+    weight: Weight values as numpy array.
 
     Returns
     -------
     List of selected features based on both algorithms used.
     """
     lasso = Lasso(alpha=0.01, random_state=42)
-    lasso.fit(x, y, sample_weight=weight)
+    if weight is not None:
+        lasso.fit(x, y, sample_weight=weight)
+    else:
+        lasso.fit(x, y)
     lasso_selected = x.columns[abs(lasso.coef_) > 0].tolist()
 
     ridge = Ridge(alpha=1.0, random_state=42)
-    ridge.fit(x, y, sample_weight=weight)
+    if weight is not None:
+        ridge.fit(x, y, sample_weight=weight)
+    else:
+        ridge.fit(x, y)
     ridge_selected = x.columns[abs(ridge.coef_) > np.mean(abs(ridge.coef_))].tolist()
 
     final_features = list(set(lasso_selected + ridge_selected))
@@ -307,24 +366,28 @@ def get_cv_class(
     """
     if is_time_series:
         return TimeSeriesSplit(n_splits=splits if splits else 5)
+
     if cv_method:
-        if cv_method.lower() == "kfold":
+        cv_lower = cv_method.lower()
+        if cv_lower == "kfold":
             return KFold(n_splits=splits if splits else 5, shuffle=True)
-        if cv_method.lower() == "stratifiedkfold":
+        elif cv_lower == "stratifiedkfold":
             return StratifiedKFold(n_splits=splits if splits else 5, shuffle=True)
-        if cv_method.lower() == "repeatedkfold":
+        elif cv_lower == "repeatedkfold":
             return RepeatedKFold(
                 n_splits=splits if splits else 5, n_repeats=repeats if repeats else 5
             )
-        if cv_method.lower() == "repeatedstratifiedkfold":
+        elif cv_lower == "repeatedstratifiedkfold":
             return RepeatedStratifiedKFold(
                 n_splits=splits if splits else 5, n_repeats=repeats if repeats else 5
             )
-        if cv_method.lower() == "timeseriessplit":
+        elif cv_lower == "timeseriessplit":
             return TimeSeriesSplit(n_splits=splits if splits else 5)
+        else:
+            LOG.warning("Invalid cross-validation method: %s", cv_method)
+            LOG.warning("Using default cross validation method: KFold")
     else:
-        LOG.warning("Invalid cross-validation method: %s", cv_method)
-        LOG.warning("Using default cross validation method: kfold")
+        LOG.info("No cross-validation method specified, using default: KFold")
 
     return KFold(n_splits=5, shuffle=True)
 
@@ -357,7 +420,6 @@ def analyse_feature_importance(
     if not output_path:
         raise ValueError("Please provide an output path")
 
-    # pd.set_option("display.float_format", lambda x: "%.10f" % x)
     pd.set_option("display.float_format", lambda z: f"{z:.10f}")
 
     if not target_column:
@@ -378,11 +440,11 @@ def analyse_feature_importance(
     if n_rows > 500000:
         LOG.warning(
             "Data is very large and may cause memory issues. To fix \n"
-                     "this, a random sample has been taken. If your data is \n"
-                     "time series then this random sample may destroy time \n"
-                     "observed trends. It is therefore recommended to \n"
-                     "evaluate your data and rerun this function or use \n"
-                     "main_feature_selection / full model flow."
+            "this, a random sample has been taken. If your data is \n"
+            "time series then this random sample may destroy time \n"
+            "observed trends. It is therefore recommended to \n"
+            "evaluate your data and rerun this function or use \n"
+            "main_feature_selection / full model flow."
         )
         sample = train_transformed.sample(n=500000, random_state=42)
         x_sample = sample.drop(
@@ -424,7 +486,7 @@ def _analyse_feat_importance_helper(
     y: pd.Series,
     rf: Union[RandomForestClassifier, RandomForestRegressor],
     n_jobs: int,
-    n_repeats: int
+    n_repeats: int,
 ) -> pd.DataFrame:
     """
     This helper function trains the provided RandomForest model on the given

@@ -19,7 +19,7 @@ from caf.brain.ml._functions.feature_selection.functions import (
 from caf.brain.ml._functions.process_data_functions.main import (
     main_input_data,
 )
-from caf.brain.ml._functions._ml_inputs import PredictionModelInputs
+from caf.brain.ml._functions._ml_inputs import PredictionModelInputs, Models
 
 LOG = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def main_feature_selection(
     modelling: PredictionModelInputs.ModellingInputs,
     train: pd.DataFrame = None,
     test: pd.DataFrame = None,
-    initialised_model=None,
+    initialised_model = None,
     output: Path | None = None,
 ):
     """

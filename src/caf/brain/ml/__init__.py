@@ -7,6 +7,7 @@ from caf.brain.ml._ml import (
     feat_selection,
     algorithm_evaluation,
     hparam_optim,
+    evaluate_data
 )
 
 from caf.brain.ml._functions._ml_inputs import Models

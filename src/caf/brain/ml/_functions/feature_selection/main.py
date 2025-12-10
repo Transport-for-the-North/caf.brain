@@ -31,7 +31,7 @@ def main_feature_selection(
     modelling: PredictionModelInputs.ModellingInputs,
     train: pd.DataFrame = None,
     test: pd.DataFrame = None,
-    initialised_model = None,
+    initialised_model=None,
     output: Path | None = None,
 ):
     """

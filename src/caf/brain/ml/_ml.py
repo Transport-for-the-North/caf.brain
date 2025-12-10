@@ -9,16 +9,21 @@ from typing import Optional
 # Third Party
 import pandas as pd
 from sklearn.base import BaseEstimator
+from sklearn.linear_model import LogisticRegression, ElasticNet
 
 # Local Imports
 from caf.brain.ml._functions._ml_inputs import Models
+from caf.brain.ml._functions.data_analysis.functions import (
+    pre_forecast_data_analysis,
+    pre_forecast_data_analysis_classification,
+)
 from caf.brain.ml._functions.feature_selection.functions import (
     analyse_feature_importance,
 )
 from caf.brain.ml._functions.hparam_optimisation.functions import (
     select_param,
 )
-from caf.brain.ml._functions.model_selection.functions import select_model
+from caf.brain.ml._functions.model_selection.functions import select_model, initialise_model
 from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
     process_data_pipeline,
 )
@@ -26,6 +31,10 @@ from caf.brain.ml._functions.process_data_functions.input_data import (
     InitialDataProcessing,
 )
 from caf.brain.ml._functions._baseclasses import ValidateData
+from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
+    simple_train_test_split,
+    stratified_split_with_categories,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -358,9 +367,9 @@ def algorithm_evaluation(
 
     if not validation(data=data, target=target, custom_index=custom_index):
         raise ValueError(
-            "Data not suitable for data analysis. Please run \n"
+            "Data not suitable for algorithm evaluation. Please run \n"
             "full model flow or tidy_data method prior to \n"
-            "data analysis."
+            "algorithm evaluation."
         )
     if not output_path:
         raise ValueError("Please provide an output path to use algorithm_evaluation")
@@ -456,6 +465,170 @@ def hparam_optim(
     return final_model
 
 
-def evaluate_data():
+def evaluate_data(
+    data: pd.DataFrame,
+    output_path: Path | str,
+    categorical_features: list[str] | None,
+    numerical_features: list[str] | None,
+    target: str,
+    classification_prediction: tuple[int, ...] | None,
+    weight: str | None = None,
+    allow_transformations: bool = True,
+    is_time_series: bool = False,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Data analysis for structured tabular numerical data. Where applicable,
+    the following tests are performed:
+        - Multicolinearity (VIF)
+        - Heteroscedasticity (Breusch-Pagan & White Test)
+        - Linearity (Correlation coefficient)
+        - Normality (Shapiro-Wilk)
+        - Autocorrelation (Durbin-Watson)
 
-    return
+    Data transformations (log and scaling) are applied to numerical features
+    only if permitted and required.
+
+    Parameters
+    ----------
+    data: Pandas Dataframe of your data. Structured or semi-structured
+          tabular format.
+    output_path: Path to output location.
+    target: Column in your data that is the target variable (Y, dependent
+            variable), what you want to predict.
+    weight: Optional string column value to be used as weight.
+    categorical_features: List of column names (strings) that are
+                          categorical variables.
+    numerical_features: List of column names (strings) that are
+                        continuous variables.
+    classification_prediction: List of integers that correspond to the
+                               target column. The value(s) to predict
+                               in a classification problem.
+    allow_transformations: Whether to apply transformations.
+    is_time_series: If true then data must be time series. Time series
+                    based characteristics are taken into consideration
+                    during function execution.
+    Returns
+    -------
+    train_transformed: training data post transformation.
+    test_transformed: test data post transformation.
+    """
+
+    if isinstance(output_path, str):
+        output_path = Path(output_path)
+
+    if not validation(data=data, target=target, custom_index=None):
+        raise ValueError(
+            "Data not suitable for data analysis. Please run \n"
+            "full model flow or tidy_data method prior to \n"
+            "data analysis."
+        )
+
+    LOG.info(
+        "Starting data evaluation for %s prediction",
+        "classification" if classification_prediction else "regression",
+    )
+
+    # split unscaled data
+    train_unscaled, test_unscaled, validate = stratified_split_with_categories(
+        df=data,
+        categorical_features=categorical_features,
+        target_column=target,
+        weight_column=weight,
+        split_size=None,
+        validation_path=None,
+        index_columns=None,
+        output_path=output_path,
+    )
+
+    # encode / scale train
+    train_scaled, _, pipeline_out = process_data_pipeline(
+        df=train_unscaled,
+        numerical_features=numerical_features,
+        categorical_features=categorical_features,
+        target_column=target,
+        weight_column=weight,
+        sample_size_encode=True,
+        select_encode_values=None,
+        encode_values_to_drop=None,
+        train_encoded=None,
+        test_data=False,
+        numerical_pipeline=None,
+        output_folder=output_path,
+    )
+
+    # encode / scale test
+    test_scaled, _, _ = process_data_pipeline(
+        df=test_unscaled,
+        numerical_features=numerical_features,
+        categorical_features=categorical_features,
+        target_column=target,
+        weight_column=weight,
+        sample_size_encode=True,
+        select_encode_values=None,
+        encode_values_to_drop=None,
+        train_encoded=train_scaled,
+        test_data=True,
+        numerical_pipeline=pipeline_out,
+        output_folder=output_path,
+    )
+
+    # train/test split for fitting (scaled data)
+    x_train, x_test, y_train, y_test, x_train_weight = simple_train_test_split(
+        df=train_scaled,
+        target_column=target,
+        weight_column=weight,
+    )
+
+    # initialise model for diagnostics
+    if classification_prediction:
+        model_initialised = LogisticRegression(max_iter=1000, random_state=42)
+    else:
+        model_initialised = ElasticNet(random_state=42)
+
+    x_train_model_fit, residuals, mse = initialise_model(
+        x_train=x_train,
+        x_test=x_test,
+        y_train=y_train,
+        y_test=y_test,
+        x_train_weight=x_train_weight,
+        output_folder=output_path,
+        model_initialised=model_initialised,
+        classification_prediction=classification_prediction,
+    )
+
+    # run data analysis
+    if classification_prediction:
+        train_transformed, test_transformed = pre_forecast_data_analysis_classification(
+            train_scaled=train_scaled,
+            test_scaled=test_scaled,
+            train_unscaled=train_unscaled,
+            target=target,
+            numerical_features=numerical_features,
+            output_path=output_path,
+            classification_prediction=classification_prediction,
+        )
+    else:
+        train_transformed, test_transformed = pre_forecast_data_analysis(
+            output_folder=output_path,
+            residuals=residuals,
+            model_fit=x_train_model_fit,
+            model_initialised=model_initialised,
+            x_test=x_test,
+            y_test=y_test,
+            train_scaled=train_scaled,
+            test_scaled=test_scaled,
+            train_unscaled=train_unscaled,
+            test_unscaled=test_unscaled,
+            numerical_pipeline=pipeline_out,
+            target_column=target,
+            weight_column=weight,
+            numerical_features=numerical_features,
+            categorical_features=categorical_features,
+            is_time_series=is_time_series,
+            allow_transformations=allow_transformations,
+        )
+
+    LOG.info("Data evaluation complete. Results saved to %s", output_path)
+    LOG.info("Check 'data_issues_present.csv' for detected issues")
+
+    return train_transformed, test_transformed

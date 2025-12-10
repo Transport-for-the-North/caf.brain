@@ -112,7 +112,10 @@ def stratified_split_with_categories(
     """
     strat = pd.cut(df.iloc[:, 0], 4)
     train, test = train_test_split(
-        df, test_size=split_size if not None else 0.2, random_state=42, stratify=strat
+        df,
+        test_size=split_size if split_size is not None else 0.2,
+        random_state=42,
+        stratify=strat,
     )
 
     if categorical_features is not None:
@@ -226,25 +229,17 @@ def simple_train_test_split(
 
     Parameters
     ----------
-    df : pandas.DataFrame
-        Input dataframe.
-    target_column : str
-        Name of the dependent (target) variable in the dataframe.
-    weight_column : str
-        Name of the weight column in the dataframe.
+    df: Input dataframe.
+    target_column: Name of the dependent (target) variable in the dataframe.
+    weight_column: Name of the weight column in the dataframe.
 
     Returns
     -------
-    x_train : pandas.DataFrame
-        Training features.
-    x_test : pandas.DataFrame
-        Test features.
-    y_train : pandas.Series
-        Training target values.
-    y_test : pandas.Series
-        Test target values.
-    x_train_weight : pandas.Series or None
-        Weight values for the training set, if available.
+    x_train: Training features.
+    x_test: Test features.
+    y_train: Training target values.
+    y_test: Test target values.
+    x_train_weight: Weight values for the training set, if available.
     """
     if not target_column:
         raise ValueError(

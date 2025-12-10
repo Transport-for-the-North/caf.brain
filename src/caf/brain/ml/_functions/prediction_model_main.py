@@ -103,8 +103,8 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
         model_fit=x_train_model_fit,
         model_initialised=selected_model,
         residuals=residuals,
-        x_train=x_train,
         x_test=x_test,
+        y_test=y_test,
         numerical_pipeline=numerical_pipeline,
     )
 
@@ -116,7 +116,7 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
         train=train_transformed,
         test=test_transformed,
         output=output_path,
-        initialised_model=selected_model
+        initialised_model=selected_model,
     )
 
     best_model = main_hyperparameter_optimisation(

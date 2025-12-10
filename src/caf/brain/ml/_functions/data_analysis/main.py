@@ -42,8 +42,8 @@ def main_evaluate_input_data(
     model_fit: object = None,
     model_initialised: object = None,
     residuals: pd.Series = None,
-    x_train: pd.DataFrame = None,
     x_test: pd.DataFrame = None,
+    y_test: pd.DataFrame = None,
     numerical_pipeline: object = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
@@ -78,8 +78,8 @@ def main_evaluate_input_data(
     model_fit: Fitted model on train_test_split test data.
     model_initialised: Initialised SciKitLearn model.
     residuals: Truth values form the train_test_split against the predictions.
-    x_train: Series of train data to be used as train.
-    x_test: Series of test data to be used as unseen test data.
+    x_test: Dataframe of test data to be used as unseen test data.
+    y_test: Dataframe of target data from train, test split.
     numerical_pipeline: Stored numerical transformation pipeline for
                         full model runs. Left as None if not a full
                         model run.
@@ -142,8 +142,8 @@ def main_evaluate_input_data(
             residuals=residuals,
             model_fit=model_fit,
             model_initialised=model_initialised,
-            x_train=x_train,
             x_test=x_test,
+            y_test=y_test,
             train_scaled=train_scaled,
             test_scaled=test_scaled,
             train_unscaled=train_unscaled,
@@ -163,8 +163,8 @@ def main_evaluate_input_data(
         residuals=residuals,
         model_fit=model_fit,
         model_initialised=model_initialised,
-        x_train=x_train,
         x_test=x_test,
+        y_test=y_test,
         train_scaled=train_scaled,
         test_scaled=test_scaled,
         train_unscaled=train_unscaled,

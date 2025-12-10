@@ -88,8 +88,7 @@ def rf_feature_selection(
     use_sampling = n_rows > 500000
     if use_sampling:
         LOG.warning(
-            "Dataset has %d rows. Sampling 500,000 rows for memory efficiency.",
-            n_rows
+            "Dataset has %d rows. Sampling 500,000 rows for memory efficiency.", n_rows
         )
 
         if is_time_series:
@@ -99,7 +98,9 @@ def rf_feature_selection(
 
         x_sample = x.loc[sample_indices]
         y_sample = y.loc[sample_indices]
-        weight_sample = weight[x.index.get_indexer(sample_indices)] if weight is not None else None
+        weight_sample = (
+            weight[x.index.get_indexer(sample_indices)] if weight is not None else None
+        )
     else:
         x_sample = x
         y_sample = y

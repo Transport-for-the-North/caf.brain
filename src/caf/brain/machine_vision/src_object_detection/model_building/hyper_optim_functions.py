@@ -10,6 +10,8 @@ import optuna
 from ultralytics import YOLO
 import torch
 import logging
+from optuna.study import Study
+from optuna.trial import FrozenTrial
 
 LOG = logging.getLogger(__name__)
 
@@ -141,7 +143,7 @@ def _optuna_objective_func(
     try:
         _ = model.train(
             data=config,
-            epochs=150,
+            epochs=100,
             imgsz=640,
             batch=16,
             patience=7,
@@ -169,3 +171,49 @@ def _optuna_objective_func(
     except Exception as e:  # pylint: disable=broad-exception-caught
         LOG.error("Error in trial %s: %s", trial.number, str(e))
         return 0.0
+
+
+class EarlyStopper:
+    """
+    Optuna early stopping callback for hyperparameter optimisation.
+
+    This monitors the fitness score (trial.value) across iterations.
+    If no improvement is observed for a set number of consecutive trials
+    (`patience`), the study is stopped.
+
+    Parameters
+    ----------
+    patience: Number of consecutive trials without improvement before stopping.
+
+    Returns
+    -------
+    None
+    """
+    def __init__(self, patience: int = 5) -> None:
+        self.patience: int = patience
+        self.best_score: float | None = None
+        self.counter: int = 0
+
+    def __call__(self, study: Study, trial: FrozenTrial) -> None:
+        """
+        Called automatically after each trial. Updates best_score, counter
+        and stops the study if patience is exceeded.
+
+        Parameters
+        ----------
+        study: The Optuna study object managing the optimisation.
+        trial: The completed trial containing its fitness value.
+
+        Returns
+        -------
+        None
+        """
+        if self.best_score is None or trial.value > self.best_score:
+            self.best_score = trial.value
+            self.counter = 0
+        else:
+            self.counter += 1
+
+        if self.counter >= self.patience:
+            print("Early stopping: no improvement in %s trials.", self.patience)
+            study.stop()

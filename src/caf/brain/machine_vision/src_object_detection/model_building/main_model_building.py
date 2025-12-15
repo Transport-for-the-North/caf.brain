@@ -8,7 +8,6 @@ import os
 import time
 import logging
 import pandas as pd
-import yaml
 import torch
 from ultralytics import YOLO
 
@@ -17,7 +16,7 @@ from caf.brain.machine_vision.src_object_detection.model_building.build_model_fu
     _final_model, _model_comparison,
 )
 from caf.brain.machine_vision.src_object_detection.model_building.hyper_optim_functions import (
-    _moderate_optimisation,
+    _moderate_optimisation, EarlyStopper
 )
 
 LOG = logging.getLogger(__name__)
@@ -62,6 +61,10 @@ def main_hyperparameter_optimisation(
         hyperparameter_dict = _moderate_optimisation(
             config=config, output_dir=hyperparameter_dir, model=basemodel
         )
+
+        df_flat = pd.DataFrame([hyperparameter_dict])
+        df_flat.to_csv(os.path.join(hyperparameter_dir, "best_hyperparameters.csv"), index=False)
+
     elif hyperparameter_optimisation == "base" or hyperparameter_optimisation is None:
         LOG.info("Simple hyperparameter optimisation is running")
         device = 0 if torch.cuda.is_available() else "cpu"
@@ -71,33 +74,34 @@ def main_hyperparameter_optimisation(
             LOG.warning("GPU not available. CPU being used.")
             torch.set_num_threads(8)
 
-        hyperparameter_dict = basemodel.tune(
-            data=config,
-            project=hyperparameter_dir,
-            epochs=300,
-            iterations=5,
-            imgsz=640,
-            workers=8,
-            optimizer="AdamW",
-            plots=True,
-            save=True,
-            val=True,
-            use_ray=False, # only one GPU so not needed
-            device=device,
-            patience=20,
-        )
+        best_hyp_file = Path(hyperparameter_dir) / "tune" / "best_hyperparameters.yaml"
+        if os.path.exists(best_hyp_file):
+            LOG.info("Best hyperparameters already exist and are being loaded in")
+        else:
+            basemodel.callbacks["on_trial_end"] = EarlyStopper(patience=5) # stop if 5 trials plateau
+            _ = basemodel.tune(
+                data=config,
+                project=hyperparameter_dir,
+                epochs=200,
+                iterations=25,
+                imgsz=640,
+                workers=8,
+                optimizer="AdamW",
+                plots=True,
+                save=True,
+                val=True,
+                use_ray=False, # only one GPU so not needed
+                device=device,
+                patience=20,
+                batch=16,
+            )
+            LOG.info("Hyperparameters written out to {C:USER_OUTPUT_PATH/output/ModelBuildingOutputs/model_results/hyperparameter_results/tune/best_hyperparameters.yaml}", )
 
-        custom_yaml_path = os.path.join(hyperparameter_dir, "best_hyperparameters.yaml")
-        with open(custom_yaml_path, "w", encoding="utf-8") as f:
-            yaml.dump(hyperparameter_dict, f)
     else:
         raise ValueError(
             "Unknown hyperparameter optimisation mode. Please \
                           choose from either base or moderate."
         )
-
-    df_flat = pd.json_normalize(hyperparameter_dict)
-    df_flat.to_csv(os.path.join(hyperparameter_dir, "best_hyperparameters.csv"), index=False)
 
     end_time = time.time()
     LOG.info("Total Hyperparameter optimisation run time: %.2f seconds", end_time - start_time)

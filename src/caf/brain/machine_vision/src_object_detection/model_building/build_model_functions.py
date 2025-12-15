@@ -47,7 +47,7 @@ def _baseline_model(output: Path, config_path: Path) -> YOLO:
         torch.set_num_threads(8)
 
     if os.path.exists(best_weights):
-        print(f"Loading existing model from {best_weights}")
+        LOG.info("Loading existing model from %s", best_weights)
         model = YOLO(best_weights)
     else:
         model = YOLO("../yolo11l.pt")
@@ -57,6 +57,7 @@ def _baseline_model(output: Path, config_path: Path) -> YOLO:
             imgsz=640,
             batch=16,
             patience=20,
+            workers=8,
             project=model_dir,
             name="baseline",
             exist_ok=True,
@@ -116,7 +117,7 @@ def _final_model(output: Path, config_path: Path) -> None:
         LOG.warning("GPU not available. CPU being used.")
         torch.set_num_threads(8)
 
-    hyp_path = os.path.join(output, "hyperparameter_results", "best_hyperparameters.yaml")
+    hyp_path = os.path.join(output, "hyperparameter_results", "tune", "best_hyperparameters.yaml")
     if os.path.exists(hyp_path):
         with open(hyp_path, "r", encoding="utf-8") as f:
             best_hyperparams = yaml.safe_load(f)
@@ -143,6 +144,8 @@ def _final_model(output: Path, config_path: Path) -> None:
         "workers",
     ]:
         learning_params.pop(param, None)
+
+    learning_params = clean_hyperparams(learning_params)
 
     final = YOLO("../yolo11l.pt")
     _ = final.train(
@@ -213,3 +216,26 @@ def _model_comparison(output: Path) -> None:
     optimal_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy(best_model_path, optimal_dir / "best.pt")
     pd.DataFrame([best_metrics]).to_csv(optimal_dir / "optimal_model_results.csv", index=False)
+
+
+def clean_hyperparams(hyp_dict: dict) -> dict:
+    """
+    Cleans hyperparameters inside the hyperparameter dictionary.
+
+    Parameters
+    ----------
+    hyp_dict: Input hyperparameter dictionary.
+
+    Returns
+    -------
+    Cleaned hyperparameter dictionary.
+    """
+    sanitised = {}
+    for k, v in hyp_dict.items():
+        if k == "close_mosaic":
+            sanitised[k] = int(v)
+        elif k in {"epochs", "batch", "workers", "patience"}:
+            sanitised[k] = int(v)
+        else:
+            sanitised[k] = v
+    return sanitised

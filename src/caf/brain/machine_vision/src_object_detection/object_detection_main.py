@@ -76,27 +76,28 @@ def main(params: ObjectDetectionInputs, output_path: Path) -> None:
         main_output_folder = Path(output_path) / "ModelBuildingOutputs"
         main_output_folder.mkdir(parents=True, exist_ok=True)
 
-        train, test, validation = main_ttv_creation(
-            user_images_folder_path=params.build_model_inputs.user_images_folder_path,
-            output_path=main_output_folder
-        )
-
-        generate_folders(dictionary=train, folder_name="train", output=main_output_folder)
-        generate_folders(dictionary=test, folder_name="test", output=main_output_folder)
-        generate_folders(dictionary=validation, folder_name="val", output=main_output_folder)
-
         train_path = main_output_folder / "train"
         test_path = main_output_folder / "test"
         val_path = main_output_folder / "val"
 
-        ensure_labels(folder_path=train_path)
-        ensure_labels(folder_path=test_path)
-        ensure_labels(folder_path=val_path)
+        if not train_path.exists():
+            train, test, validation = main_ttv_creation(
+                user_images_folder_path=params.build_model_inputs.user_images_folder_path,
+                output_path=main_output_folder
+            )
 
-        build_config(
-            output=main_output_folder,
-            class_names=params.build_model_inputs.classification_names,
-        )
+            generate_folders(dictionary=train, folder_name="train", output=main_output_folder)
+            generate_folders(dictionary=test, folder_name="test", output=main_output_folder)
+            generate_folders(dictionary=validation, folder_name="val", output=main_output_folder)
+
+            ensure_labels(folder_path=train_path)
+            ensure_labels(folder_path=test_path)
+            ensure_labels(folder_path=val_path)
+
+            build_config(
+                output=main_output_folder,
+                class_names=params.build_model_inputs.classification_names,
+            )
 
         model_dir = main_output_folder / "model_results"
         final_model_path = model_dir / "best.pt"

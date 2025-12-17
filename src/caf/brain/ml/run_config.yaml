@@ -16,8 +16,10 @@ data_classification:
     is_time_series: False
 
 transforming_inputs:
-    column_name_to_drop_rows: null
-    value_in_row: null
+    column_name_to_drop_rows:
+      - null
+    value_in_row:
+      - null
     classification_prediction: null
     split_by_value: null
     split_size: null
@@ -32,3 +34,4 @@ modelling:
     cv: null
     skip_feature_selection: False
     intensive_feature_selection: False
+

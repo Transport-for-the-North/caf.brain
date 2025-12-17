@@ -38,13 +38,14 @@ def model_setup():
     parser.add_argument(
         "--config",
         type=Path,
-        default=None,
-        help="Path to YAML config file that follows \
-                        INSERT PATH TO GUIDANCE DOC ",
-    )  # todo
+        default=Path(__file__).parent / "run_config.yaml",
+        help=("Path to YAML config file. You should use this \n"
+              "src/caf/brain/ml/run_config.yaml as the template. \n"
+              "If you edit the pre-existing config file, then there is no \n"
+              "need to pass an alternative config path")
+    )
     args = parser.parse_args()
-
-    config_data = load_yaml(args.config_path)
+    config_data = load_yaml(args.config)
 
     params = PredictionModelInputs(**config_data)
 

@@ -8,6 +8,7 @@ from pathlib import Path
 
 # Third Party
 import pandas as pd
+from sklearn.base import BaseEstimator
 
 # Local Imports
 from caf.brain.ml._functions.model_selection.functions import select_model
@@ -26,7 +27,7 @@ def main_model_selection(
     output: Path,
     paths: PredictionModelInputs.Paths,
     train: pd.DataFrame = None,
-) -> object:
+) -> BaseEstimator:
     """
     Function to automatically score and rank algorithms from the Models
     class which can be used in machine learning modelling.

@@ -1,26 +1,31 @@
-output_path: "C:\\caf.brAIn\\Object Detection\\output_v6"
-user_locations_csv_path: null
-
-build_model_inputs:
-  build_model: true
-  user_images_folder_path: "C:\\caf.brAIn\\Object Detection\\training_images\\Object detection FINISHED"
-  classification_names:
-    - PMM
-    - PM
-    - RS
-    - RP
-    - M
-    - P
-    - X
-    - S
-  hyperparameter_optimisation: "base"
+output_path: "C:\\caf.brAIn\\Object Detection\\prediction_testing\\v2 Bath"
 
 image_generation_inputs:
   generate_images: false
   image_folder_path: null
-  x_coordinate: null
-  y_coordinate: null
+  img_locations_path: null
+
+build_model_inputs:
+  build_model: false
+  user_images_folder_path: null # "C:\\caf.brAIn\\Object Detection\\training_images\\Object detection FINISHED"
+  classification_names: null
+#    - PMM
+#    - PM
+#    - RS
+#    - RP
+#    - M
+#    - P
+#    - X
+#    - S
+  hyperparameter_optimisation: null
 
 prediction_inputs:
-  prediction_object_detection: false
-  trained_model: null
+  prediction_object_detection: true
+  os_path: "T:\\Adil Zaheer\\Object Detection - extra data for prediction\\oproad_gpkg_gb\\Data\\oproad_gb.gpkg"
+  model_path: "C:\\caf.brAIn\\Object Detection\\output_v6\\output\\ModelBuildingOutputs\\model_results\\optimal_model\\best.pt"
+  img_locations_pred: "Bath"
+  locations: null
+
+temp_inputs:
+  north_eng_images: "Q:\\North England\\RGB_12.5cm_2025_latest"
+  south_eng_images: "Q:\\South England\\RGB_12.5cm"

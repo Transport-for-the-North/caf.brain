@@ -152,3 +152,63 @@ def _user_image_path_finder(
     path_df = pd.DataFrame(list(path_dict.items()), columns=["box_boundary", "paths"])
 
     return path_df
+
+
+def _TEMP_user_image_path_finder(
+user_coordinate_data: pd.DataFrame,
+image_folder_path_north: Path,
+image_folder_path_south: Path
+) -> pd.DataFrame:
+    """
+    Find image paths for each of the user provided coordinates.
+    Each row in user_coordinate_data has a box_boundary identifier.
+    This function searches the image folder (recursively) for .jpg files
+    whose filename (without extension) matches one of those identifiers.
+
+    Parameters
+    ----------
+    image_folder: Path to image folder.
+    user_coordinate_data: User coordinate data created after the
+                          euclidean_distance function.
+
+    Returns
+    -------
+    path_df: Satellite image path dataframe that corresponds to the user
+             provided locations.
+    """
+
+    counter = 0
+    paths_north = glob.glob(os.path.join(image_folder_path_north) + "/**/*.jpg", recursive=True)
+    paths_south = glob.glob(os.path.join(image_folder_path_south) + "/**/*.jpg", recursive=True)
+
+    user_coordinate_data["box_boundary"] = user_coordinate_data["box_boundary"].astype(str)
+    reference_set = set(user_coordinate_data["box_boundary"].values)
+
+    north_south = len(paths_north) + len(paths_south)
+    path_dict = {}
+    LOG.info(
+        "Looking for %s unique reference values in %s image files",
+        len(reference_set),
+        north_south,
+    )
+
+    with tqdm(total=north_south) as pbar:
+        for path in paths_north + paths_south:
+            _, file_name = os.path.split(path)
+            name = os.path.splitext(file_name)[0]
+
+            if name in reference_set:
+                path_dict[name] = path
+            pbar.update(1)
+            counter += 1
+            if counter % 100 == 0:
+                LOG.info(
+                    "Processed %s/%s paths, found %s matches so far",
+                    counter,
+                    north_south,
+                    len(path_dict),
+                )
+
+    path_df = pd.DataFrame(list(path_dict.items()), columns=["box_boundary", "paths"])
+
+    return path_df

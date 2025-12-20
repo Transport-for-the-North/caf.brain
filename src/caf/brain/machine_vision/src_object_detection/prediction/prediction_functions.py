@@ -143,13 +143,11 @@ def main_prediction(output: Path, images_to_predict_path: Path, model_path: Path
 
     if model_path is None:
         raise ValueError(
-            "Model_path is none. This is required in order to run \
-             the model. If you ran the model build it should be located \
-             inside a folder your_out_path/ModelBuildingOutputs/model_results/best.pt. \
-             This is generated when the model is trained which is what \
-             you are using for your predictions. If you did not \
-             run the model build then it should be located here: \
-             "
+             "Model_path is none. This is required in order to run \n"
+             "the model. If you ran the model build it should be located \n"
+             "inside a folder your_out_path/ModelBuildingOutputs/model_results/optimal_model/best.pt \n"
+             "This is generated when the model is trained which is what \n"
+             "you are using for your predictions."
         )
 
     if output is None:

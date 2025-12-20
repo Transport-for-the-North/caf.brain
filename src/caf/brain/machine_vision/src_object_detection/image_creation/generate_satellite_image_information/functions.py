@@ -16,6 +16,55 @@ from tqdm import tqdm
 LOG = logging.getLogger(__name__)
 
 
+def _TEMP_satellite_xml_processor(image_folder_path_north: Path, output_path: Path,
+                                  image_folder_path_south: Path) -> pd.DataFrame:
+    """
+    Creates a dataframe of British National Grid satellite image xml data.
+
+    ***************
+    THIS IS TEMPORARY UNTIL WE ARE ABLE TO COMBINE NORTH AND SOUTH
+    BLUESKY IMAGES
+    ***************
+
+    Parameters
+    ----------
+    image_folder_path: Path to folder that contains xml files.
+    output_path: Path to output location.
+
+    Returns
+    -------
+    final_data: Dataframe of xml information for evey file in the folder_path.
+    """
+    LOG.info("XML processing beginning")
+    problem_html = []
+
+    data_dict = {}
+    counter = 0
+    paths_north = glob.glob(os.path.join(image_folder_path_north) + "/**/*.xml", recursive=True)
+    paths_south = glob.glob(os.path.join(image_folder_path_south) + "/**/*.xml", recursive=True)
+
+    with tqdm(total=None) as pbar:
+        for path in paths_north + paths_south:
+            df, name = _extract_info_from_xml(html_file_path=path)
+            if df is None or df.empty:
+                LOG.warning("Skipping file %s due to missing or empty data.", path)
+                problem_html.append(path)
+                continue
+            data_dict[name] = df
+            pbar.update(1)
+            counter += 1
+            if counter % 1000 == 0:
+                LOG.info("Processed item %s: %s", counter, path)
+
+    final_data = pd.concat(data_dict.values(), ignore_index=True)
+
+    problem_df = pd.DataFrame(problem_html)
+    problem_df.to_csv(os.path.join(output_path, "problem_xml_files.csv"), index=False)
+
+    LOG.info("XML processing ending")
+    return final_data
+
+
 def _satellite_xml_processor(image_folder_path: Path, output_path: Path) -> pd.DataFrame:
     """
     Creates a dataframe of British National Grid satellite image xml data.
@@ -189,7 +238,7 @@ def _image_path_name_finder(folder_path: Path) -> pd.DataFrame:
 
     Parameters
     ----------
-    folder_path: Path to folder that contains the satelite images (JPG).
+    folder_path: Path to folder that contains the satellite images (JPG).
 
     Returns
     -------
@@ -199,6 +248,39 @@ def _image_path_name_finder(folder_path: Path) -> pd.DataFrame:
 
     paths = glob.glob(os.path.join(folder_path) + "/**/*.jpg", recursive=True)
     for path in paths:
+        _, file_name = os.path.split(path)
+        name = os.path.splitext(file_name)[0]
+        meta_dict[name] = path
+
+    df = pd.DataFrame(list(meta_dict.items()), columns=["box_boundary", "path"])
+
+    return df
+
+
+def _TEMP_image_path_name_finder(image_folder_path_north: Path,
+                                 image_folder_path_south: Path) -> pd.DataFrame:
+    """
+    Helper function for finding satellite image names and path locations.
+
+    ***************
+    THIS IS TEMPORARY UNTIL WE ARE ABLE TO COMBINE NORTH AND SOUTH
+    BLUESKY IMAGES
+    ***************
+
+    Parameters
+    ----------
+    folder_path: Path to folder that contains the satellite images (JPG).
+
+    Returns
+    -------
+    df: Dataframe of image paths and their box boundary (BNG name).
+    """
+    meta_dict = {}
+
+    paths_north = glob.glob(os.path.join(image_folder_path_north) + "/**/*.jpg", recursive=True)
+    paths_south = glob.glob(os.path.join(image_folder_path_south) + "/**/*.jpg", recursive=True)
+
+    for path in paths_north + paths_south:
         _, file_name = os.path.split(path)
         name = os.path.splitext(file_name)[0]
         meta_dict[name] = path

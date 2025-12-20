@@ -6,6 +6,10 @@ Original author: Adil Zaheer
 import logging
 from pathlib import Path
 import time
+import geopandas as gpd
+
+from caf.brain.machine_vision.src_object_detection.image_creation.generate_set_geog_data.functions import \
+    _get_general_area_junc_coords
 from caf.brain.machine_vision.src_object_detection.model_building.build_model_data_functions import (
     main_ttv_creation,
     generate_folders,
@@ -22,10 +26,10 @@ from caf.brain.machine_vision.src_object_detection.image_creation.crop_user_sate
     image_crop,
 )
 from caf.brain.machine_vision.src_object_detection.image_creation.generate_satellite_image_information.main import (
-    image_info_generation,
+    image_info_generation, TEMP_image_info_generation,
 )
 from caf.brain.machine_vision.src_object_detection.image_creation.generate_user_satellite_images.main import (
-    locate_user_coordinates,
+    locate_user_coordinates, TEMP_locate_user_coordinates,
 )
 from caf.brain.machine_vision.src_object_detection.prediction.prediction_functions import (
     main_prediction,
@@ -53,13 +57,13 @@ def main(params: ObjectDetectionInputs, output_path: Path) -> None:
             image_folder_path=params.image_generation_inputs.image_folder_path,
         )
 
+        df = gpd.read_file(params.user_locations_path)
+
         user_image_metadata = locate_user_coordinates(
-            user_locations_csv_path=params.user_locations_csv_path,
+            df=df,
             output_path=output_path,
             satellite_image_metadata=satellite_image_metadata,
             image_folder_path=params.image_generation_inputs.image_folder_path,
-            x_coordinate=params.image_generation_inputs.x_coordinate,
-            y_coordinate=params.image_generation_inputs.y_coordinate,
         )
 
         _ = image_crop(
@@ -124,21 +128,39 @@ def main(params: ObjectDetectionInputs, output_path: Path) -> None:
         #         predictions/
         #           labels/
         #           prediction_summary.csv
-        model_dir = Path(output_path) / "ObjectDetectionResults"
+        model_dir = Path(params.output_path) / "ObjectDetectionResults"
         model_dir.mkdir(parents=True, exist_ok=True)
 
-        satellite_image_metadata = image_info_generation(
+        # generating bng images metadata
+        # satellite_image_metadata = image_info_generation(
+        #     output_path=model_dir,
+        #     image_folder_path=params.image_generation_inputs.image_folder_path
+        # )
+
+        satellite_image_metadata = TEMP_image_info_generation(
             output_path=model_dir,
-            image_folder_path=params.image_generation_inputs.image_folder_path,
+            image_folder_path_north=params.temp_inputs.north_eng_images,
+            image_folder_path_south=params.temp_inputs.south_eng_images,
         )
 
-        user_image_metadata = locate_user_coordinates(
-            user_locations_csv_path=params.user_locations_csv_path,
+        df = _get_general_area_junc_coords(output_path=model_dir,
+                                           os_path=params.prediction_inputs.os_path,
+                                           user_prediction_location=params.prediction_inputs.img_locations_pred,
+                                           locations=params.prediction_inputs.locations)
+
+        # user_image_metadata = locate_user_coordinates(
+        #     df=df,
+        #     output_path=model_dir,
+        #     satellite_image_metadata=satellite_image_metadata,
+        #     image_folder_path=params.image_generation_inputs.image_folder_path,
+        # )
+
+        user_image_metadata = TEMP_locate_user_coordinates(
+            df=df,
             output_path=model_dir,
             satellite_image_metadata=satellite_image_metadata,
-            image_folder_path=params.image_generation_inputs.image_folder_path,
-            x_coordinate=params.image_generation_inputs.x_coordinate,
-            y_coordinate=params.image_generation_inputs.y_coordinate,
+            image_folder_path_north=params.temp_inputs.north_eng_images,
+            image_folder_path_south=params.temp_inputs.south_eng_images,
         )
 
         output_dir = image_crop(

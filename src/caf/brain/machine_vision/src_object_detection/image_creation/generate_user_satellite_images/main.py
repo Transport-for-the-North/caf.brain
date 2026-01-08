@@ -77,8 +77,6 @@ def TEMP_locate_user_coordinates(
     output_path: Path to output folder.
     satellite_image_metadata: Satellite image metadata containing tile names,
                               midpoints and path locations.
-    image_folder_path: Path to folder that contains British National Grid tile
-                       jpegs and their accompanying xml files.
 
     Returns
     -------

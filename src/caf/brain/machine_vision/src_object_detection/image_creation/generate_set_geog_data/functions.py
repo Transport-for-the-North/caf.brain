@@ -198,7 +198,7 @@ def _get_general_area_junc_coords(
     LOG.info("Loaded %d boundaries", len(df))
 
     # Spatial join to find junctions within boundaries
-    LOG.info("Finding junctions within boundaries...")
+    LOG.info("Finding junctions within boundaries")
     joined = gpd.sjoin(os_data, df, how="inner", predicate="within")
 
     if joined.empty:

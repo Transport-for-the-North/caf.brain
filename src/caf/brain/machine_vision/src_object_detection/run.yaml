@@ -1,4 +1,4 @@
-output_path: "C:\\caf.brAIn\\Object Detection\\prediction_testing\\v2 Bath"
+output_path: "C:\\caf.brAIn\\Object Detection\\prediction_testing\\v3 Bath"
 
 image_generation_inputs:
   generate_images: false
@@ -21,7 +21,7 @@ build_model_inputs:
 
 prediction_inputs:
   prediction_object_detection: true
-  os_path: "T:\\Adil Zaheer\\Object Detection - extra data for prediction\\oproad_gpkg_gb\\Data\\oproad_gb.gpkg"
+  os_path: "T:\\Adil Zaheer\\Object Detection - extra data for prediction\\oproad_gb.gpkg"
   model_path: "C:\\caf.brAIn\\Object Detection\\output_v6\\output\\ModelBuildingOutputs\\model_results\\optimal_model\\best.pt"
   img_locations_pred: "Bath"
   locations: null

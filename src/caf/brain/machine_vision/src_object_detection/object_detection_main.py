@@ -128,7 +128,7 @@ def main(params: ObjectDetectionInputs, output_path: Path) -> None:
         #         predictions/
         #           labels/
         #           prediction_summary.csv
-        model_dir = Path(params.output_path) / "ObjectDetectionResults"
+        model_dir = Path(output_path) / "ObjectDetectionResults"
         model_dir.mkdir(parents=True, exist_ok=True)
 
         # generating bng images metadata

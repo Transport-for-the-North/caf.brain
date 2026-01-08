@@ -54,28 +54,37 @@ def image_crop(
     invalid_images = []
 
     with tqdm(total=None) as pbar:
-        for path in user_image_metadata["paths"]:
-            base_name = os.path.basename(path)
-            file_name = os.path.splitext(base_name)[0]
-            output_filename = output_dir / f"{file_name}_cropped.jpg"
-            output_filename_extended = output_dir / f"{file_name}_cropped_extended.jpg"
+        for idx, row_data in user_image_metadata.iterrows():
+        # for path in user_image_metadata["paths"]:
+        #     base_name = os.path.basename(path)
+        #     file_name = os.path.splitext(base_name)[0]
+            path = row_data["paths"]
+            file_name = row_data["box_boundary"]
+
+            if "id" in row_data and pd.notna(row_data["id"]):
+                unique_id = str(row_data["id"])
+            else:
+                unique_id = f"{file_name}_{idx}"
+
+            output_filename = output_dir / f"{unique_id}_cropped.jpg"
+            output_filename_extended = output_dir / f"{unique_id}_cropped_extended.jpg"
 
             if output_filename.exists() or output_filename_extended.exists():
-                LOG.info(
-                    "Skipping image processing as final cropped image already exists in \
-                          output directory."
-                )
-                continue
-
-            row_data = user_image_metadata[user_image_metadata["box_boundary"] == file_name]
-
-            if row_data.empty:
-                LOG.warning("No matching data found for %s", file_name)
+                LOG.info("Skipping image processing as final cropped image already exists")
                 pbar.update(1)
                 continue
 
-            focal_point_easting = row_data["coordinates_easting"].values[0]
-            focal_point_northing = row_data["coordinates_northing"].values[0]
+            # row_data = user_image_metadata[user_image_metadata["box_boundary"] == file_name]
+            # if row_data.empty:
+            #     LOG.warning("No matching data found for %s", file_name)
+            #     pbar.update(1)
+            #     continue
+            #
+            # focal_point_easting = row_data["coordinates_easting"].values[0]
+            # focal_point_northing = row_data["coordinates_northing"].values[0]
+
+            focal_point_easting = row_data["coordinates_easting"]
+            focal_point_northing = row_data["coordinates_northing"]
 
             if _check_raster_file(path):
                 with rasterio.open(path) as img:

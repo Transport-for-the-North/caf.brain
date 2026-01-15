@@ -1,0 +1,38 @@
+paths:
+    file_path: "D:\\2025 work streams\\norcom_mvp+\\qa\\cb_tfn_v2023.2.csv"
+    folder_path: null
+    output_path: "D:\\2025 work streams\\caf.brAIn\\prediction_model\\final_review_winter25\\full_model_testing_v5"
+    validation_path: null
+
+data_classification:
+    target_column: "numcarvan"
+    custom_index:
+      - "householdid"
+    categorical_features:
+        - "mode"
+        - "gender"
+        - "hh_child"
+        - "ns"
+    numerical_features:
+        - "trips"
+        - "triptravtime"
+    weight_column: "w5"
+    is_time_series: True
+
+transforming_inputs:
+    column_name_to_drop_rows: null
+    value_in_row: null
+    classification_prediction: [2, 0, 3, 1, 5, 7, 4, 6, 9, 8]
+    split_by_value: null
+    split_size: null
+    sample_size_encode: False
+    select_encode_values: False
+    encode_values_to_drop: null
+
+modelling:
+    model_choice:
+        - GRADIENT_BOOSTING_CLASSIFIER
+    full_transformations: False
+    cv: null
+    skip_feature_selection: True
+    intensive_feature_selection: False

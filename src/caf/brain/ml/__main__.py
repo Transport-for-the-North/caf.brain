@@ -38,9 +38,9 @@ def model_setup():
     parser.add_argument(
         "--config",
         type=Path,
-        default=Path(__file__).parent / "run_config.yaml",
+        default=Path(__file__).parent / "config.yaml",
         help=("Path to YAML config file. You should use this \n"
-              "src/caf/brain/ml/run_config.yaml as the template. \n"
+              "src/caf/brain/ml/config.yaml as the template. \n"
               "If you edit the pre-existing config file, then there is no \n"
               "need to pass an alternative config path")
     )

@@ -127,7 +127,7 @@ class Models(enum.Enum):
         GradientBoostingRegressor,
         {},
     )  # type: ignore
-    GRADIENT_BOOSTING_CLASS = (
+    GRADIENT_BOOSTING_CLASSIFIER = (
         GradientBoostingClassifier,
         {},
     )  # type: ignore
@@ -428,7 +428,6 @@ def get_model_grid_from_type(model_type: Type[BaseEstimator]) -> dict:
         ExtraTreesClassifier: ModelGrids.EXTRA_TREES_CLASSIFIER.value,
         DecisionTreeClassifier: ModelGrids.DECISION_TREE_CLASSIFIER.value,
         GradientBoostingClassifier: ModelGrids.GRADIENT_BOOSTING_CLASSIFIER.value,
-        # KLUDGE: Need a better way to handle the different logistic regressions
         LogisticRegression: ModelGrids.LOGIT_REGRESSION_ELASTICNET.value,
     }
     try:

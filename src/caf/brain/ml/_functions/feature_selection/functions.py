@@ -31,6 +31,8 @@ from sklearn.model_selection import (
 )
 from tqdm import tqdm
 
+from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import sample_data
+
 LOG = logging.getLogger(__name__)
 
 
@@ -84,27 +86,7 @@ def rf_feature_selection(
     weight = data[weight_column].values.flatten() if weight_column else None
     weight_df = data[weight_column] if weight_column else None
 
-    n_rows = len(x)
-    use_sampling = n_rows > 500000
-    if use_sampling:
-        LOG.warning(
-            "Dataset has %d rows. Sampling 500,000 rows for memory efficiency.", n_rows
-        )
-
-        if is_time_series:
-            sample_indices = x.index[-500000:]
-        else:
-            sample_indices = x.sample(n=500000, random_state=42).index
-
-        x_sample = x.loc[sample_indices]
-        y_sample = y.loc[sample_indices]
-        weight_sample = (
-            weight[x.index.get_indexer(sample_indices)] if weight is not None else None
-        )
-    else:
-        x_sample = x
-        y_sample = y
-        weight_sample = weight
+    x_sample, y_sample, weight_sample = sample_data(x=x, y=y, weight=weight, is_time_series=is_time_series)
 
     if classification_prediction:
         model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
@@ -126,10 +108,10 @@ def rf_feature_selection(
         pbar.update(1)
 
     selector = SelectFromModel(model, prefit=True)
-    selected_features = x.columns[selector.get_support()].tolist()
+    selected_features = x_sample.columns[selector.get_support()].tolist()
 
     feature_importance = pd.DataFrame(
-        {"feature": x.columns, "importance": model.feature_importances_}
+        {"feature": x_sample.columns, "importance": model.feature_importances_}
     ).sort_values("importance", ascending=False)
 
     LOG.info("Feature Importances:")
@@ -398,6 +380,7 @@ def analyse_feature_importance(
     target_column: str | None,
     weight_column: str | None,
     output_path: Path | None,
+    is_time_series: bool = False,
 ) -> pd.DataFrame:
     """
     Simple feature selection through importance and correlation metrics with
@@ -409,6 +392,7 @@ def analyse_feature_importance(
     target_column: String column name of value to predict.
     weight_column: Optional string column value to be used as weight.
     output_path: Path to output location.
+    is_time_series: If true, data is temporal in nature.
 
     Returns
     -------
@@ -426,10 +410,9 @@ def analyse_feature_importance(
     if not target_column:
         raise ValueError("A target column is required for feature selection")
 
-    x = train_transformed.drop(
-        columns=[target_column] + ([weight_column] if weight_column else [])
-    )
+    x = train_transformed.drop(columns=[target_column] + ([weight_column] if weight_column else []))
     y = train_transformed[target_column]
+    weight = train_transformed[weight_column].values.flatten() if weight_column else None
 
     is_classification = y.dtype == "object" or y.dtype.name == "category" or y.nunique() <= 20
     if is_classification:
@@ -437,25 +420,12 @@ def analyse_feature_importance(
     else:
         rf = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
 
-    n_rows, n_cols = x.shape
-    if n_rows > 500000:
-        LOG.warning(
-            "Data is very large and may cause memory issues. To fix \n"
-            "this, a random sample has been taken. If your data is \n"
-            "time series then this random sample may destroy time \n"
-            "observed trends. It is therefore recommended to \n"
-            "evaluate your data and rerun this function or use \n"
-            "main_feature_selection / full model flow."
-        )
-        sample = train_transformed.sample(n=500000, random_state=42)
-        x_sample = sample.drop(
-            columns=[target_column] + ([weight_column] if weight_column else [])
-        )
-        y_sample = sample[target_column]
+    x, y, weight = sample_data(x=x, y=y, weight=weight, is_time_series=is_time_series)
 
-        results_df = _analyse_feat_importance_helper(x_sample, y_sample, rf, -1, 3)
+    n_rows, n_cols = train_transformed.shape
+    if n_rows > 500000:
+        results_df = _analyse_feat_importance_helper(x, y, rf, -1, 3)
     else:
-        # 10, -1
         results_df = _analyse_feat_importance_helper(x, y, rf, -1, 10)
 
     importance_metrics, filtered_data = filtering_results(

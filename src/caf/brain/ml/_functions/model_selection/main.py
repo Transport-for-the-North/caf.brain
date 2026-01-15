@@ -98,6 +98,7 @@ def main_model_selection(
             models_to_test=model,
             classification_prediction=transforming_inputs.classification_prediction,
             output_folder=output,
+            is_time_series=data_classification.is_time_series
         )
     else:
         LOG.error(

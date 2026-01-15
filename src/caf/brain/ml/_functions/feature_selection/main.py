@@ -104,6 +104,7 @@ def main_feature_selection(
             target_column=data_classification.target_column,
             weight_column=data_classification.weight_column,
             output_path=output,
+            is_time_series=data_classification.is_time_series
         )
 
         test_final, cols_dropped_by_feat_select = combine_results(
@@ -136,6 +137,7 @@ def main_feature_selection(
                 target_column=data_classification.target_column,
                 weight_column=data_classification.weight_column,
                 output_path=output,
+                is_time_series=data_classification.is_time_series
             )
 
             test_final, cols_dropped_by_feat_select = combine_results(
@@ -172,6 +174,7 @@ def main_feature_selection(
         target_column=data_classification.target_column,
         weight_column=data_classification.weight_column,
         output_path=output,
+        is_time_series=data_classification.is_time_series
     )
 
     test_final, cols_dropped_by_feat_select = combine_results(

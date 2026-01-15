@@ -543,4 +543,7 @@ def process_data_pipeline(
             if weight_df is not None:
                 final_df[weight_column] = weight_df
 
+    if drop_vals is not None and not drop_vals.empty:
+        drop_vals.to_csv(os.path.join(output_folder, "dropped_encoding_vals.csv"), index=True)
+
     return final_df, drop_vals, pipeline_out

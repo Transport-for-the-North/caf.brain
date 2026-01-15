@@ -96,16 +96,16 @@ transforming_inputs:
 
 ### Parameters
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `column_name_to_drop_rows` | `list[str]` or `null` | Columns containing values to be filtered out |
-| `value_in_row` | `list[str/float/int]` or `null` | Values to remove from corresponding columns in `column_name_to_drop_rows` |
-| `classification_prediction` | `tuple[int]` or `null` | Classes to predict for classification problems (e.g., `[0, 1, 2]`) |
-| `split_by_value` | `str` or `null` | Value in a custom index column to use as train/test split point (e.g., "2020" for year) |
-| `split_size` | `float` or `null` | Train/test split ratio (default: 0.2 if null) |
-| `sample_size_encode` | `bool` | If `True`, encode categorical variables by dropping the most frequent category |
-| `select_encode_values` | `bool` | If `True`, manually specify which categorical values to drop during encoding |
-| `encode_values_to_drop` | `list[str]` or `null` | Categorical values to drop when encoding (length must match `categorical_features`) |
+| Parameter | Type | Description                                                                                                         |
+|-----------|------|---------------------------------------------------------------------------------------------------------------------|
+| `column_name_to_drop_rows` | `list[str]` or `null` | Columns containing values to be filtered out                                                                        |
+| `value_in_row` | `list[str/float/int]` or `null` | Values to remove from corresponding columns in `column_name_to_drop_rows`                                           |
+| `classification_prediction` | `tuple[int]` or `null` | Classes to predict for classification problems (e.g., `[0, 1, 2]`)                                                  |
+| `split_by_value` | `str` or `null` | Value in a custom index column to use as train/test split point (e.g., "2020" for year)                             |
+| `split_size` | `float` or `null` | Train/test split ratio (default: 0.2 if null)                                                                       |
+| `sample_size_encode` | `bool` | If `True`, encode categorical variables by dropping the most frequent category                                      |
+| `select_encode_values` | `bool` | If `True`, manually specify which categorical values to drop during encoding                                        |
+| `encode_values_to_drop` | `list[str]` or `null` | Categorical values to drop when encoding (length must match `categorical_features`). Links to select_encode_values. |
 
 ### Example: Filtering Rows
 
@@ -124,7 +124,20 @@ in the mode column where `mode == "car"`.
 - Order matters: `value_in_row` entries must correspond to `column_name_to_drop_rows` entries
 - If unfamiliar with encoding, leave `sample_size_encode` and `select_encode_values` as `False`
 - For time series data, use `split_by_value` with a year/date column in `custom_index`
+- If `sample_size_encode`, `select_encode_values` and `encode_values_to_drop` are left as False and null respectively, standard SciKitLearn encoding principles are applied.
+- If `select_encode_values` is true, then `encode_values_to_drop` must contain the values to "drop" (used as reference for encoding). This must also be in the same order as the variables passed to `categorical_features`. Example below.
 
+### Example: select_encode_values
+```yaml
+select_encode_values: True
+encode_values_to_drop:
+  - 0
+  - 1
+categorical_features: 
+  - "mode"
+  - "adults_in_household"
+```
+- So here mode 0 and adults_in_household 1 are dropped (used as reference values) during encoding. This allows you to have more control over categorical variable encoding.
 ---
 
 ## 4. Modelling
@@ -193,8 +206,8 @@ If `cv` is `null`, standard K-Fold is used. Available options:
 ```yaml
 modelling:
     model_choice:
-        - Models.RANDOM_FOREST_REGRESSOR
-        - Models.GRADIENT_BOOSTING_REGRESSOR
+        - RANDOM_FOREST_REGRESSOR
+        - GRADIENT_BOOSTING_REGRESSOR
     full_transformations: True
     cv: timeseriessplit
     skip_feature_selection: False
@@ -245,8 +258,8 @@ transforming_inputs:
 
 modelling:
     model_choice:
-        - Models.RANDOM_FOREST_REGRESSOR
-        - Models.GRADIENT_BOOSTING_REGRESSOR
+        - RANDOM_FOREST_REGRESSOR
+        - GRADIENT_BOOSTING_REGRESSOR
     full_transformations: True
     cv: timeseriessplit
     skip_feature_selection: False

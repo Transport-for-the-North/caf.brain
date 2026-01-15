@@ -20,6 +20,7 @@ from sklearn.model_selection import cross_val_score
 
 # Local Imports
 from caf.brain.ml._functions._ml_inputs import Models
+from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import sample_data
 
 LOG = logging.getLogger(__name__)
 
@@ -106,6 +107,7 @@ def select_model(
     weight_column: str | None,
     models_to_test: list[Models],
     classification_prediction: tuple[int, ...] | None,
+    is_time_series: bool = False,
 ) -> BaseEstimator:
     """
     Quickly assess and select the best model from a list of candidates.
@@ -122,40 +124,44 @@ def select_model(
     classification_prediction: List of integers that correspond to the
                                target column. The value(s) to predict
                                in a classification problem.
+    is_time_series: If true data is temporal is nature.
 
     Returns
     -------
     best_model: Best performing model initialised.
     """
-    if not target_column or weight_column:
+    eval_df_path = Path(output_folder) / "model_algorithm_evaluation.csv"
+
+    if eval_df_path.exists():
+        LOG.info("model_algorithm_evaluation.csv already exists so the best "
+                 "model is being selected from these results.")
+        df = pd.read_csv(eval_df_path)
+        if classification_prediction:
+            best_idx = df["F1"].idxmax()
+            best_model_str = str(df.loc[best_idx, "Models"])
+        else:
+            best_idx = df["R2"].idxmax()
+            best_model_str = str(df.loc[best_idx, "Models"])
+        best_model_enum = [best_model_str]
+        best_model = best_model_enum[0].get_model()
+
+        return best_model
+
+    if not target_column:
         raise ValueError(
-            "Please make sure that target column and weight \
-                          column"
+            "Please provide a target column. "
+            "This should be a column title passed as a string."
         )
-    weight = None
+
+    x = train.drop(columns=[target_column] + ([weight_column] if weight_column else []))
     y = train[target_column]
-    x = train.drop(columns=target_column)
-    if weight_column in train.columns:
-        weight = x[weight_column]
-        x = x.drop(columns=weight_column)
+    weight = train[weight_column].values.flatten() if weight_column else None
 
     acc = {}
     best_score = float("-inf")
     best_model = None
 
-    n_rows, n_cols = x.shape
-    if n_rows > 500000:
-        LOG.warning(
-            "Data is very large and may cause memory issues. To fix \n"
-            "this, a random sample has been taken. If your data is \n"
-            "time series then this random sample may destroy time \n"
-            "observed trends. It is therefore recommended to \n"
-            "evaluate your data and rerun this function or use \n"
-            "main_model_selection / full model flow."
-        )
-        sample = train.sample(n=500000, random_state=42)
-        x = sample.drop(columns=[target_column] + ([weight_column] if weight_column else []))
-        y = sample[target_column]
+    x, y, weight = sample_data(x=x, y=y, weight=weight, is_time_series=is_time_series)
 
     for model_enum in models_to_test:
         # scikit
@@ -185,6 +191,7 @@ def select_model(
     LOG.info("Best model: %s", best_model)
     LOG.info("Best model score: %s", best_score)
     evaluation_df = pd.DataFrame.from_dict(acc, orient="index")
+    evaluation_df.index.name = "Models"
     evaluation_df.to_csv(output_folder / "model_algorithm_evaluation.csv", index=True)
 
     return best_model

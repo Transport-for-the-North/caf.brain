@@ -29,6 +29,7 @@ from caf.brain.ml._functions._ml_inputs import (
     ModelGrids,
     get_model_grid_from_type,
 )
+from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import sample_data
 
 LOG = logging.getLogger(__name__)
 
@@ -71,6 +72,13 @@ def select_param(
     best_model: Fitted final model for prediction on unseen (test) data.
 
     """
+    model_filename = os.path.join(output_folder, "final_model.pkl")
+    filename = "final_model.pkl"
+    model_path = Path(output_folder) / filename
+    if model_path.exists():
+        final_model = joblib.load(model_path)
+        return final_model
+
     if not target_column:
         raise ValueError(
             "Please provide a target column for hyperparameter \
@@ -80,6 +88,8 @@ def select_param(
     y = train_final[target_column]
     weight = train_final[weight_column].values.flatten() if weight_column else None
     cv = get_cv_class(cv_method=cv, splits=None, repeats=None, is_time_series=is_time_series)
+
+    x, y, weight = sample_data(x=x, y=y, weight=weight, is_time_series=is_time_series)
 
     if isinstance(model_name, list):
         if len(model_name) == 1:
@@ -179,7 +189,6 @@ def select_param(
     best_model = model_instance.set_params(**best_params)
     best_model.fit(x, y, sample_weight=weight)
 
-    model_filename = os.path.join(output_folder, "final_model.pkl")
     joblib.dump(best_model, model_filename)
     LOG.info("Best model saved here: %s", model_filename)
     # coeffs
@@ -230,6 +239,7 @@ def rand_search(
     best_params: best hyperparameters found.
 
     """
+    LOG.info("Performing randomised search for hyperparameter optimisation.")
     random_search = RandomizedSearchCV(
         model_instance,
         param_grid,
@@ -279,6 +289,7 @@ def perform_grid_search(
     -------
     best_params: best hyperparameters found.
     """
+    LOG.info("Performing grid search for hyperparameter optimisation.")
     grid_search = GridSearchCV(
         model_instance,
         param_grid,

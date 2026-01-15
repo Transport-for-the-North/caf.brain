@@ -6,8 +6,10 @@ Original author: Adil Zaheer
 # Built-Ins
 import logging
 import time
+import os
 from pathlib import Path
 
+import joblib
 # Third Party
 import pandas as pd
 
@@ -45,24 +47,78 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
     """
     start_time = time.time()
 
-    data_dict, drop_vals, numerical_pipeline = main_input_data(
-        output_path=output_path,
-        paths=params.paths,
-        data_classification=params.data_classification,
-        transforming_inputs=params.transforming_inputs,
-    )
+    paths = {
+        "train_scaled": Path(output_path) / "train_scaled.csv",
+        "test_scaled": Path(output_path) / "test_scaled.csv",
+        "train_unscaled": Path(output_path) / "train_unscaled.csv",
+        "test_unscaled": Path(output_path) / "test_unscaled.csv",
+        "validate": Path(output_path) / "validate.csv",
+    }
 
-    train_scaled = pd.DataFrame.from_dict(data_dict["train_scaled"])
-    test_scaled = pd.DataFrame.from_dict(data_dict["test_scaled"])
-    train_unscaled = pd.DataFrame.from_dict(data_dict["train_unscaled"])
-    test_unscaled = pd.DataFrame.from_dict(data_dict["test_unscaled"])
+    if paths["train_scaled"].exists() and paths["test_scaled"].exists():
+        LOG.info("Training data is already present from a previous model run "
+                 "so it is being read in.")
 
-    train_scaled.to_csv(output_path / "train_scaled.csv", index=True)
-    test_scaled.to_csv(output_path / "test_scaled.csv", index=True)
+        drop_vals_path = Path(output_path) / "dropped_encoding_vals.csv"
+        if drop_vals_path.exists():
+            drop_vals = pd.read_csv(drop_vals_path)
+        else:
+            drop_vals = None
 
-    validate = None
-    if data_dict["validate"] is not None and len(data_dict["validate"]) > 0:
-        validate = pd.DataFrame.from_dict(data_dict["validate"])
+        data = {
+            name: pd.read_csv(path) if path.exists() else None
+            for name, path in paths.items()
+        }
+
+        validate = data["validate"]
+
+        custom_index = params.data_classification.custom_index
+        if custom_index:
+            for key in ["train_scaled", "test_scaled", "train_unscaled", "test_unscaled"]:
+                df = data[key]
+                if df is not None and all(col in df.columns for col in custom_index):
+                    data[key] = df.set_index(custom_index, verify_integrity=False)
+
+            if validate is not None and all(
+                col in validate.columns for col in custom_index):
+                validate = validate.set_index(custom_index, verify_integrity=False)
+
+        train_scaled = data["train_scaled"]
+        test_scaled = data["test_scaled"]
+        train_unscaled = data["train_unscaled"]
+        test_unscaled = data["test_unscaled"]
+
+        if params.data_classification.numerical_features:
+            num_pipe_path = Path(output_path) / "numerical_pipeline.pkl"
+            numerical_pipeline = joblib.load(num_pipe_path)
+        else:
+            numerical_pipeline = None
+
+    else:
+        LOG.info("Training data is not present from a previous model run so it"
+                 "is being generated.")
+
+        data_dict, drop_vals, numerical_pipeline = main_input_data(
+            output_path=output_path,
+            paths=params.paths,
+            data_classification=params.data_classification,
+            transforming_inputs=params.transforming_inputs,
+        )
+
+        train_scaled = pd.DataFrame.from_dict(data_dict["train_scaled"])
+        test_scaled = pd.DataFrame.from_dict(data_dict["test_scaled"])
+        train_unscaled = pd.DataFrame.from_dict(data_dict["train_unscaled"])
+        test_unscaled = pd.DataFrame.from_dict(data_dict["test_unscaled"])
+
+        train_scaled.to_csv(paths["train_scaled"], index=True)
+        test_scaled.to_csv(paths["test_scaled"], index=True)
+        train_unscaled.to_csv(paths["train_unscaled"], index=True)
+        test_unscaled.to_csv(paths["test_unscaled"], index=True)
+
+        validate = None
+        if data_dict["validate"] is not None and len(data_dict["validate"]) > 0:
+            validate = pd.DataFrame.from_dict(data_dict["validate"])
+            validate.to_csv(paths["validate"], index=True)
 
     selected_model = main_model_selection(
         paths=params.paths,

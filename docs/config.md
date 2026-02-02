@@ -19,10 +19,10 @@ Defines the locations of input data and output directories.
 
 ```yaml
 paths:
-    file_path: null
-    folder_path: null
-    output_path: null
-    validation_path: null
+    file_path: 
+    folder_path: 
+    output_path: 
+    validation_path: 
 ```
 
 ### Parameters
@@ -38,7 +38,7 @@ paths:
 - Either `file_path` OR `folder_path` must be provided, not both
 - All CSVs in `folder_path` must have identical column structures
 - For consistency, place pre-processed train/test data in `output_path`
-
+- Arguments that are not populated (null) must be removed from your config file.
 ---
 
 ## 2. Data Classification
@@ -73,7 +73,7 @@ data_classification:
 - **Categorical features** will be automatically encoded during preprocessing
 - **Custom index** columns should include any time columns (year, month, day etc.) if `is_time_series` is `True`
 - Include custom index columns to aid interpretation without affecting model training
-
+- Arguments that are not populated (null) must be removed from your config file.
 ---
 
 ## 3. Transforming Inputs
@@ -86,7 +86,8 @@ transforming_inputs:
       - null
     value_in_row:
       - null
-    classification_prediction: null
+    classification_prediction: 
+      - null
     split_by_value: null
     split_size: null
     sample_size_encode: False
@@ -96,16 +97,16 @@ transforming_inputs:
 
 ### Parameters
 
-| Parameter | Type | Description                                                                                                         |
-|-----------|------|---------------------------------------------------------------------------------------------------------------------|
-| `column_name_to_drop_rows` | `list[str]` or `null` | Columns containing values to be filtered out                                                                        |
-| `value_in_row` | `list[str/float/int]` or `null` | Values to remove from corresponding columns in `column_name_to_drop_rows`                                           |
-| `classification_prediction` | `tuple[int]` or `null` | Classes to predict for classification problems (e.g., `[0, 1, 2]`)                                                  |
-| `split_by_value` | `str` or `null` | Value in a custom index column to use as train/test split point (e.g., "2020" for year)                             |
-| `split_size` | `float` or `null` | Train/test split ratio (default: 0.2 if null)                                                                       |
-| `sample_size_encode` | `bool` | If `True`, encode categorical variables by dropping the most frequent category                                      |
-| `select_encode_values` | `bool` | If `True`, manually specify which categorical values to drop during encoding                                        |
-| `encode_values_to_drop` | `list[str]` or `null` | Categorical values to drop when encoding (length must match `categorical_features`). Links to select_encode_values. |
+| Parameter | Type                            | Description                                                                                                       |
+|-----------|---------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `column_name_to_drop_rows` | `list[str]` or `null`           | Columns containing values to be filtered out                                                                      |
+| `value_in_row` | `list[str/float/int]` or `null` | Values to remove from corresponding columns in `column_name_to_drop_rows`                                         |
+| `classification_prediction` | `list[int]` or `null`           | Classes to predict for classification problems (e.g., `0, 1, 2`)                                                  |
+| `split_by_value` | `str` or `null`                 | Value in a custom index column to use as train/test split point (e.g., "2020" for year)                           |
+| `split_size` | `float` or `null`               | Train/test split ratio (default: 0.2 if null)                                                                     |
+| `sample_size_encode` | `bool`                          | If `True`, encode categorical variables by dropping the most frequent category                                    |
+| `select_encode_values` | `bool`                          | If `True`, manually specify which categorical values to drop during encoding                                      |
+| `encode_values_to_drop` | `list[str]` or `null`           | Categorical values to drop when encoding (length must match `categorical_features`). Links to select_encode_values. |
 
 ### Example: Filtering Rows
 
@@ -126,6 +127,7 @@ in the mode column where `mode == "car"`.
 - For time series data, use `split_by_value` with a year/date column in `custom_index`
 - If `sample_size_encode`, `select_encode_values` and `encode_values_to_drop` are left as False and null respectively, standard SciKitLearn encoding principles are applied.
 - If `select_encode_values` is true, then `encode_values_to_drop` must contain the values to "drop" (used as reference for encoding). This must also be in the same order as the variables passed to `categorical_features`. Example below.
+- Arguments that are not populated (null) must be removed from your config file.
 
 ### Example: select_encode_values
 ```yaml
@@ -218,17 +220,17 @@ modelling:
 - You are able to provide a list of one algorithm to `model_choice` if you know which you would like to use
 - Classification algorithms are used for categorical Y variables (e.g. number of cars in a household). Regression is used for continuous Y variables (e.g. number of trips taken).
 - Leaving `skip_feature_selection` and `intensive_feature_selection` as False still allows standard feature selection to run. 
+- Arguments that are not populated (null) must be removed from your config file.
 
 ---
 
-## Complete Example Configuration
+## Regression Example Configuration
 
 ```yaml
 paths:
-    file_path: "data/input/training_data.csv"
-    folder_path: null
-    output_path: "outputs/model_results"
-    validation_path: "data/validation/validation_2025.csv"
+    file_path: "data\\input\\training_data.csv"
+    output_path: "outputs\\model_results"
+    validation_path: "data\\validation\\validation_2025.csv"
 
 data_classification:
     target_column: "trip_count"
@@ -249,12 +251,9 @@ transforming_inputs:
       - "purpose"
     value_in_row:
       - 99
-    classification_prediction: null
     split_by_value: "2020"
-    split_size: null
     sample_size_encode: False
     select_encode_values: False
-    encode_values_to_drop: null
 
 modelling:
     model_choice:
@@ -265,9 +264,43 @@ modelling:
     skip_feature_selection: False
     intensive_feature_selection: True
 ```
+---
+## Classification Example Configuration
+
+```yaml
+paths:
+    file_path: "data\\input\\training_data.csv"
+    output_path: "outputs\\model_results"
+
+data_classification:
+    target_column: 'numcarvan'
+    custom_index: 
+        - "householdid"
+        - "soc"
+        - "ns"
+    categorical_features: 
+        - "hh_child"
+    numerical_features: 
+        - "trips"
+    is_time_series: false
+
+transforming_inputs:
+    classification_prediction: 
+        - 0
+        - 1
+    sample_size_encode: false
+    select_encode_values: false
+
+modelling:
+    model_choice: 
+        - logit_regression_elasticnet 
+        - gradient_boosting_classifier
+    full_transformations: true
+    skip_feature_selection: false
+    intensive_feature_selection: true
+```
 
 ---
-
 ## Quick Start Checklist
 
 1. Set `output_path` (required)
@@ -277,7 +310,7 @@ modelling:
 5. Add time columns to `custom_index` if `is_time_series: True`
 6. Choose at least one model in `model_choice`
 7. Set `cv: timeseriessplit` if working with time series data
-
+8. Arguments that are not populated (null) are removed from your config file.
 ---
 
 ## Common Pitfalls
@@ -287,3 +320,4 @@ modelling:
 3. Mixing regression and classification models - choose models appropriate for your problem  
 4. Leaving `target_column` as null - this is required  
 5. Mismatched lengths between `column_name_to_drop_rows` and `value_in_row`
+6. Leaving values as null / None and not removing them from the config

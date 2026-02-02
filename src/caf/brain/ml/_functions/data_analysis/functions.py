@@ -40,7 +40,7 @@ from scipy.stats import pointbiserialr
 from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
     preprocess_numerical_data,
 )
-from caf.brain.ml._functions._ml_inputs import PredictionModelInputs
+from caf.brain.ml._functions._ml_inputs import DataClassificationInputs, ModellingInputs
 
 LOG = logging.getLogger(__name__)
 
@@ -57,8 +57,8 @@ def pre_forecast_data_analysis(
     train_unscaled: pd.DataFrame,
     test_unscaled: pd.DataFrame,
     numerical_pipeline: Optional[Pipeline],
-    data_classification: Optional[PredictionModelInputs.DataClassificationInputs] = None,
-    modelling: Optional[PredictionModelInputs.ModellingInputs] = None,
+    data_classification: Optional[DataClassificationInputs] = None,
+    modelling: Optional[ModellingInputs] = None,
     target_column: Optional[str] = None,
     weight_column: Optional[str] = None,
     numerical_features: Optional[list[str]] = None,
@@ -225,7 +225,8 @@ def pre_forecast_data_analysis(
                     "Design matrix is rank deficient (rank %d, expected %d). \n"
                     "This is likely due to perfect multicollinearity from encoded categorical variables. \n"
                     "Skipping heteroscedasticity tests.",
-                    matrix_rank, expected_rank
+                    matrix_rank,
+                    expected_rank,
                 )
             else:
                 # Breusch-Pagan
@@ -239,9 +240,16 @@ def pre_forecast_data_analysis(
                 # White Test
                 try:
                     ols_model = sm.OLS(y_test, x_with_const).fit()
-                    _, white_test_p_value, _, _ = het_white(ols_model.resid, ols_model.model.exog)
+                    _, white_test_p_value, _, _ = het_white(
+                        ols_model.resid, ols_model.model.exog
+                    )
                     LOG.info("White's test p-value: %s", white_test_p_value)
-                except (ValueError, MissingDataError, AssertionError, np.linalg.LinAlgError) as e:
+                except (
+                    ValueError,
+                    MissingDataError,
+                    AssertionError,
+                    np.linalg.LinAlgError,
+                ) as e:
                     LOG.warning("White's test failed: %s", e)
                     white_test_p_value = 1.0
 
@@ -252,9 +260,7 @@ def pre_forecast_data_analysis(
         except Exception as e:
             LOG.warning("Heteroscedasticity tests failed: %s", e)
     else:
-        LOG.info(
-            "Skipping heteroscedasticity tests: insufficient features."
-        )
+        LOG.info("Skipping heteroscedasticity tests: insufficient features.")
 
     if is_linear_model and residuals is not None:
         LOG.info("Running tests for linear model assumptions")
@@ -275,7 +281,8 @@ def pre_forecast_data_analysis(
             if len(residuals) > 5000:
                 LOG.info(
                     "Large sample size (%d) - Shapiro-Wilk may be overly sensitive. \n"
-                    "Consider results cautiously.", len(residuals)
+                    "Consider results cautiously.",
+                    len(residuals),
                 )
 
             _, shapiro_p_value = shapiro(residuals)
@@ -491,7 +498,6 @@ def pre_forecast_data_analysis_classification(
             LOG.info("Insufficient numerical features for VIF calculation (need >= 2)")
     elif numerical_features:
         LOG.info("Only one numerical feature - skipping multicollinearity check")
-
 
     # class imbalance
     class_counts = train_unscaled[target].value_counts()

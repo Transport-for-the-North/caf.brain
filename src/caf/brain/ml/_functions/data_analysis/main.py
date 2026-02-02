@@ -13,7 +13,8 @@ import pandas as pd
 
 # Local Imports
 from caf.brain.ml._functions.data_analysis.functions import (
-    pre_forecast_data_analysis, pre_forecast_data_analysis_classification,
+    pre_forecast_data_analysis,
+    pre_forecast_data_analysis_classification,
 )
 from caf.brain.ml._functions.model_selection.functions import (
     initialise_model,
@@ -24,16 +25,21 @@ from caf.brain.ml._functions.process_data_functions.main import (
 from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
     simple_train_test_split,
 )
-from caf.brain.ml._functions._ml_inputs import PredictionModelInputs
+from caf.brain.ml._functions._ml_inputs import (
+    Paths,
+    DataClassificationInputs,
+    TransformingInputDataInputs,
+    ModellingInputs,
+)
 
 LOG = logging.getLogger(__name__)
 
 
 def main_evaluate_input_data(
-    paths: PredictionModelInputs.Paths,
-    data_classification: PredictionModelInputs.DataClassificationInputs,
-    transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
-    modelling: PredictionModelInputs.ModellingInputs,
+    paths: Paths,
+    data_classification: DataClassificationInputs,
+    transforming_inputs: TransformingInputDataInputs,
+    modelling: ModellingInputs,
     output_path: Path | None = None,
     train_scaled: pd.DataFrame = None,
     test_scaled: pd.DataFrame = None,
@@ -136,13 +142,15 @@ def main_evaluate_input_data(
         )
 
         if transforming_inputs.classification_prediction is not None:
-            train_transformed, test_transformed = pre_forecast_data_analysis_classification(train_scaled=train_scaled,
-                                                                                            test_scaled=test_scaled,
-                                                                                            train_unscaled=train_unscaled,
-                                                                                            target=data_classification.target_column,
-                                                                                            numerical_features=data_classification.numerical_features,
-                                                                                            output_path=output_path,
-                                                                                            classification_prediction=transforming_inputs.classification_prediction)
+            train_transformed, test_transformed = pre_forecast_data_analysis_classification(
+                train_scaled=train_scaled,
+                test_scaled=test_scaled,
+                train_unscaled=train_unscaled,
+                target=data_classification.target_column,
+                numerical_features=data_classification.numerical_features,
+                output_path=output_path,
+                classification_prediction=transforming_inputs.classification_prediction,
+            )
         else:
             train_transformed, test_transformed = pre_forecast_data_analysis(
                 data_classification=data_classification,
@@ -173,7 +181,8 @@ def main_evaluate_input_data(
             target=data_classification.target_column,
             numerical_features=data_classification.numerical_features,
             output_path=output_path,
-            classification_prediction=transforming_inputs.classification_prediction)
+            classification_prediction=transforming_inputs.classification_prediction,
+        )
     else:
         train_transformed, test_transformed = pre_forecast_data_analysis(
             data_classification=data_classification,

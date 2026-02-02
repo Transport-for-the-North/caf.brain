@@ -45,9 +45,11 @@ def _load_data(data: Optional[pd.DataFrame], data_path: Path | None) -> pd.DataF
 
     Parameters
     ----------
-    data: Pandas Dataframe of your data. Structured or semi-structured
-          tabular format.
-    data_path: Path to your structured or semi-structured tabular data.
+    data
+        Pandas Dataframe of your data. Structured or semi-structured tabular
+        format.
+    data_path
+        Path to your structured or semi-structured tabular data.
 
     Returns
     -------
@@ -58,35 +60,6 @@ def _load_data(data: Optional[pd.DataFrame], data_path: Path | None) -> pd.DataF
     if data_path:
         return pd.read_csv(data_path)
     raise ValueError("No data or data_path provided")
-
-
-def validation(data: pd.DataFrame, custom_index: list[str] | None, target: str) -> bool:
-    """
-    Validates data against baseclasses to ensure data is suitable for
-    further processing.
-
-    Parameters
-    ----------
-    data: Pandas Dataframe of your data. Structured or semi-structured
-          tabular format.
-    custom_index: Columns in your data that are to be indexed e.g. year,
-                  geography.
-    target: Column in your data that is the target variable (Y, dependent
-            variable), what you want to predict.
-
-    Returns
-    -------
-    True if all validation checks pass.
-
-    """
-    validator = ValidateData(dataframe=data, custom_index=custom_index, target_column=target)
-    validator.index_present()
-    validator.target_column_present()
-    validator.explanatory_data()
-    validator.is_data_numeric()
-    validator.data_correct_shape()
-    LOG.info("Data is in correct format for caf.brAIn processes")
-    return True
 
 
 def tidy_data(
@@ -103,35 +76,39 @@ def tidy_data(
     data: Optional[pd.DataFrame] = None,
 ) -> pd.DataFrame:
     """
-    Converts semi-structured data into structured inline with machine
-    learning standards.
+    Converts semi-structured data into structured for machine learning.
 
     Parameters
     ----------
-    data_path: Path to your structured or semi-structured tabular data.
-    classification_prediction: List of integers that correspond to the
-                               target column. The value(s) to predict
-                               in a classification problem.
-    output_path: Path to output location.
-    categorical_features: List of column names (strings) that are
-                              categorical variables.
-    numerical_features: List of column names (strings) that are
-                        continuous variables.
-    custom_index: Columns in your data that are to be indexed e.g. year,
-                  geography.
-    target: Column in your data that is the target variable (Y, dependent
-            variable), what you want to predict.
-    weight: Optional string column value to be used as weight.
-    column_name_to_drop_rows: List of string column names that
-                              contain values to drop.
-    value_in_row: Corresponding values for column_name_to_drop_rows.
-    data: Pandas Dataframe of your data. Structured or semi-structured
-          tabular format.
+    data_path
+        Path to your structured or semi-structured tabular data.
+    classification_prediction
+        List of integers that correspond to the target column. The value(s) to
+        predict in a classification problem.
+    output_path
+        Path to output location.
+    categorical_features
+        List of column names (strings) that are categorical variables.
+    numerical_features
+        List of column names (strings) that are continuous variables.
+    custom_index
+        Columns in your data that are to be indexed e.g. year, geography.
+    target
+        Column in your data that is the target variable (Y, dependent variable),
+        what you want to predict.
+    weight
+        Optional string column value to be used as weight.
+    column_name_to_drop_rows
+        List of string column names that contain values to drop.
+    value_in_row
+        Corresponding values for column_name_to_drop_rows.
+    data
+        Pandas Dataframe of your data. Structured or semi-structured tabular
+        format.
 
     Returns
     -------
     Structured dataframe.
-
     """
     output_path = Path(output_path)
 
@@ -175,29 +152,32 @@ def transform_data(
 
     Parameters
     ----------
-    data: Pandas Dataframe of your data. Structured or semi-structured
-          tabular format.
-    output_path: Path to output location.
-    categorical_features: List of column names (strings) that are
-                              categorical variables.
-    numerical_features: List of column names (strings) that are
-                        continuous variables.
-    target: Column in your data that is the target variable (Y, dependent
-            variable), what you want to predict.
-    custom_index: Columns in your data that are to be indexed e.g. year,
-                  geography.
-    weight: Optional string column value to be used as weight.
-    sample_size_encode: Optional bool. If true, the data will be split
-                    based on sample size. Variables with the largest
-                    sample size will be used as reference class.
-    select_encode_values: Optional bool. If True, data is split based
-                      on custom values set by the user. Corresponds
-                      to encode_values_to_drop.
-    encode_values_to_drop: If select_encode_values is True, then this
-                       must be a list of strings the length of
-                       categorical_features. Position one in the list
-                       will link to the first variable provided in
-                       categorical_features and so on.
+    data
+        Pandas Dataframe of your data. Structured or semi-structured tabular
+        format.
+    output_path
+        Path to output location.
+    categorical_features
+        List of column names (strings) that are categorical variables.
+    numerical_features
+        List of column names (strings) that are continuous variables.
+    target
+        Column in your data that is the target variable (Y, dependent variable),
+        what you want to predict.
+    custom_index
+        Columns in your data that are to be indexed e.g. year, geography.
+    weight
+        Optional string column value to be used as weight.
+    sample_size_encode
+        Optional bool. If true, the data will be split based on sample size.
+        Variables with the largest sample size will be used as reference class.
+    select_encode_values
+        Optional bool. If True, data is split based on custom values set by the
+        user. Corresponds to encode_values_to_drop.
+    encode_values_to_drop
+        If select_encode_values is True, then this must be a list of strings
+        the length of categorical_features. Position one in the list will link
+        to the first variable provided in categorical_features and so on.
 
     Returns
     -------
@@ -206,7 +186,9 @@ def transform_data(
     """
     output_path = Path(output_path)
 
-    if not validation(data=data, custom_index=custom_index, target=target):
+    if not ValidateData(
+        dataframe=data, custom_index=custom_index, target_column=target
+    ).validate():
         raise ValueError(
             "Data not suitable for encoding and scaling. Please run \n"
             "full model flow or tidy_data method prior to \n"
@@ -235,7 +217,7 @@ def transform_data(
     return preprocessed_df
 
 
-def feat_selection(
+def feature_selection(
     data: pd.DataFrame,
     output_path: Path | str,
     categorical_features: list[str] | None,
@@ -253,40 +235,45 @@ def feat_selection(
 
     Parameters
     ----------
-    is_encoded: is data encoded and scaled.
-    data: Pandas Dataframe of your data. Structured or semi-structured
-          tabular format.
-    output_path: Path to output location.
-    target: Column in your data that is the target variable (Y, dependent
-            variable), what you want to predict.
-    weight: Optional string column value to be used as weight.
-    custom_index: Columns in your data that are to be indexed e.g. year,
-                  geography.
-    categorical_features: List of column names (strings) that are
-                          categorical variables.
-    numerical_features: List of column names (strings) that are
-                        continuous variables.
-    sample_size_encode: Optional bool. If true, the data will be split
-                    based on sample size. Variables with the largest
-                    sample size will be used as reference class.
-    select_encode_values: Optional bool. If True, data is split based
-                      on custom values set by the user. Corresponds
-                      to encode_values_to_drop.
-    encode_values_to_drop: If select_encode_values is True, then this
-                       must be a list of strings the length of
-                       categorical_features. Position one in the list
-                       will link to the first variable provided in
-                       categorical_features and so on.
+    is_encoded
+        is data encoded and scaled.
+    data
+        Pandas Dataframe of your data. Structured or semi-structured tabular
+        format.
+    output_path
+        Path to output location.
+    target
+        Column in your data that is the target variable (Y, dependent variable),
+        what you want to predict.
+    weight
+        Optional string column value to be used as weight.
+    custom_index
+        Columns in your data that are to be indexed e.g. year, geography.
+    categorical_features
+        List of column names (strings) that are categorical variables.
+    numerical_features
+        List of column names (strings) that are continuous variables.
+    sample_size_encode
+        Optional bool. If true, the data will be split based on sample size.
+        Variables with the largest sample size will be used as reference class.
+    select_encode_values
+        Optional bool. If True, data is split based on custom values set by
+        the user. Corresponds to encode_values_to_drop.
+    encode_values_to_drop
+        If select_encode_values is True, then this must be a list of strings
+        the length of categorical_features. Position one in the list will link
+        to the first variable provided in categorical_features and so on.
 
     Returns
     -------
-    train_final: feature selected train dataset.
-    test_final: feature selected test dataset.
-    cols_dropped_by_feat_select: data removed due to feature selection.
+    df_final
+        Feature selected dataset.
     """
     output_path = Path(output_path)
 
-    if not validation(data=data, target=target, custom_index=custom_index):
+    if not ValidateData(
+        dataframe=data, custom_index=custom_index, target_column=target
+    ).validate():
         raise ValueError(
             "Data not suitable for data analysis. Please run \n"
             "full model flow or tidy_data method prior to \n"
@@ -332,28 +319,35 @@ def algorithm_evaluation(
     classification_prediction: tuple[int, ...] | None = None,
 ) -> BaseEstimator:
     """
-    Evaluate which algorithm is best performing. Algorithms must be from
-    the Models enum class. It is advised to ensure data is in an optimal
-    state in order to get accurate results. This means data is encoded
-    and scaled where applicable and feature selection is applied. This can be
-    done with:
-        from caf.brain.ml import feat_selection, transform_data, algorithm_evaluation
+    Evaluate which algorithm is best performing.
+
+    Algorithms must be from the Models enum class. It is advised to ensure data
+    is in an optimal state in order to get accurate results. This means data is
+    encoded and scaled where applicable and feature selection is applied. This
+    can be done with:
+
+    ``from caf.brain.ml import feat_selection, transform_data, algorithm_evaluation``
 
     Parameters
     ----------
-    model_choice: List or one algorithm to use as the base of the model.
-                  Available algorithms can be seen in _ml_inputs.py or __info__.py.
-    data: Pandas Dataframe of your data. Structured or semi-structured
-          tabular format.
-    output_path: Path to output location.
-    target: Column in your data that is the target variable (Y, dependent
-            variable), what you want to predict.
-    weight: Optional string column value to be used as weight.
-    classification_prediction: List of integers that correspond to the
-                               target column. The value(s) to predict
-                               in a classification problem.
-    custom_index: Columns in your data that are to be indexed e.g. year,
-                  geography.
+    model_choice
+        List or one algorithm to use as the base of the model.
+        Available algorithms can be seen in _ml_inputs.py or __info__.py.
+    data
+        Pandas Dataframe of your data. Structured or semi-structured
+        tabular format.
+    output_path
+        Path to output location.
+    target
+        Column in your data that is the target variable (Y, dependent
+        variable), what you want to predict.
+    weight
+        Optional string column value to be used as weight.
+    classification_prediction
+        List of integers that correspond to the target column. The value(s) to
+        predict in a classification problem.
+    custom_index
+        Columns in your data that are to be indexed e.g. year, geography etc.
     Returns
     -------
     Initialised best performing model.
@@ -365,7 +359,9 @@ def algorithm_evaluation(
         "prior to algorithm_evaluation."
     )
 
-    if not validation(data=data, target=target, custom_index=custom_index):
+    if not ValidateData(
+        dataframe=data, custom_index=custom_index, target_column=target
+    ).validate():
         raise ValueError(
             "Data not suitable for algorithm evaluation. Please run \n"
             "full model flow or tidy_data method prior to \n"
@@ -401,26 +397,31 @@ def hparam_optim(
     classification_prediction: tuple[int, ...] | None = None,
 ) -> BaseEstimator:
     """
-    Hyperparameter optimisation for your selected algorithm. Algorithm must
-    be part of the Models enum class.
+    Hyperparameter optimisation for your selected algorithm.
+
+    Algorithm must be part of the Models enum class.
 
     Parameters
     ----------
-    model_choice: List or one algorithm to use as the base of the model.
-                Available algorithms can be seen in
-                _ml_inputs.py or __info__.py.
-    is_time_series: If true then data must be time series. Time series
-                based characteristics are taken into consideration
-                during function execution.
-    data: Pandas Dataframe of your data. Structured or semi-structured
-          tabular format.
-    output_path: Path to output location.
-    target: Column in your data that is the target variable (Y, dependent
-            variable), what you want to predict.
-    weight: Optional string column value to be used as weight.
-    classification_prediction: List of integers that correspond to the
-                               target column. The value(s) to predict
-                               in a classification problem.
+    model_choice
+        List or one algorithm to use as the base of the model.
+        Available algorithms can be seen in _ml_inputs.py or __info__.py.
+    is_time_series
+        If true then data must be time series. Time series based
+        characteristics are taken into consideration during function execution.
+    data
+        Pandas Dataframe of your data. Structured or semi-structured tabular
+        format.
+    output_path
+        Path to output location.
+    target
+        Column in your data that is the target variable (Y, dependent variable),
+        what you want to predict.
+    weight
+        Optional string column value to be used as weight.
+    classification_prediction
+        List of integers that correspond to the target column. The value(s) to
+        predict in a classification problem.
     Returns
     -------
     Initialised model with the best combination of hyperparameters.
@@ -477,8 +478,9 @@ def evaluate_data(
     is_time_series: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Data analysis for structured tabular numerical data. Where applicable,
-    the following tests are performed:
+    Data analysis for structured tabular numerical data.
+
+    Where applicable, the following tests are performed:
         - Multicolinearity (VIF)
         - Heteroscedasticity (Breusch-Pagan & White Test)
         - Linearity (Correlation coefficient)
@@ -486,37 +488,44 @@ def evaluate_data(
         - Autocorrelation (Durbin-Watson)
 
     Data transformations (log and scaling) are applied to numerical features
-    only if permitted and required.
+    only if permitted and required (to fix issues the tests reveal).
 
     Parameters
     ----------
-    data: Pandas Dataframe of your data. Structured or semi-structured
-          tabular format.
-    output_path: Path to output location.
-    target: Column in your data that is the target variable (Y, dependent
-            variable), what you want to predict.
-    weight: Optional string column value to be used as weight.
-    categorical_features: List of column names (strings) that are
-                          categorical variables.
-    numerical_features: List of column names (strings) that are
-                        continuous variables.
-    classification_prediction: List of integers that correspond to the
-                               target column. The value(s) to predict
-                               in a classification problem.
-    allow_transformations: Whether to apply transformations.
-    is_time_series: If true then data must be time series. Time series
-                    based characteristics are taken into consideration
-                    during function execution.
+    data
+        Pandas Dataframe of your data. Structured or semi-structured
+        tabular format. This data should not yet be scaled or encoded.
+    output_path
+        Path to output location.
+    target
+        Column in your data that is the target variable (Y, dependent
+        variable), what you want to predict.
+    weight
+        Optional string column value to be used as weight.
+    categorical_features
+        List of column names (strings) that are categorical variables.
+    numerical_features
+        List of column names (strings) that are continuous variables.
+    classification_prediction
+        List of integers that correspond to the target column. The value(s) to
+        predict in a classification problem.
+    allow_transformations
+        Whether to apply transformations.
+    is_time_series
+        If true then data must be time series. Time series based characteristics
+        are taken into consideration during function execution.
     Returns
     -------
-    train_transformed: training data post transformation.
-    test_transformed: test data post transformation.
+    train_transformed
+        training data post transformation.
+    test_transformed
+        test data post transformation.
     """
 
     if isinstance(output_path, str):
         output_path = Path(output_path)
 
-    if not validation(data=data, target=target, custom_index=None):
+    if not ValidateData(dataframe=data, custom_index=None, target_column=target).validate():
         raise ValueError(
             "Data not suitable for data analysis. Please run \n"
             "full model flow or tidy_data method prior to \n"

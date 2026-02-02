@@ -19,16 +19,21 @@ from caf.brain.ml._functions.feature_selection.functions import (
 from caf.brain.ml._functions.process_data_functions.main import (
     main_input_data,
 )
-from caf.brain.ml._functions._ml_inputs import PredictionModelInputs, Models
+from caf.brain.ml._functions._ml_inputs import (
+    Paths,
+    DataClassificationInputs,
+    TransformingInputDataInputs,
+    ModellingInputs,
+)
 
 LOG = logging.getLogger(__name__)
 
 
 def main_feature_selection(
-    paths: PredictionModelInputs.Paths,
-    data_classification: PredictionModelInputs.DataClassificationInputs,
-    transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
-    modelling: PredictionModelInputs.ModellingInputs,
+    paths: Paths,
+    data_classification: DataClassificationInputs,
+    transforming_inputs: TransformingInputDataInputs,
+    modelling: ModellingInputs,
     train: pd.DataFrame = None,
     test: pd.DataFrame = None,
     initialised_model=None,
@@ -104,7 +109,7 @@ def main_feature_selection(
             target_column=data_classification.target_column,
             weight_column=data_classification.weight_column,
             output_path=output,
-            is_time_series=data_classification.is_time_series
+            is_time_series=data_classification.is_time_series,
         )
 
         test_final, cols_dropped_by_feat_select = combine_results(
@@ -137,7 +142,7 @@ def main_feature_selection(
                 target_column=data_classification.target_column,
                 weight_column=data_classification.weight_column,
                 output_path=output,
-                is_time_series=data_classification.is_time_series
+                is_time_series=data_classification.is_time_series,
             )
 
             test_final, cols_dropped_by_feat_select = combine_results(
@@ -174,7 +179,7 @@ def main_feature_selection(
         target_column=data_classification.target_column,
         weight_column=data_classification.weight_column,
         output_path=output,
-        is_time_series=data_classification.is_time_series
+        is_time_series=data_classification.is_time_series,
     )
 
     test_final, cols_dropped_by_feat_select = combine_results(

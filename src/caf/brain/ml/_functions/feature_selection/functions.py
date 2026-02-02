@@ -86,7 +86,9 @@ def rf_feature_selection(
     weight = data[weight_column].values.flatten() if weight_column else None
     weight_df = data[weight_column] if weight_column else None
 
-    x_sample, y_sample, weight_sample = sample_data(x=x, y=y, weight=weight, is_time_series=is_time_series)
+    x_sample, y_sample, weight_sample = sample_data(
+        x=x, y=y, weight=weight, is_time_series=is_time_series
+    )
 
     if classification_prediction:
         model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
@@ -410,7 +412,9 @@ def analyse_feature_importance(
     if not target_column:
         raise ValueError("A target column is required for feature selection")
 
-    x = train_transformed.drop(columns=[target_column] + ([weight_column] if weight_column else []))
+    x = train_transformed.drop(
+        columns=[target_column] + ([weight_column] if weight_column else [])
+    )
     y = train_transformed[target_column]
     weight = train_transformed[weight_column].values.flatten() if weight_column else None
 

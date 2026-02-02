@@ -133,8 +133,10 @@ def select_model(
     eval_df_path = Path(output_folder) / "model_algorithm_evaluation.csv"
 
     if eval_df_path.exists():
-        LOG.info("model_algorithm_evaluation.csv already exists so the best "
-                 "model is being selected from these results.")
+        LOG.info(
+            "model_algorithm_evaluation.csv already exists so the best "
+            "model is being selected from these results."
+        )
         df = pd.read_csv(eval_df_path)
         if classification_prediction:
             best_idx = df["F1"].idxmax()

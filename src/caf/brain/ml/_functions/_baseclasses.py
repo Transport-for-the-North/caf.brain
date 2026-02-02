@@ -52,6 +52,15 @@ class BaseDataClass(ABC):
     def data_correct_shape(self) -> bool:
         """Validate the shape of the DataFrame"""
 
+    def validate(self) -> bool:
+        """Run all validation checks in sequence."""
+        self.index_present()
+        self.target_column_present()
+        self.explanatory_data()
+        self.is_data_numeric()
+        self.data_correct_shape()
+        return True
+
 
 class ValidateData(BaseDataClass):
     """

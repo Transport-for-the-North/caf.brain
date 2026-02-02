@@ -1,4 +1,4 @@
-# .github/workflows/release.yaml
+# .github/workflows/release.yml
 # Publish caf.brain to PyPI when a GitHub Release is published
 
 name: Publish Python Package
@@ -23,7 +23,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.x"
 
       - name: Upgrade pip and install build tools
         run: |

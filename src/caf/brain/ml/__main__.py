@@ -1,5 +1,5 @@
 """
-Created on: 1/15/2025
+Created on: 15/1/2025
 Original author: Adil Zaheer
 """
 
@@ -9,22 +9,35 @@ import argparse
 from pathlib import Path
 
 # Third Party
-import yaml
 from caf.toolkit import LogHelper, ToolDetails
 
 # Local Imports
-from caf.brain.ml._functions._ml_inputs import Models, PredictionModelInputs
+from caf.brain.ml._functions._ml_inputs import PredictionModelInputs
 from caf.brain.ml._functions.prediction_model_main import main
 
 
-def load_yaml(config_path: Path) -> dict:
+def _custom_load_yaml(config_path: Path) -> PredictionModelInputs:
+    """
+    Loads the YAML configuration file for the caf.brAIn full machine learning
+    pipline and returns its contents as a dictionary.
+
+    If no path is provided, defaults to 'brain.yml' which you can put in the
+    current working directory.
+
+    Parameters
+    ----------
+    config_path: Path to the YAML configuration file.
+
+    Returns
+    -------
+    Parsed contents of the YAML file as a dictionary.
+    """
     if config_path is None:
-        config_path = Path.cwd() / "config.yaml"
+        config_path = Path.cwd() / "brain.yml"
     if not config_path.exists():
         raise FileNotFoundError(f"No config file found at {config_path}")
 
-    with open(config_path, "r", encoding="UTF-8") as file:
-        config_data = yaml.safe_load(file)
+    config_data = PredictionModelInputs.load_yaml(config_path)
 
     return config_data
 
@@ -32,32 +45,26 @@ def load_yaml(config_path: Path) -> dict:
 def model_setup():
     """
     Function to set up logging files, output folders and input data
-    for the caf.brAIn prediction model config run.
+    for the caf.brAIn full machine learning pipline.
     """
-    parser = argparse.ArgumentParser(description="Run caf.brAIn prediction model.")
+    parser = argparse.ArgumentParser(
+        description="Run caf.brAIn prediction model.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument(
         "--config",
         type=Path,
-        default=Path(__file__).parent / "config.yaml",
-        help=("Path to YAML config file. You should use this \n"
-              "src/caf/brain/ml/config.yaml as the template. \n"
-              "If you edit the pre-existing config file, then there is no \n"
-              "need to pass an alternative config path")
+        default=Path("brain.yml"),
+        help=(
+            "Path to YAML config file. You should use docs/config.md \n"
+            "as guidance and examples/brain.yml as a template.\n"
+        ),
     )
     args = parser.parse_args()
-    config_data = load_yaml(args.config)
-
-    params = PredictionModelInputs(**config_data)
-
-    if isinstance(params.modelling.model_choice, str):
-        params.modelling.model_choice = [Models[params.modelling.model_choice]]
-    else:
-        params.modelling.model_choice = [
-            Models[model] for model in params.modelling.model_choice
-        ]
+    params = _custom_load_yaml(args.config)
 
     output_path = params.paths.output_path / "output"
-    if not output_path.exists():
+    if not output_path.is_dir():
         os.makedirs(output_path)
 
     path = output_path / "log_file.log"

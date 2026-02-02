@@ -19,15 +19,19 @@ from caf.brain.ml._functions.process_data_functions.input_data import (
 from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
     split_data,
 )
-from caf.brain.ml._functions._ml_inputs import PredictionModelInputs
+from caf.brain.ml._functions._ml_inputs import (
+    Paths,
+    DataClassificationInputs,
+    TransformingInputDataInputs,
+)
 
 LOG = logging.getLogger(__name__)
 
 
 def main_input_data(
-    paths: PredictionModelInputs.Paths,
-    data_classification: PredictionModelInputs.DataClassificationInputs,
-    transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
+    paths: Paths,
+    data_classification: DataClassificationInputs,
+    transforming_inputs: TransformingInputDataInputs,
     output_path,
 ):
     """

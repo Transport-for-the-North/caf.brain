@@ -18,15 +18,20 @@ from sklearn.model_selection import train_test_split
 from caf.brain.ml._functions.process_data_functions.input_data import (
     InitialDataProcessing,
 )
-from caf.brain.ml._functions._ml_inputs import PredictionModelInputs
+from caf.brain.ml._functions._ml_inputs import (
+    Paths,
+    DataClassificationInputs,
+    TransformingInputDataInputs,
+)
+
 LOG = logging.getLogger(__name__)
 
 
 def split_data(
     processed_dataframes: dict | pd.DataFrame,
-    paths: PredictionModelInputs.Paths,
-    data_classification: PredictionModelInputs.DataClassificationInputs,
-    transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
+    paths: Paths,
+    data_classification: DataClassificationInputs,
+    transforming_inputs: TransformingInputDataInputs,
     output_path,
 ) -> tuple[pd.DataFrame, pd.DataFrame, Optional[pd.DataFrame]]:
     """
@@ -262,7 +267,9 @@ def simple_train_test_split(
     return x_train, x_test, y_train, y_test, x_train_weight
 
 
-def sample_data(x: pd.DataFrame, y: pd.DataFrame, weight: np.ndarray = None, is_time_series: bool = False):
+def sample_data(
+    x: pd.DataFrame, y: pd.DataFrame, weight: np.ndarray = None, is_time_series: bool = False
+):
     """
     Take a sample of data whilst maintaining temporal nature of data if
     applicable.

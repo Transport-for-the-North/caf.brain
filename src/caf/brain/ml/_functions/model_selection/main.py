@@ -15,17 +15,22 @@ from caf.brain.ml._functions.model_selection.functions import select_model
 from caf.brain.ml._functions.process_data_functions.main import (
     main_input_data,
 )
-from caf.brain.ml._functions._ml_inputs import PredictionModelInputs
+from caf.brain.ml._functions._ml_inputs import (
+    Paths,
+    DataClassificationInputs,
+    TransformingInputDataInputs,
+    ModellingInputs,
+)
 
 LOG = logging.getLogger(__name__)
 
 
 def main_model_selection(
-    data_classification: PredictionModelInputs.DataClassificationInputs,
-    transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
-    modelling: PredictionModelInputs.ModellingInputs,
+    data_classification: DataClassificationInputs,
+    transforming_inputs: TransformingInputDataInputs,
+    modelling: ModellingInputs,
     output: Path,
-    paths: PredictionModelInputs.Paths,
+    paths: Paths,
     train: pd.DataFrame = None,
 ) -> BaseEstimator:
     """
@@ -98,7 +103,7 @@ def main_model_selection(
             models_to_test=model,
             classification_prediction=transforming_inputs.classification_prediction,
             output_folder=output,
-            is_time_series=data_classification.is_time_series
+            is_time_series=data_classification.is_time_series,
         )
     else:
         LOG.error(

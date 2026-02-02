@@ -6,10 +6,10 @@ Original author: Adil Zaheer
 # Built-Ins
 import logging
 import time
-import os
 from pathlib import Path
 
 import joblib
+
 # Third Party
 import pandas as pd
 
@@ -32,7 +32,8 @@ LOG = logging.getLogger(__name__)
 
 def main(params: PredictionModelInputs, output_path: Path) -> None:
     """
-    The main function for the caf.brAIn prediction model.
+    The main function for the caf.brAIn full machine learning pipeline.
+
     The prediction model utilises machine learning libraries in order to
     generate predictions. It's designed to streamline the process and remove
     any barrier to entry thereby making machine learning modelling more
@@ -56,8 +57,10 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
     }
 
     if paths["train_scaled"].exists() and paths["test_scaled"].exists():
-        LOG.info("Training data is already present from a previous model run "
-                 "so it is being read in.")
+        LOG.info(
+            "Training data is already present from a previous model run \n"
+            "so it is being read in."
+        )
 
         drop_vals_path = Path(output_path) / "dropped_encoding_vals.csv"
         if drop_vals_path.exists():
@@ -66,8 +69,7 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
             drop_vals = None
 
         data = {
-            name: pd.read_csv(path) if path.exists() else None
-            for name, path in paths.items()
+            name: pd.read_csv(path) if path.exists() else None for name, path in paths.items()
         }
 
         validate = data["validate"]
@@ -79,8 +81,7 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
                 if df is not None and all(col in df.columns for col in custom_index):
                     data[key] = df.set_index(custom_index, verify_integrity=False)
 
-            if validate is not None and all(
-                col in validate.columns for col in custom_index):
+            if validate is not None and all(col in validate.columns for col in custom_index):
                 validate = validate.set_index(custom_index, verify_integrity=False)
 
         train_scaled = data["train_scaled"]
@@ -95,8 +96,10 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
             numerical_pipeline = None
 
     else:
-        LOG.info("Training data is not present from a previous model run so it"
-                 "is being generated.")
+        LOG.info(
+            "Training data is not present from a previous model run so it \n"
+            "is being generated."
+        )
 
         data_dict, drop_vals, numerical_pipeline = main_input_data(
             output_path=output_path,

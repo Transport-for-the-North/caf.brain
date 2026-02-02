@@ -18,16 +18,21 @@ from caf.brain.ml._functions.model_selection.main import main_model_selection
 from caf.brain.ml._functions.process_data_functions.main import (
     main_input_data,
 )
-from caf.brain.ml._functions._ml_inputs import PredictionModelInputs
+from caf.brain.ml._functions._ml_inputs import (
+    Paths,
+    DataClassificationInputs,
+    TransformingInputDataInputs,
+    ModellingInputs,
+)
 
 LOG = logging.getLogger(__name__)
 
 
 def main_hyperparameter_optimisation(
-    paths: PredictionModelInputs.Paths,
-    data_classification: PredictionModelInputs.DataClassificationInputs,
-    transforming_inputs: PredictionModelInputs.TransformingInputDataInputs,
-    modelling: PredictionModelInputs.ModellingInputs,
+    paths: Paths,
+    data_classification: DataClassificationInputs,
+    transforming_inputs: TransformingInputDataInputs,
+    modelling: ModellingInputs,
     output_folder: Path,
     train: pd.DataFrame = None,
     model_instance=None,

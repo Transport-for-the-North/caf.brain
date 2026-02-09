@@ -171,29 +171,29 @@ modelling:
 Specify models using the `Models` enum format (e.g., `Models.RANDOM_FOREST_REGRESSOR`):
 
 **Regression Models:**
-- `RANDOM_FOREST_REGRESSOR`
-- `EXTRA_TREES_REGRESSOR`
-- `GRADIENT_BOOSTING_REGRESSOR`
-- `ADABOOST_REGRESSOR`
-- `BAGGING_REGRESSOR`
-- `SVR`
-- `KNN`
-- `RIDGE`
-- `LASSO`
-- `ELASTICNET`
-- `LINEAR_REGRESSION`
-- `DECISION_TREE_REGRESSOR`
+- `random_forest_regressor`
+- `extra_trees_regressor`
+- `gradient_boosting_regressor`
+- `adaboost_regressor`
+- `bagging_regressor`
+- `svr`
+- `knn`
+- `ridge`
+- `lasso`
+- `elasticnet`
+- `linear_regressor`
+- `decision_tree_regresor`
 
 **Classification Models:**
-- `LOGIT_REGRESSION_L1`
-- `LOGIT_REGRESSION_L2`
-- `LOGIT_REGRESSION_ELASTICNET`
-- `MULTINOMIAL`
-- `GRADIENT_BOOSTING_CLASS`
-- `RANDOM_FOREST_CLASSIFIER`
-- `EXTRA_TREES_CLASSIFIER`
-- `DECISION_TREE_CLASSIFIER`
-- `SVM_CLASSIFIER`
+- `logit_regressor_l1`
+- `logit_regressor_l2`
+- `logit_regressor_elasticnet`
+- `multinomial`
+- `gradient_boosting_classifier`
+- `random_forest_classifier`
+- `extra_trees_classifier`
+- `decision_tree_classifier`
+- `svm_classifier`
 
 ### Cross-Validation Options
 
@@ -208,8 +208,8 @@ If `cv` is `null`, standard K-Fold is used. Available options:
 ```yaml
 modelling:
     model_choice:
-        - RANDOM_FOREST_REGRESSOR
-        - GRADIENT_BOOSTING_REGRESSOR
+        - random_forest_regressor
+        - gradient_boosting_regressor
     full_transformations: True
     cv: timeseriessplit
     skip_feature_selection: False
@@ -257,8 +257,8 @@ transforming_inputs:
 
 modelling:
     model_choice:
-        - RANDOM_FOREST_REGRESSOR
-        - GRADIENT_BOOSTING_REGRESSOR
+        - random_forest_regressor
+        - gradient_boosting_regressor
     full_transformations: True
     cv: timeseriessplit
     skip_feature_selection: False

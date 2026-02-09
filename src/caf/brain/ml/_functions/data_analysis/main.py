@@ -14,7 +14,6 @@ import pandas as pd
 # Local Imports
 from caf.brain.ml._functions.data_analysis.functions import (
     pre_forecast_data_analysis,
-    pre_forecast_data_analysis_classification,
 )
 from caf.brain.ml._functions.model_selection.functions import (
     initialise_model,
@@ -83,7 +82,7 @@ def main_evaluate_input_data(
     test_unscaled: Input data unprocessed split into test.
     model_fit: Fitted model on train_test_split test data.
     model_initialised: Initialised SciKitLearn model.
-    residuals: Truth values form the train_test_split against the predictions.
+    residuals: Truth values from the train_test_split against the predictions.
     x_test: Dataframe of test data to be used as unseen test data.
     y_test: Dataframe of target data from train, test split.
     numerical_pipeline: Stored numerical transformation pipeline for
@@ -141,49 +140,7 @@ def main_evaluate_input_data(
             classification_prediction=transforming_inputs.classification_prediction,
         )
 
-        if transforming_inputs.classification_prediction is not None:
-            train_transformed, test_transformed = pre_forecast_data_analysis_classification(
-                train_scaled=train_scaled,
-                test_scaled=test_scaled,
-                train_unscaled=train_unscaled,
-                target=data_classification.target_column,
-                numerical_features=data_classification.numerical_features,
-                output_path=output_path,
-                classification_prediction=transforming_inputs.classification_prediction,
-            )
-        else:
-            train_transformed, test_transformed = pre_forecast_data_analysis(
-                data_classification=data_classification,
-                modelling=modelling,
-                output_folder=output_path,
-                residuals=residuals,
-                model_fit=model_fit,
-                model_initialised=model_initialised,
-                x_test=x_test,
-                y_test=y_test,
-                train_scaled=train_scaled,
-                test_scaled=test_scaled,
-                train_unscaled=train_unscaled,
-                test_unscaled=test_unscaled,
-                numerical_pipeline=numerical_pipeline,
-            )
-        train_transformed.to_csv(output_path / "train_transformed.csv")
-        test_transformed.to_csv(output_path / "test_transformed.csv")
 
-        LOG.info("Evaluation of input data finished.")
-        return train_transformed, test_transformed
-
-    if transforming_inputs.classification_prediction is not None:
-        train_transformed, test_transformed = pre_forecast_data_analysis_classification(
-            train_scaled=train_scaled,
-            test_scaled=test_scaled,
-            train_unscaled=train_unscaled,
-            target=data_classification.target_column,
-            numerical_features=data_classification.numerical_features,
-            output_path=output_path,
-            classification_prediction=transforming_inputs.classification_prediction,
-        )
-    else:
         train_transformed, test_transformed = pre_forecast_data_analysis(
             data_classification=data_classification,
             modelling=modelling,
@@ -199,6 +156,27 @@ def main_evaluate_input_data(
             test_unscaled=test_unscaled,
             numerical_pipeline=numerical_pipeline,
         )
+        train_transformed.to_csv(output_path / "train_transformed.csv")
+        test_transformed.to_csv(output_path / "test_transformed.csv")
+
+        LOG.info("Evaluation of input data finished.")
+        return train_transformed, test_transformed
+
+    train_transformed, test_transformed = pre_forecast_data_analysis(
+        data_classification=data_classification,
+        modelling=modelling,
+        output_folder=output_path,
+        residuals=residuals,
+        model_fit=model_fit,
+        model_initialised=model_initialised,
+        x_test=x_test,
+        y_test=y_test,
+        train_scaled=train_scaled,
+        test_scaled=test_scaled,
+        train_unscaled=train_unscaled,
+        test_unscaled=test_unscaled,
+        numerical_pipeline=numerical_pipeline,
+    )
 
     if train_transformed is not None and test_transformed is not None:
         return train_transformed, test_transformed

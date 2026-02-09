@@ -15,7 +15,6 @@ from sklearn.linear_model import LogisticRegression, ElasticNet
 from caf.brain.ml._functions._ml_inputs import Models
 from caf.brain.ml._functions.data_analysis.functions import (
     pre_forecast_data_analysis,
-    pre_forecast_data_analysis_classification,
 )
 from caf.brain.ml._functions.feature_selection.functions import (
     analyse_feature_importance,
@@ -66,8 +65,8 @@ def tidy_data(
     data_path: Path | None,
     classification_prediction: tuple[int, ...] | None,
     output_path: Path | str,
-    categorical_features: list[str],
-    numerical_features: list[str],
+    categorical_features: list[str] | None,
+    numerical_features: list[str] | None,
     target: str,
     custom_index: list[str] | None = None,
     weight: str | None = None,
@@ -606,36 +605,25 @@ def evaluate_data(
     )
 
     # run data analysis
-    if classification_prediction:
-        train_transformed, test_transformed = pre_forecast_data_analysis_classification(
-            train_scaled=train_scaled,
-            test_scaled=test_scaled,
-            train_unscaled=train_unscaled,
-            target=target,
-            numerical_features=numerical_features,
-            output_path=output_path,
-            classification_prediction=classification_prediction,
-        )
-    else:
-        train_transformed, test_transformed = pre_forecast_data_analysis(
-            output_folder=output_path,
-            residuals=residuals,
-            model_fit=x_train_model_fit,
-            model_initialised=model_initialised,
-            x_test=x_test,
-            y_test=y_test,
-            train_scaled=train_scaled,
-            test_scaled=test_scaled,
-            train_unscaled=train_unscaled,
-            test_unscaled=test_unscaled,
-            numerical_pipeline=pipeline_out,
-            target_column=target,
-            weight_column=weight,
-            numerical_features=numerical_features,
-            categorical_features=categorical_features,
-            is_time_series=is_time_series,
-            allow_transformations=allow_transformations,
-        )
+    train_transformed, test_transformed = pre_forecast_data_analysis(
+        output_folder=output_path,
+        residuals=residuals,
+        model_fit=x_train_model_fit,
+        model_initialised=model_initialised,
+        x_test=x_test,
+        y_test=y_test,
+        train_scaled=train_scaled,
+        test_scaled=test_scaled,
+        train_unscaled=train_unscaled,
+        test_unscaled=test_unscaled,
+        numerical_pipeline=pipeline_out,
+        target_column=target,
+        weight_column=weight,
+        numerical_features=numerical_features,
+        categorical_features=categorical_features,
+        is_time_series=is_time_series,
+        allow_transformations=allow_transformations,
+    )
 
     LOG.info("Data evaluation complete. Results saved to %s", output_path)
     LOG.info("Check 'data_issues_present.csv' for detected issues")

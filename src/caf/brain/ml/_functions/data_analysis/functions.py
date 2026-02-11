@@ -260,6 +260,8 @@ def _classification_only(is_classification: bool,
     numerical_to_fix = []
     categorical_warnings = []
     all_issues = []
+    full_path = output_path / "data_analysis_output"
+    full_path.mkdir(parents=True, exist_ok=True)
 
     # NUMERICAL FEATURE CHECKS
     if is_classification and numerical_features:
@@ -268,7 +270,7 @@ def _classification_only(is_classification: bool,
                 numerical_features=numerical_features,
                 df=df,
                 target=target,
-                output_path=output_path
+                output_path=full_path
             )
             if has_issue:
                 numerical_to_fix.extend(weak_feats)
@@ -283,7 +285,7 @@ def _classification_only(is_classification: bool,
         has_issue, high_vif_feats = _multicolinearity_check(
             df=df,
             numerical_features=numerical_features,
-            output_path=output_path
+            output_path=full_path
         )
         if has_issue:
             numerical_to_fix.extend(high_vif_feats)
@@ -298,7 +300,7 @@ def _classification_only(is_classification: bool,
     has_imbalance = _class_imbalance_classification_target(
         df=df,
         target_column=target,
-        output_path=output_path
+        output_path=full_path
     )
     if has_imbalance:
         all_issues.append({
@@ -313,7 +315,7 @@ def _classification_only(is_classification: bool,
             df=df,
             target=target,
             categorical_features=categorical_features,
-            output_path=output_path
+            output_path=full_path
         )
         if has_issue:
             categorical_warnings.extend(weak_feats)
@@ -328,7 +330,7 @@ def _classification_only(is_classification: bool,
         has_issue, rare_feats = _check_rare_categories(
             df=df,
             categorical_features=categorical_features,
-            output_path=output_path
+            output_path=full_path
         )
         if has_issue:
             categorical_warnings.extend(rare_feats)
@@ -343,7 +345,7 @@ def _classification_only(is_classification: bool,
         has_issue, high_card_feats = _check_cardinality(
             df=df,
             categorical_features=categorical_features,
-            output_path=output_path
+            output_path=full_path
         )
         if has_issue:
             categorical_warnings.extend(high_card_feats)
@@ -356,10 +358,10 @@ def _classification_only(is_classification: bool,
 
     if all_issues:
         pd.DataFrame(all_issues).to_csv(
-            output_path / "data_issues_summary.csv", index=False
+            full_path / "data_issues_summary.csv", index=False
         )
         LOG.warning(
-            f"Data issues detected. See data_issues_summary.csv in {output_path} for full summary.")
+            f"Data issues detected. See data_issues_summary.csv in {full_path} for full summary.")
     else:
         LOG.info("No data issues detected.")
 
@@ -369,10 +371,10 @@ def _classification_only(is_classification: bool,
             'issue_count': [categorical_warnings.count(feat) for feat in set(categorical_warnings)]
         })
         categorical_detail.to_csv(
-            output_path / "categorical_warnings_detail.csv", index=False
+            full_path / "categorical_warnings_detail.csv", index=False
         )
 
-    return len(numerical_to_fix) > 0
+    return len(all_issues) > 0
 
 
 def _regression_only(
@@ -421,13 +423,15 @@ def _regression_only(
     numerical_to_fix = []
     categorical_warnings = []
     all_issues = []
+    full_path = output_path / "data_analysis_output"
+    full_path.mkdir(parents=True, exist_ok=True)
 
     # NUMERICAL FEATURE CHECKS
     if numerical_features:
         has_issue, high_vif_feats = _multicolinearity_check(
             df=df,
             numerical_features=numerical_features,
-            output_path=output_path
+            output_path=full_path
         )
         if has_issue:
             numerical_to_fix.extend(high_vif_feats)
@@ -480,7 +484,7 @@ def _regression_only(
             df=df,
             target=target,
             categorical_features=categorical_features,
-            output_path=output_path
+            output_path=full_path
         )
         if has_issue:
             categorical_warnings.extend(weak_feats)
@@ -494,7 +498,7 @@ def _regression_only(
         has_issue, rare_feats = _check_rare_categories(
             df=df,
             categorical_features=categorical_features,
-            output_path=output_path
+            output_path=full_path
         )
         if has_issue:
             categorical_warnings.extend(rare_feats)
@@ -508,7 +512,7 @@ def _regression_only(
         has_issue, high_card_feats = _check_cardinality(
             df=df,
             categorical_features=categorical_features,
-            output_path=output_path
+            output_path=full_path
         )
         if has_issue:
             categorical_warnings.extend(high_card_feats)
@@ -521,9 +525,9 @@ def _regression_only(
 
     if all_issues:
         pd.DataFrame(all_issues).to_csv(
-            output_path / "data_issues_summary.csv", index=False
+            full_path / "data_issues_summary.csv", index=False
         )
-        LOG.warning(f"Data issues detected. See data_issues_summary.csv in {output_path} for full summary.")
+        LOG.warning(f"Data issues detected. See data_issues_summary.csv in {full_path} for full summary.")
     else:
         LOG.info("No data issues detected.")
 
@@ -532,10 +536,10 @@ def _regression_only(
             'warning': list(set(categorical_warnings))
         })
         categorical_detail.to_csv(
-            output_path / "categorical_warnings_detail.csv", index=False
+            full_path / "categorical_warnings_detail.csv", index=False
         )
 
-    return len(numerical_to_fix) > 0
+    return len(all_issues) > 0
 
 
 def transform_data(

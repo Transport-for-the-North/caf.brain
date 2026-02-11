@@ -140,7 +140,6 @@ def main_evaluate_input_data(
             classification_prediction=transforming_inputs.classification_prediction,
         )
 
-
         train_transformed, test_transformed = pre_forecast_data_analysis(
             data_classification=data_classification,
             modelling=modelling,

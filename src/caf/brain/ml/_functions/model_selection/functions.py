@@ -83,7 +83,6 @@ def initialise_model(
 
     y_pred = model_fit.predict(x_test)
     residuals = y_test - y_pred
-
     coeff_df, mse = calculate_model_coeff(
         model=model_fit,
         x_train=x_train,
@@ -313,95 +312,59 @@ def score_classification(
 def calculate_model_coeff(
     model,
     x_train: pd.DataFrame,
-    x_test: pd.DataFrame,
-    y_test: pd.Series,
-    residuals: pd.Series,
+    x_test: pd.DataFrame | None,
+    y_test: pd.Series | None,
+    residuals: pd.Series | None,
     classification_prediction: tuple[int, ...] | None,
     y_pred: pd.Series,
 ) -> tuple[Optional[pd.DataFrame], Optional[float]]:
     """
-    Calculate linear model coefficients and statistics.
+    Calculate model coefficients and statistics.
 
     Parameters
     ----------
-    model: Fitted model on train_test_split of training data.
-    x_train: Series of train data to be used as train.
-    x_test: Series of test data to be used as unseen test data.
-    y_test: Series of target column inside train to be used as validation
-            for predictions.
-    residuals: Series of residual values based on x_test predictions.
-    classification_prediction: List of integers that correspond to the
-                               target column. The value(s) to predict
-                               in a classification problem.
-    y_pred: Series of predicted values based on training data.
+    model:
+        Fitted model on train_test_split of training data.
+    x_train:
+        Series of train data to be used as train.
+    x_test:
+        Series of test data to be used as unseen test data.
+    y_test:
+        Series of target column inside train to be used as validation
+        for predictions.
+    residuals:
+        Series of residual values based on x_test predictions.
+    classification_prediction:
+        List of integers that correspond to the target column. The value(s) to
+        predict in a classification problem.
+    y_pred:
+        Series of predicted values based on training data.
 
     Returns
     -------
-    coeff_df: Dataframe of coefficient values and other relevant statistics.
-    mse: Mean squared error of predictions.
+    coeff_df:
+        Dataframe of coefficient values and other relevant statistics.
+    mse:
+        Mean squared error of predictions.
     """
-    if not hasattr(model, "coef_"):
-        return None, None
+    if _is_statsmodels_model(model):
+        return _extract_statsmodels_inference(model, x_test, y_test)
 
-    if len(model.coef_.shape) == 2:  # Multinomial
-        return None, None
+    if hasattr(model, "coef_"):
+        if len(model.coef_.shape) == 2 and model.coef_.shape[0] > 1:
+            return None, None
 
-    n = x_train.shape[0]
-    p = x_train.shape[1]
-    dof = n - p - 1
+        return _extract_sklearn_coefficients(
+            model, x_train, x_test, y_test, y_pred, residuals, classification_prediction
+        )
 
-    if classification_prediction:
-        if hasattr(model, "predict_proba"):
-            proba = model.predict_proba(x_test)
-            if proba.shape[1] == 2:
-                # binary
-                mse = log_loss(y_test, proba[:, 1])
-            else:
-                # multiclass
-                mse = log_loss(y_test, proba)
-        else:
-            # linear svc
-            mse = log_loss(y_test, y_pred, labels=np.unique(y_test))
-    else:
-        # regression
-        mse = np.mean(residuals**2)
+    if hasattr(model, "feature_importances_"):
+        return _extract_feat_importance(
+            model, x_train, x_test, y_test, y_pred, classification_prediction
+        )
 
-    # variance-covariance matrix
-    x_with_intercept = (
-        np.column_stack([np.ones(n), x_train]) if hasattr(model, "intercept_") else x_train
-    )
-    covariance_matrix = np.linalg.pinv(x_with_intercept.T.dot(x_with_intercept)) * mse
-
-    std_errors = np.sqrt(np.diag(covariance_matrix))
-
-    if hasattr(model, "intercept_"):
-        intercept = np.array(model.intercept_).flatten()
-        coefficients = np.array(model.coef_).flatten()
-        coefficients = np.concatenate([intercept, coefficients])
-    else:
-        coefficients = model.coef_.flatten()
-
-    # t-values and p-values
-    t_values = coefficients / std_errors
-    p_values = 2 * (1 - stats.t.cdf(abs(t_values), dof))
-
-    feature_names = (
-        ["intercept"] + list(x_train.columns)
-        if hasattr(model, "intercept_")
-        else list(x_train.columns)
-    )
-
-    coeff_df = pd.DataFrame(
-        {
-            "Feature": feature_names,
-            "Coefficient": coefficients,
-            "Std_Error": std_errors,
-            "T_Value": t_values,
-            "P_Value": p_values,
-        }
-    )
-
-    return coeff_df, mse
+    LOG.warning("Model %s does not support coefficient or importance extraction", {type(model).__name__})
+    return None, None
 
 
 def calculate_final_coefficients(
@@ -414,136 +377,348 @@ def calculate_final_coefficients(
     is_classification: tuple[int, ...] | None,
     drop_vals: pd.DataFrame,
     cols_dropped_by_feat_select: pd.DataFrame,
-) -> pd.DataFrame:
+) -> pd.DataFrame | None:
     """
     Calculate final model coefficients and statistics.
 
     Parameters
     ----------
-    model: Fitted final model for prediction on unseen (test) data.
-    test_data: Dataframe of final test data post feature selection.
-    training_mse: Mean squared error of predictions based on training data.
-    predictions: Predicted values based on the test data and set to the
-                 same index.
-    validation_data: Validation data if available. Must pass target column
-                     if passing validation data otherwise validation will not
-                     be used.
-    target_column: String column name of value to predict.
-    is_classification: List of integers that correspond to the target column.
-                       The value(s) to predict in a classification problem.
-    drop_vals: Values dropped during encoding of categorical variables.
-    cols_dropped_by_feat_select: These are the columns removed due to
-                                 feature selection.
+    model:
+        Fitted final model for prediction on unseen (test) data.
+    test_data:
+        Dataframe of final test data post feature selection.
+    training_mse:
+        Mean squared error of predictions based on training data.
+    predictions:
+        Predicted values based on the test data and set to the same index.
+    validation_data:
+        Validation data if available. Must pass target column if passing
+        validation data otherwise validation will not be used.
+    target_column:
+        String column name of value to predict.
+    is_classification:
+        List of integers that correspond to the target column. The value(s) to
+        predict in a classification problem.
+    drop_vals:
+        Values dropped during encoding of categorical variables.
+    cols_dropped_by_feat_select:
+        These are the columns removed due to feature selection.
 
     Returns
     -------
-    coeff_df: Dataframe of coefficient values and other relevant statistics.
+    coeff_df:
+        Dataframe of coefficient values and other relevant statistics.
     """
-    if not hasattr(model, "coef_"):
+    if validation_data is not None and target_column is not None:
+        coeff_df, error_metric = calculate_model_coeff(
+            model=model,
+            x_train=test_data, # only using it for the column names
+            x_test=test_data,
+            y_test=validation_data[target_column],
+            y_pred=predictions,
+            residuals=None,
+            classification_prediction=is_classification,
+        )
+    else:
+        coeff_df, error_metric = calculate_model_coeff(
+            model=model,
+            x_train=test_data,
+            x_test=test_data,
+            y_test=None,
+            y_pred=predictions,
+            residuals=None,
+            classification_prediction=is_classification,
+        )
+        error_metric = training_mse if error_metric is None else error_metric
+
+    if coeff_df is None:
         return None
 
-    if validation_data is not None and target_column is not None:
-        if is_classification:
-            # classification
-            if hasattr(model, "predict_proba"):
-                proba = model.predict_proba(test_data)
-                if proba.shape[1] == 2:
-                    # Binary
-                    mse = log_loss(validation_data[target_column], proba[:, 1])
-                else:
-                    # Multiclass
-                    mse = log_loss(validation_data[target_column], proba)
-            else:
-                # LinearSVC
-                mse = log_loss(
-                    validation_data[target_column],
-                    predictions,
-                    labels=np.unique(validation_data[target_column]),
-                )
-            LOG.info("Using validation log loss: %s", mse)
-        else:
-            # regression
-            mse = mean_squared_error(validation_data[target_column], predictions)
-            LOG.info("Using validation MSE: %s", mse)
+    coeff_df['Error_Metric'] = error_metric
+    coeff_df['Error_Source'] = 'validation' if validation_data is not None else 'training'
 
-    else:
-        mse = training_mse
-        LOG.info("Using training 'log loss' if %s else 'MSE': %s", is_classification, mse)
+    base_columns = list(coeff_df.columns)
+    dropped_dfs = []
 
-    feature_names = list(test_data.columns)
-    if hasattr(model, "intercept_"):
-        coefficients = np.array(model.coef_).flatten()
-        intercept = np.array(model.intercept_).flatten()
-        coefficients = np.concatenate([intercept, coefficients])
-        feature_names = ["intercept"] + feature_names
-    else:
-        coefficients = model.coef_.flatten()
+    if drop_vals is not None and len(drop_vals.columns) > 0:
+        drop_vals_features = pd.DataFrame({
+            'Feature': drop_vals.columns,
+            'Status': 'Dropped during encoding',
+        })
+        for col in base_columns:
+            if col not in drop_vals_features.columns:
+                drop_vals_features[col] = 'N/A'
+        dropped_dfs.append(drop_vals_features)
 
-    n = test_data.shape[0]
-    p = test_data.shape[1]
-    dof = n - p - 1
+    if cols_dropped_by_feat_select is not None and len(cols_dropped_by_feat_select.columns) > 0:
+        feat_select_features = pd.DataFrame({
+            'Feature': cols_dropped_by_feat_select.columns,
+            'Status': 'Dropped during feature selection',
+        })
+        for col in base_columns:
+            if col not in feat_select_features.columns:
+                feat_select_features[col] = 'N/A'
+        dropped_dfs.append(feat_select_features)
 
-    x_with_intercept = (
-        np.column_stack([np.ones(n), test_data]) if hasattr(model, "intercept_") else test_data
-    )
-    covariance_matrix = np.linalg.pinv(x_with_intercept.T.dot(x_with_intercept)) * mse
-    std_errors = np.sqrt(np.diag(covariance_matrix))
-    t_values = coefficients / std_errors
-    p_values = 2 * (1 - stats.t.cdf(abs(t_values), dof))
-
-    coeff_df = pd.DataFrame(
-        {
-            "Feature": feature_names,
-            "Coefficient": coefficients,
-            "Std_Error": std_errors,
-            "T_Value": t_values,
-            "P_Value": p_values,
-            "MSE_Source": "validation" if validation_data is not None else "training",
-        }
-    )
-
-    if drop_vals is not None:
-        # df with extra columns
-        drop_vals_features = pd.DataFrame(
-            {
-                "Feature": drop_vals.columns,
-                "Coefficient": "N/A",
-                "Std_Error": "N/A",
-                "T_Value": "N/A",
-                "P_Value": "N/A",
-                "MSE_Source": ["dropped during encoding"] * drop_vals.shape[1],
-            }
-        )
-    else:
-        drop_vals_features = None
-
-    if cols_dropped_by_feat_select is not None:
-        feat_select_features = pd.DataFrame(
-            {
-                "Feature": cols_dropped_by_feat_select.columns,
-                "Coefficient": "N/A",
-                "Std_Error": "N/A",
-                "T_Value": "N/A",
-                "P_Value": "N/A",
-                "MSE_Source": ["dropped during feature selection"]
-                * cols_dropped_by_feat_select.shape[1],
-            }
-        )
-    else:
-        feat_select_features = None
-
-    if (
-        drop_vals_features is not None
-        and len(drop_vals_features) > 0
-        and feat_select_features is not None
-        and len(feat_select_features) > 0
-    ):
-        coeff_df = pd.concat(
-            [coeff_df, drop_vals_features, feat_select_features], ignore_index=True
-        )
-    elif drop_vals_features is not None and len(drop_vals_features) > 0:
-        coeff_df = pd.concat([coeff_df, drop_vals_features], ignore_index=True)
-    elif feat_select_features is not None and len(feat_select_features) > 0:
-        coeff_df = pd.concat([coeff_df, feat_select_features], ignore_index=True)
+    if dropped_dfs:
+        coeff_df['Status'] = 'Active in model'
+        coeff_df = pd.concat([coeff_df] + dropped_dfs, ignore_index=True)
 
     return coeff_df
+
+
+def _extract_sklearn_coefficients(
+    model,
+    x_train: pd.DataFrame,
+    x_test: pd.DataFrame | None,
+    y_test: pd.Series | None,
+    y_pred: pd.Series | None,
+    residuals: Optional[pd.Series] | None,
+    classification_prediction: Optional[tuple[int, ...]] = None,
+) -> tuple[Optional[pd.DataFrame], Optional[float]]:
+    """
+    Extract coefficients from scikit-learn linear models.
+
+    No p-values or standard errors (not mathematically valid for sklearn).
+
+    Valid for:
+    - LinearRegression
+    - Ridge, Lasso, ElasticNet
+    - LogisticRegression (L1, L2, ElasticNet)
+    - LinearSVC
+
+    Parameters
+    ----------
+    model:
+        Fitted model on train_test_split of training data.
+    x_train:
+        Series of train data to be used as train.
+    x_test:
+        Series of test data to be used as unseen test data.
+    y_test:
+        Series of target column inside train to be used as validation
+        for predictions.
+    residuals:
+        Series of residual values based on x_test predictions.
+    classification_prediction:
+        List of integers that correspond to the target column. The value(s) to
+        predict in a classification problem.
+    y_pred:
+        Series of predicted values based on training data.
+
+    Returns
+    -------
+    coeff_df:
+        Dataframe of coefficient values and other relevant statistics.
+    error_metric:
+        Mean squared error of predictions.
+    """
+    # multinomial
+    if len(model.coef_.shape) == 2 and model.coef_.shape[0] > 1:
+        LOG.info("Multinomial logistic regression excluded")
+        return None, None
+
+    if hasattr(model, "intercept_"):
+        intercept = np.array(model.intercept_).flatten()
+        coefficients = np.array(model.coef_).flatten()
+        coefficients = np.concatenate([intercept, coefficients])
+        feature_names = ["intercept"] + list(x_train.columns)
+    else:
+        coefficients = model.coef_.flatten()
+        feature_names = list(x_train.columns)
+
+    coeff_df = pd.DataFrame({
+        'Feature': feature_names,
+        'Coefficient': coefficients,
+        'Abs_Coefficient': np.abs(coefficients),
+    })
+
+    if isinstance(model, LogisticRegression):
+        coeff_df['Odds_Ratio'] = np.exp(coefficients)
+        coeff_df['Note'] = 'Odds ratios from sklearn LogisticRegression (no p-values available)'
+    else:
+        coeff_df['Note'] = 'Coefficients from sklearn (no statistical inference available)'
+
+    coeff_df = coeff_df.sort_values('Abs_Coefficient', ascending=False)
+
+    if y_test is not None:
+        if classification_prediction:
+            if hasattr(model, "predict_proba"):
+                proba = model.predict_proba(x_test)
+                if proba.shape[1] == 2:
+                    # binary
+                    error_metric = log_loss(y_test, proba[:, 1])
+                else:
+                    # multiclass
+                    error_metric = log_loss(y_test, proba)
+            else:
+                # linear svc
+                error_metric = log_loss(y_test, y_pred, labels=np.unique(y_test))
+        else:
+            # regression
+            error_metric = np.mean(residuals**2) if residuals is not None else mean_squared_error(y_test, y_pred)
+        LOG.info("Extracted sklearn coefficients for %s features", len(coeff_df))
+        return coeff_df, error_metric
+
+    LOG.info("Extracted sklearn coefficients for %s features", len(coeff_df))
+    return coeff_df, None
+
+
+def _extract_feat_importance(
+    model,
+    x_train: pd.DataFrame,
+    x_test: pd.DataFrame | None,
+    y_test: pd.Series | None,
+    y_pred: pd.Series | None,
+    classification_prediction: Optional[tuple[int, ...]] = None,
+) -> tuple[pd.DataFrame, Optional[float]]:
+    """
+    Extract feature importances from tree-based models (sklearn).
+
+    Valid for:
+    - RandomForest (Classifier/Regressor)
+    - ExtraTrees (Classifier/Regressor)
+    - GradientBoosting (Classifier/Regressor)
+    - DecisionTree (Classifier/Regressor)
+    - AdaBoost
+    - Bagging
+
+    Parameters
+    ----------
+    model:
+        Fitted model on train_test_split of training data.
+    x_train:
+        Series of train data to be used as train.
+    x_test:
+        Series of test data to be used as unseen test data.
+    y_test:
+        Series of target column inside train to be used as validation
+        for predictions.
+    classification_prediction:
+        List of integers that correspond to the target column. The value(s) to
+        predict in a classification problem.
+    y_pred:
+        Series of predicted values based on training data.
+
+    Returns
+    -------
+    importance_df:
+        Dataframe of importance values.
+    error_metric:
+        Log loss or mean squared error of predictions.
+    """
+    importance_df = pd.DataFrame({
+        'Feature': x_train.columns,
+        'Importance': model.feature_importances_,
+        'Importance_Type': 'Gini/MDI',
+    }).sort_values('Importance', ascending=False)
+
+    importance_df['Cumulative_Importance'] = importance_df['Importance'].cumsum()
+
+    if y_test is not None:
+        if classification_prediction:
+            if hasattr(model, "predict_proba"):
+                proba = model.predict_proba(x_test)
+                error_metric = log_loss(y_test, proba)
+            else:
+                error_metric = log_loss(y_test, y_pred)
+        else:
+            error_metric = mean_squared_error(y_test, y_pred)
+
+        LOG.info("Extracted feature importances for %s features", len(importance_df))
+        return importance_df, error_metric
+    LOG.info("Extracted feature importances for %s features", len(importance_df))
+    return importance_df, None
+
+
+def _is_statsmodels_model(model) -> bool:
+    """
+    Check if model is statsmodels model.
+
+    Parameters
+    ----------
+    model:
+        Fitted model on train_test_split of training data.
+    Returns
+    -------
+    True if statsmodels algorithm.
+    """
+    return any(
+        base.__module__.startswith("statsmodels")
+        for base in model.__class__.__mro__
+    )
+
+def _extract_statsmodels_inference(
+    model,
+    x_test: pd.DataFrame | None,
+    y_test: pd.Series | None,
+    classification_prediction: Optional[tuple[int, ...]] = None,
+) -> tuple[Optional[pd.DataFrame], Optional[float]]:
+    """
+    Extract full statistical inference from statsmodels.
+
+    Valid for:
+    - statsmodels.OLS (returns t-values)
+    - statsmodels.Logit (returns z-values)
+    - statsmodels.GLM (returns z-values)
+
+    Parameters
+    ----------
+    model:
+        Fitted model on train_test_split of training data.
+    x_test:
+        Series of test data to be used as unseen test data.
+    y_test:
+        Series of target column inside train to be used as validation
+        for predictions.
+    classification_prediction:
+        List of integers that correspond to the target column. The value(s) to
+        predict in a classification problem.
+
+    Returns
+    -------
+    coeff_df:
+        Dataframe of coefficient values and other relevant statistics.
+    error_metric:
+        Mean squared error or log loss of predictions.
+    """
+    # multinomial
+    if "MNLogit" in str(model.__class__):
+        LOG.info("Multinomial logit results excluded")
+        return None, None
+
+    try:
+        stats_df = pd.DataFrame({
+            'Feature': model.params.index,
+            'Coefficient': model.params.values,
+            'Std_Error': model.bse.values,
+            'Statistic': model.tvalues.values,  # t-value for OLS, z-value for Logit/GLM
+            'P_Value': model.pvalues.values,
+            'CI_Lower_95': model.conf_int()[0].values,
+            'CI_Upper_95': model.conf_int()[1].values,
+        })
+
+        if "Logit" in str(model.__class__):
+            stats_df['Odds_Ratio'] = np.exp(stats_df['Coefficient'])
+            stats_df['OR_CI_Lower_95'] = np.exp(stats_df['CI_Lower_95'])
+            stats_df['OR_CI_Upper_95'] = np.exp(stats_df['CI_Upper_95'])
+
+        if y_test is not None:
+            if hasattr(model, 'predict'):
+                if classification_prediction:
+                    # logistic regression
+                    y_pred_proba = model.predict(x_test)
+                    error_metric = log_loss(y_test, y_pred_proba)
+                else:
+                    # OLS
+                    y_pred = model.predict(x_test)
+                    error_metric = mean_squared_error(y_test, y_pred)
+                LOG.info("Extracted statsmodels inference with %s features", len(stats_df))
+                return stats_df, error_metric
+        else:
+            LOG.info("Extracted statsmodels inference with %s features", len(stats_df))
+        return stats_df, None
+
+    except Exception as e:
+        LOG.error("Failed to extract statsmodels inference: %s", e)
+        return None, None

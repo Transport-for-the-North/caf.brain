@@ -1,14 +1,13 @@
-"""
-Arguments with null are to be populated or removed from the config prior to 
-model run. Where (required) is in brackets, these must be provided. 
+#Arguments with null are to be populated or removed from the config prior to
+#model run. Where (required) is in brackets, these must be provided.
+#
+#Some arguments have (required-optional) meaning they are required but only if
+#they apply to your data (e.g. categorical_features is required if you have
+#categorical features).
+#
+#It is advised to refer to docs/config.rst for full guidance and explanation on
+#how to run the model.
 
-Some arguments have (required-optional) meaning they are required but only if 
-they apply to your data (e.g. categorical_features is required if you have 
-categorical features).
-
-It is advised to refer to docs/config.rst for full guidance and explanation on
-how to run the model. 
-"""
 
 paths:
     file_path: null # (required)

@@ -78,7 +78,7 @@ def main_hyperparameter_optimisation(
         if os.path.exists(best_hyp_file):
             LOG.info("Best hyperparameters already exist and are being loaded in")
         else:
-            basemodel.callbacks["on_trial_end"] = EarlyStopper(patience=5) # stop if 5 trials plateau
+            basemodel.callbacks["on_trial_end"] = EarlyStopper(patience=5)  # stop if 5 trials plateau
             _ = basemodel.tune(
                 data=config,
                 project=hyperparameter_dir,

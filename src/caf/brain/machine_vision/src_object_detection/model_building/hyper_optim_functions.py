@@ -119,15 +119,6 @@ def _optuna_objective_func(
     The mAP50-95 score for the trained model.
     """
 
-    # reduced_search_space = {
-    #     "lr0": trial.suggest_float("lr0", 0.005, 0.02),
-    #     "lrf": trial.suggest_float("lrf", 0.1, 0.3),
-    #     "momentum": trial.suggest_float("momentum", 0.8, 0.95),
-    #     "weight_decay": trial.suggest_float("weight_decay", 1e-5, 1e-4, log=True),
-    #     "warmup_epochs": trial.suggest_int("warmup_epochs", 1, 3),
-    #     "mosaic": trial.suggest_float("mosaic", 0.5, 1.0),
-    #     "scale": trial.suggest_float("scale", 0.3, 0.7),
-    # }
 
     reduced_search_space = {
         "lr0": trial.suggest_float("lr0", 0.008, 0.012),
@@ -179,7 +170,7 @@ class EarlyStopper:
 
     This monitors the fitness score (trial.value) across iterations.
     If no improvement is observed for a set number of consecutive trials
-    (`patience`), the study is stopped.
+    (patience), the study is stopped.
 
     Parameters
     ----------

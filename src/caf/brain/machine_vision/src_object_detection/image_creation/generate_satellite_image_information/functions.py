@@ -132,7 +132,6 @@ def _extract_info_from_xml(html_file_path: str) -> tuple:
         if string is not None:
             final_string = str(string.text)
 
-            # tile = str(soup.find('gmd:supplementalInformation').find('gco:CharacterString').text)
             west = float(soup.find("gmd:westBoundLongitude").find("gco:Decimal").text)
             east = float(soup.find("gmd:eastBoundLongitude").find("gco:Decimal").text)
             south = float(soup.find("gmd:southBoundLatitude").find("gco:Decimal").text)

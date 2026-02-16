@@ -7,7 +7,7 @@
 Welcome to CAF.brain's documentation!
 ===========================================================
 
-Package description
+Common Analytical Framework package of Machine and Deep Learning tools.
 
 CAF.brain source code is available on `GitHub <https://github.com/transport-for-the-north/caf.brain>`_.
 

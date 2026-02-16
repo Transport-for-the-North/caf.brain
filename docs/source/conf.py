@@ -22,10 +22,10 @@ sys.path.insert(0, str(source.absolute()))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "CAF.brain"
-copyright = "2024, Transport for the North"
+copyright = "2025, Transport for the North"
 author = "Transport for the North"
 
-# Local Imports
+# Third Party
 import caf.brain
 
 version = str(caf.brain.__version__)
@@ -54,7 +54,7 @@ templates_path = ["_templates", "_templates/autosummary"]
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []  # type: ignore
+exclude_patterns = []
 
 # -- Options for API summary -------------------------------------------------
 napoleon_google_docstring = False
@@ -78,10 +78,21 @@ autosummary_generate = True
 autosummary_imported_members = True
 modindex_common_prefix = ["caf.", "caf.brain."]
 
+autosummary_context = {
+    # Enable inherited methods / attributes in all classes
+    "include_inherited_methods": False,
+    "include_inherited_attributes": False,
+    # Enable / disable inherited methods / attributes in some classes
+    "show_inherited": [],
+    "exclude_inherited": [],
+}
+
 # -- Options for Sphinx Examples gallery -------------------------------------
 sphinx_gallery_conf = {
     "examples_dirs": "../../examples",  # path to your example scripts
-    "gallery_dirs": "examples",  # path to where to save gallery generated output
+    "gallery_dirs": "_generated/examples",  # path to where to save gallery generated output
+    "backreferences_dir": "_generated/examples/backrefs",  # path to the backreferences files
+    "doc_module": ("caf.brain",),
     # Regex pattern of filenames to be ran so the output can be included
     "filename_pattern": rf"{re.escape(os.sep)}run_.*\.py",
 }
@@ -91,7 +102,6 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
 }
 intersphinx_timeout = 30
-
 
 # -- Options for Todo extension ----------------------------------------------
 def get_env_bool(name: str, default: bool) -> bool:
@@ -148,6 +158,11 @@ html_theme_options = {
         },
     ],
     "primary_sidebar_end": ["indices.html", "sidebar-ethical-ads.html"],
+    "announcement": """
+        The documentation pages are currently work-in-progress, if you have any suggestions
+        for improvements please raise an issue on the
+        <a href="https://github.com/transport-for-the-north/caf.brain/issues/new/choose">caf.brain repository</a>.
+    """,
 }
 html_context = {
     "github_url": "https://github.com",

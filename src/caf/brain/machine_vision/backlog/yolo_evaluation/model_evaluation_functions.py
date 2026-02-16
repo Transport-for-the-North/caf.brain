@@ -108,7 +108,7 @@ def nms(
     model_package: str,
 ):
     """
-    Non-max suppression bounding box evaluation. This functions uses the
+    Non-max suppression bounding box evaluation. This _functions uses the
     iou_validation function.
 
     param: predicted_bboxes: List. This should be a list of lists that contain

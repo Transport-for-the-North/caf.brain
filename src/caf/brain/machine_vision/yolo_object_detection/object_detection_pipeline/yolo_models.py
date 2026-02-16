@@ -78,11 +78,11 @@ def final_model(output, config_path):
     else:
         LOG.error(
             "best_hyperparameters does not exist. Please provide them or run \
-                          hyperparamter optimisation functions"
+                          hyperparamter optimisation _functions"
         )
         raise ValueError(
             "best_hyperparameters does not exist. Please provide them or run \
-                          hyperparamter optimisation functions"
+                          hyperparamter optimisation _functions"
         )
 
     learning_params = best_hyperparams.copy()

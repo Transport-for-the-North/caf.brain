@@ -10,6 +10,7 @@ from typing import List, Optional, Type, Union
 
 # Third Party
 import numpy as np
+from caf.toolkit import BaseConfig
 from sklearn.base import BaseEstimator
 from sklearn.ensemble import (
     AdaBoostRegressor,
@@ -32,7 +33,6 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR, LinearSVC
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from caf.toolkit import BaseConfig
 
 
 class Models(enum.Enum):

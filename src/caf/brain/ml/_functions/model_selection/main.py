@@ -11,15 +11,15 @@ import pandas as pd
 from sklearn.base import BaseEstimator
 
 # Local Imports
+from caf.brain.ml._functions._ml_inputs import (
+    DataClassificationInputs,
+    ModellingInputs,
+    Paths,
+    TransformingInputDataInputs,
+)
 from caf.brain.ml._functions.model_selection.functions import select_model
 from caf.brain.ml._functions.process_data_functions.main import (
     main_input_data,
-)
-from caf.brain.ml._functions._ml_inputs import (
-    Paths,
-    DataClassificationInputs,
-    TransformingInputDataInputs,
-    ModellingInputs,
 )
 
 LOG = logging.getLogger(__name__)

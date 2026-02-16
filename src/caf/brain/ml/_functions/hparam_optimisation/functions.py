@@ -24,12 +24,14 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 # Local Imports
-from caf.brain.ml._functions.feature_selection.functions import get_cv_class
 from caf.brain.ml._functions._ml_inputs import (
     ModelGrids,
     get_model_grid_from_type,
 )
-from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import sample_data
+from caf.brain.ml._functions.feature_selection.functions import get_cv_class
+from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
+    sample_data,
+)
 
 LOG = logging.getLogger(__name__)
 

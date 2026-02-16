@@ -4,24 +4,24 @@ Original author: Adil Zaheer
 """
 
 # Built-Ins
+import logging
 import os.path
 from pathlib import Path
 from typing import Optional
-import logging
 
 # Third Party
-import pandas as pd
 import numpy as np
+import pandas as pd
 from sklearn.model_selection import train_test_split
 
 # Local Imports
+from caf.brain.ml._functions._ml_inputs import (
+    DataClassificationInputs,
+    Paths,
+    TransformingInputDataInputs,
+)
 from caf.brain.ml._functions.process_data_functions.input_data import (
     InitialDataProcessing,
-)
-from caf.brain.ml._functions._ml_inputs import (
-    Paths,
-    DataClassificationInputs,
-    TransformingInputDataInputs,
 )
 
 LOG = logging.getLogger(__name__)

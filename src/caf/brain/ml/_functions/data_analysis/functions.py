@@ -12,7 +12,8 @@ from typing import Optional
 # Third Party
 import numpy as np
 import pandas as pd
-from scipy.stats import shapiro, chi2_contingency, f_oneway
+import statsmodels.api as sm
+from scipy.stats import chi2_contingency, f_oneway, pointbiserialr, shapiro
 from sklearn.ensemble import (
     ExtraTreesClassifier,
     GradientBoostingClassifier,
@@ -33,14 +34,12 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.stats.stattools import durbin_watson
 from statsmodels.tools import add_constant
 from statsmodels.tools.sm_exceptions import MissingDataError
-import statsmodels.api as sm
-from scipy.stats import pointbiserialr
 
 # Local Imports
+from caf.brain.ml._functions._ml_inputs import DataClassificationInputs, ModellingInputs
 from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
     preprocess_numerical_data,
 )
-from caf.brain.ml._functions._ml_inputs import DataClassificationInputs, ModellingInputs
 
 LOG = logging.getLogger(__name__)
 
@@ -166,24 +165,28 @@ def pre_forecast_data_analysis(
     )
 
     if is_classification:
-        needs_transformations = _classification_only(is_classification=is_classification,
-                                       numerical_features=_numerical_features,
-                                       categorical_features=_categorical_features,
-                                       df=train_unscaled,
-                                       target=_target_column,
-                                       output_path=output_folder)
+        needs_transformations = _classification_only(
+            is_classification=is_classification,
+            numerical_features=_numerical_features,
+            categorical_features=_categorical_features,
+            df=train_unscaled,
+            target=_target_column,
+            output_path=output_folder,
+        )
 
     else:
-        needs_transformations = _regression_only(numerical_features=_numerical_features,
-                                   categorical_features=_categorical_features,
-                                   df=train_unscaled,
-                                   target=_target_column,
-                                   output_path=output_folder,
-                                   x_test=x_test,
-                                   y_test=y_test,
-                                   residuals=residuals,
-                                   is_linear_model=is_linear_model,
-                                   is_time_series=is_time_series)
+        needs_transformations = _regression_only(
+            numerical_features=_numerical_features,
+            categorical_features=_categorical_features,
+            df=train_unscaled,
+            target=_target_column,
+            output_path=output_folder,
+            x_test=x_test,
+            y_test=y_test,
+            residuals=residuals,
+            is_linear_model=is_linear_model,
+            is_time_series=is_time_series,
+        )
 
     if needs_transformations:
         if (
@@ -215,8 +218,8 @@ def pre_forecast_data_analysis(
             )
         else:
             LOG.warning(
-            "Data issue present but no numerical features are present or full transformations have \n"
-            "not been permitted so transformations can't occur"
+                "Data issue present but no numerical features are present or full transformations have \n"
+                "not been permitted so transformations can't occur"
             )
             train_out = train_scaled
             test_out = test_scaled
@@ -228,12 +231,14 @@ def pre_forecast_data_analysis(
     return train_out, test_out
 
 
-def _classification_only(is_classification: bool,
-                         numerical_features: list[str],
-                         categorical_features: list[str],
-                         df: pd.DataFrame,
-                         target: str,
-                         output_path: Path) -> bool:
+def _classification_only(
+    is_classification: bool,
+    numerical_features: list[str] | None,
+    categorical_features: list[str] | None,
+    df: pd.DataFrame,
+    target: str | None,
+    output_path: Path,
+) -> bool:
     """
     Classification only problems data analysis.
 
@@ -257,6 +262,14 @@ def _classification_only(is_classification: bool,
     True if issues detected.
     """
 
+    if target is None:
+        raise ValueError(
+            "Target column must be provided. Ensure target is \n"
+            "populated if using data_classification.target in \n"
+            "the config file. If calling the pre_forecast_data_analysis\n"
+            "function directly, ensure target column is provided."
+        )
+
     numerical_to_fix = []
     categorical_warnings = []
     all_issues = []
@@ -270,124 +283,130 @@ def _classification_only(is_classification: bool,
                 numerical_features=numerical_features,
                 df=df,
                 target=target,
-                output_path=full_path
+                output_path=full_path,
             )
             if has_issue:
                 numerical_to_fix.extend(weak_feats)
-                all_issues.append({
-                    'issue_type': 'Weak Numerical-Target Correlation',
-                    'severity': 'HIGH - Will be transformed',
-                    'affected_features': ', '.join(weak_feats),
-                    'recommendation': 'Log transformation will be applied (if permitted)'
-                })
+                all_issues.append(
+                    {
+                        "issue_type": "Weak Numerical-Target Correlation",
+                        "severity": "HIGH - Will be transformed",
+                        "affected_features": ", ".join(weak_feats),
+                        "recommendation": "Log transformation will be applied (if permitted)",
+                    }
+                )
 
     if numerical_features:
         has_issue, high_vif_feats = _multicolinearity_check(
-            df=df,
-            numerical_features=numerical_features,
-            output_path=full_path
+            df=df, numerical_features=numerical_features, output_path=full_path
         )
         if has_issue:
             numerical_to_fix.extend(high_vif_feats)
-            all_issues.append({
-                'issue_type': 'Multicollinearity (VIF > 10)',
-                'severity': 'HIGH - Will be transformed',
-                'affected_features': ', '.join(high_vif_feats),
-                'recommendation': 'Log transformation will be applied (if permitted)'
-            })
+            all_issues.append(
+                {
+                    "issue_type": "Multicollinearity (VIF > 10)",
+                    "severity": "HIGH - Will be transformed",
+                    "affected_features": ", ".join(high_vif_feats),
+                    "recommendation": "Log transformation will be applied (if permitted)",
+                }
+            )
 
     # CATEGORICAL FEATURE CHECKS
     has_imbalance = _class_imbalance_classification_target(
-        df=df,
-        target_column=target,
-        output_path=full_path
+        df=df, target_column=target, output_path=full_path
     )
     if has_imbalance:
-        all_issues.append({
-            'issue_type': 'Class Imbalance',
-            'severity': 'WARNING - Manual action recommended',
-            'affected_features': target,
-            'recommendation': 'Consider SMOTE, class weights, or stratified sampling'
-        })
+        all_issues.append(
+            {
+                "issue_type": "Class Imbalance",
+                "severity": "WARNING - Manual action recommended",
+                "affected_features": target,
+                "recommendation": "Consider SMOTE, class weights, or stratified sampling",
+            }
+        )
 
     if categorical_features:
         has_issue, weak_feats = _check_categorical_classification(
             df=df,
             target=target,
             categorical_features=categorical_features,
-            output_path=full_path
+            output_path=full_path,
         )
         if has_issue:
             categorical_warnings.extend(weak_feats)
-            all_issues.append({
-                'issue_type': 'Weak Categorical-Target Relationship (Chi-square p > 0.05)',
-                'severity': 'WARNING - Manual action recommended',
-                'affected_features': ', '.join(weak_feats),
-                'recommendation': 'Consider feature engineering or removal'
-            })
+            all_issues.append(
+                {
+                    "issue_type": "Weak Categorical-Target Relationship (Chi-square p > 0.05)",
+                    "severity": "WARNING - Manual action recommended",
+                    "affected_features": ", ".join(weak_feats),
+                    "recommendation": "Consider feature engineering or removal",
+                }
+            )
 
     if categorical_features:
         has_issue, rare_feats = _check_rare_categories(
-            df=df,
-            categorical_features=categorical_features,
-            output_path=full_path
+            df=df, categorical_features=categorical_features, output_path=full_path
         )
         if has_issue:
             categorical_warnings.extend(rare_feats)
-            all_issues.append({
-                'issue_type': 'Rare Categories (< 5% frequency)',
-                'severity': 'WARNING - Manual action recommended',
-                'affected_features': ', '.join(rare_feats),
-                'recommendation': 'Consider grouping rare categories or removal'
-            })
+            all_issues.append(
+                {
+                    "issue_type": "Rare Categories (< 5% frequency)",
+                    "severity": "WARNING - Manual action recommended",
+                    "affected_features": ", ".join(rare_feats),
+                    "recommendation": "Consider grouping rare categories or removal",
+                }
+            )
 
     if categorical_features:
         has_issue, high_card_feats = _check_cardinality(
-            df=df,
-            categorical_features=categorical_features,
-            output_path=full_path
+            df=df, categorical_features=categorical_features, output_path=full_path
         )
         if has_issue:
             categorical_warnings.extend(high_card_feats)
-            all_issues.append({
-                'issue_type': 'High Cardinality (> 50 unique values)',
-                'severity': 'WARNING - Manual action recommended',
-                'affected_features': ', '.join(high_card_feats),
-                'recommendation': 'Consider dimensionality reduction'
-            })
+            all_issues.append(
+                {
+                    "issue_type": "High Cardinality (> 50 unique values)",
+                    "severity": "WARNING - Manual action recommended",
+                    "affected_features": ", ".join(high_card_feats),
+                    "recommendation": "Consider dimensionality reduction",
+                }
+            )
 
     if all_issues:
-        pd.DataFrame(all_issues).to_csv(
-            full_path / "data_issues_summary.csv", index=False
-        )
+        pd.DataFrame(all_issues).to_csv(full_path / "data_issues_summary.csv", index=False)
         LOG.warning(
-            f"Data issues detected. See data_issues_summary.csv in {full_path} for full summary.")
+            "Data issues detected. See data_issues_summary.csv in %s for full summary.",
+            full_path,
+        )
     else:
         LOG.info("No data issues detected.")
 
     if len(categorical_warnings) > 0:
-        categorical_detail = pd.DataFrame({
-            'feature': list(set(categorical_warnings)),
-            'issue_count': [categorical_warnings.count(feat) for feat in set(categorical_warnings)]
-        })
-        categorical_detail.to_csv(
-            full_path / "categorical_warnings_detail.csv", index=False
+        categorical_detail = pd.DataFrame(
+            {
+                "feature": list(set(categorical_warnings)),
+                "issue_count": [
+                    categorical_warnings.count(feat) for feat in set(categorical_warnings)
+                ],
+            }
         )
+        categorical_detail.to_csv(full_path / "categorical_warnings_detail.csv", index=False)
 
     return len(all_issues) > 0
 
 
 def _regression_only(
     df: pd.DataFrame,
-    target: str,
-    numerical_features: list[str],
-    categorical_features: list[str],
+    target: str | None,
+    numerical_features: list[str] | None,
+    categorical_features: list[str] | None,
     output_path: Path,
     x_test: pd.DataFrame = None,
     y_test: pd.DataFrame = None,
     residuals: pd.Series = None,
     is_linear_model: bool = False,
-    is_time_series: bool = False
+    is_time_series: bool | None = False,
 ) -> bool:
     """
     Regression only problems data analysis.
@@ -420,6 +439,14 @@ def _regression_only(
     True if issues detected.
     """
 
+    if target is None:
+        raise ValueError(
+            "Target column must be provided. Ensure target is \n"
+            "populated if using data_classification.target in \n"
+            "the config file. If calling the pre_forecast_data_analysis\n"
+            "function directly, ensure target column is provided."
+        )
+
     numerical_to_fix = []
     categorical_warnings = []
     all_issues = []
@@ -429,18 +456,18 @@ def _regression_only(
     # NUMERICAL FEATURE CHECKS
     if numerical_features:
         has_issue, high_vif_feats = _multicolinearity_check(
-            df=df,
-            numerical_features=numerical_features,
-            output_path=full_path
+            df=df, numerical_features=numerical_features, output_path=full_path
         )
         if has_issue:
             numerical_to_fix.extend(high_vif_feats)
-            all_issues.append({
-                'issue_type': 'Multicollinearity (VIF > 10)',
-                'severity': 'HIGH - Will be transformed',
-                'affected_features': ', '.join(high_vif_feats),
-                'recommendation': 'Log transformation will be applied (if permitted)'
-            })
+            all_issues.append(
+                {
+                    "issue_type": "Multicollinearity (VIF > 10)",
+                    "severity": "HIGH - Will be transformed",
+                    "affected_features": ", ".join(high_vif_feats),
+                    "recommendation": "Log transformation will be applied (if permitted)",
+                }
+            )
 
     # LINEAR MODEL CHECKS
     if is_linear_model:
@@ -449,7 +476,7 @@ def _regression_only(
             y_test=y_test,
             numerical_features=numerical_features,
             residuals=residuals,
-            is_linear_model=is_linear_model
+            is_linear_model=is_linear_model,
         )
 
         linear_model_issues = _linear_model_tests(
@@ -457,26 +484,30 @@ def _regression_only(
             numerical_features=numerical_features,
             is_time_series=is_time_series,
             residuals=residuals,
-            is_linear_model=is_linear_model
+            is_linear_model=is_linear_model,
         )
 
         if heteroscedasticity_flag:
-            categorical_warnings.append('Heteroscedasticity')
-            all_issues.append({
-                'issue_type': 'Heteroscedasticity',
-                'severity': 'WARNING - Linear model assumption violated',
-                'affected_features': 'All numerical features',
-                'recommendation': 'Consider transformation. Applied if permitted'
-            })
+            categorical_warnings.append("Heteroscedasticity")
+            all_issues.append(
+                {
+                    "issue_type": "Heteroscedasticity",
+                    "severity": "WARNING - Linear model assumption violated",
+                    "affected_features": "All numerical features",
+                    "recommendation": "Consider transformation. Applied if permitted",
+                }
+            )
 
         if linear_model_issues:
-            categorical_warnings.append('Linear model assumptions violated')
-            all_issues.append({
-                'issue_type': 'Linear Model Assumptions (linearity/normality/autocorrelation)',
-                'severity': 'WARNING - Linear model assumption violated',
-                'affected_features': 'Model residuals',
-                'recommendation': 'Review diagnostic plots; consider non-linear models'
-            })
+            categorical_warnings.append("Linear model assumptions violated")
+            all_issues.append(
+                {
+                    "issue_type": "Linear Model Assumptions (linearity/normality/autocorrelation)",
+                    "severity": "WARNING - Linear model assumption violated",
+                    "affected_features": "Model residuals",
+                    "recommendation": "Review diagnostic plots; consider non-linear models",
+                }
+            )
 
     # CATEGORICAL FEATURE CHECKS
     if categorical_features:
@@ -484,60 +515,59 @@ def _regression_only(
             df=df,
             target=target,
             categorical_features=categorical_features,
-            output_path=full_path
+            output_path=full_path,
         )
         if has_issue:
             categorical_warnings.extend(weak_feats)
-            all_issues.append({
-                'issue_type': 'Weak Categorical-Target Relationship (ANOVA p > 0.05)',
-                'severity': 'WARNING - Manual action recommended',
-                'affected_features': ', '.join(weak_feats),
-                'recommendation': 'Consider feature engineering or removal'
-            })
+            all_issues.append(
+                {
+                    "issue_type": "Weak Categorical-Target Relationship (ANOVA p > 0.05)",
+                    "severity": "WARNING - Manual action recommended",
+                    "affected_features": ", ".join(weak_feats),
+                    "recommendation": "Consider feature engineering or removal",
+                }
+            )
 
         has_issue, rare_feats = _check_rare_categories(
-            df=df,
-            categorical_features=categorical_features,
-            output_path=full_path
+            df=df, categorical_features=categorical_features, output_path=full_path
         )
         if has_issue:
             categorical_warnings.extend(rare_feats)
-            all_issues.append({
-                'issue_type': 'Rare Categories (< 5% frequency)',
-                'severity': 'WARNING - Manual action recommended',
-                'affected_features': ', '.join(rare_feats),
-                'recommendation': 'Consider grouping rare categories or removal'
-            })
+            all_issues.append(
+                {
+                    "issue_type": "Rare Categories (< 5% frequency)",
+                    "severity": "WARNING - Manual action recommended",
+                    "affected_features": ", ".join(rare_feats),
+                    "recommendation": "Consider grouping rare categories or removal",
+                }
+            )
 
         has_issue, high_card_feats = _check_cardinality(
-            df=df,
-            categorical_features=categorical_features,
-            output_path=full_path
+            df=df, categorical_features=categorical_features, output_path=full_path
         )
         if has_issue:
             categorical_warnings.extend(high_card_feats)
-            all_issues.append({
-                'issue_type': 'High Cardinality (> 50 unique values)',
-                'severity': 'WARNING - Manual action recommended',
-                'affected_features': ', '.join(high_card_feats),
-                'recommendation': 'Consider dimensionality reduction'
-            })
+            all_issues.append(
+                {
+                    "issue_type": "High Cardinality (> 50 unique values)",
+                    "severity": "WARNING - Manual action recommended",
+                    "affected_features": ", ".join(high_card_feats),
+                    "recommendation": "Consider dimensionality reduction",
+                }
+            )
 
     if all_issues:
-        pd.DataFrame(all_issues).to_csv(
-            full_path / "data_issues_summary.csv", index=False
+        pd.DataFrame(all_issues).to_csv(full_path / "data_issues_summary.csv", index=False)
+        LOG.warning(
+            "Data issues detected. See data_issues_summary.csv in %s for full summary.",
+            full_path,
         )
-        LOG.warning(f"Data issues detected. See data_issues_summary.csv in {full_path} for full summary.")
     else:
         LOG.info("No data issues detected.")
 
     if len(categorical_warnings) > 0:
-        categorical_detail = pd.DataFrame({
-            'warning': list(set(categorical_warnings))
-        })
-        categorical_detail.to_csv(
-            full_path / "categorical_warnings_detail.csv", index=False
-        )
+        categorical_detail = pd.DataFrame({"warning": list(set(categorical_warnings))})
+        categorical_detail.to_csv(full_path / "categorical_warnings_detail.csv", index=False)
 
     return len(all_issues) > 0
 
@@ -624,11 +654,13 @@ def transform_data(
     return transformed_df
 
 
-def _linear_model_tests(x_test: pd.DataFrame,
-                        numerical_features: list[str],
-                        is_time_series: bool = False,
-                        residuals: pd.Series = None,
-                        is_linear_model: bool = False) -> bool:
+def _linear_model_tests(
+    x_test: pd.DataFrame,
+    numerical_features: list[str] | None,
+    is_time_series: bool | None = False,
+    residuals: pd.Series = None,
+    is_linear_model: bool | None = False,
+) -> bool:
     """
     Perform diagnostic checks for linear regression model assumptions.
 
@@ -726,12 +758,13 @@ def _linear_model_tests(x_test: pd.DataFrame,
 
     return False
 
+
 def _heteroscedasticity_check(
     x_test: pd.DataFrame,
     y_test: pd.DataFrame,
-    numerical_features: list[str],
+    numerical_features: list[str] | None,
     residuals: pd.Series = None,
-    is_linear_model: bool = False
+    is_linear_model: bool = False,
 ) -> bool:
     """
     Test for heteroscedasticity using the Breusch–Pagan and White tests.
@@ -774,7 +807,9 @@ def _heteroscedasticity_check(
         return False
 
     if not numerical_features:
-        LOG.info("Numerical features are required for heteroscedasticity tests, skipping heteroscedasticity test.")
+        LOG.info(
+            "Numerical features are required for heteroscedasticity tests, skipping heteroscedasticity test."
+        )
         return False
 
     LOG.info("Checking for heteroscedasticity")
@@ -805,15 +840,13 @@ def _heteroscedasticity_check(
 
             try:
                 ols_model = sm.OLS(y_test, x_with_const).fit()
-                _, white_test_p_value, _, _ = het_white(
-                    ols_model.resid, ols_model.model.exog
-                )
+                _, white_test_p_value, _, _ = het_white(ols_model.resid, ols_model.model.exog)
                 LOG.info("White's test p-value: %s", white_test_p_value)
             except (
-                    ValueError,
-                    MissingDataError,
-                    AssertionError,
-                    np.linalg.LinAlgError,
+                ValueError,
+                MissingDataError,
+                AssertionError,
+                np.linalg.LinAlgError,
             ) as e:
                 LOG.warning("White's test failed: %s", e)
                 white_test_p_value = 1.0
@@ -828,9 +861,7 @@ def _heteroscedasticity_check(
 
 
 def _multicolinearity_check(
-    df: pd.DataFrame,
-    numerical_features: list[str],
-    output_path: Path
+    df: pd.DataFrame, numerical_features: list[str], output_path: Path
 ) -> tuple[bool, list[str]]:
     """
     Check numerical features for multicollinearity with Variance Inflation Factor.
@@ -857,7 +888,7 @@ def _multicolinearity_check(
         List of numerical features with VIF greater than 10.
     """
 
-    high_vif_features = []
+    high_vif_features: list[str] = []
 
     if not numerical_features or len(numerical_features) < 2:
         LOG.info("Insufficient numerical features for VIF calculation (need >= 2)")
@@ -876,8 +907,7 @@ def _multicolinearity_check(
         vif_data = pd.DataFrame()
         vif_data["Feature"] = x_num.columns
         vif_data["VIF"] = [
-            variance_inflation_factor(x_num.values, i)
-            for i in range(x_num.shape[1])
+            variance_inflation_factor(x_num.values, i) for i in range(x_num.shape[1])
         ]
 
         high_vif = vif_data[vif_data["VIF"] > 10]
@@ -895,9 +925,9 @@ def _multicolinearity_check(
         return False, high_vif_features
 
 
-def _class_imbalance_classification_target(df: pd.DataFrame,
-                                           target_column: str,
-                                           output_path: Path) -> bool:
+def _class_imbalance_classification_target(
+    df: pd.DataFrame, target_column: str, output_path: Path
+) -> bool:
     """
     Check for class imbalance in a classification target.
 
@@ -942,10 +972,9 @@ def _class_imbalance_classification_target(df: pd.DataFrame,
     return has_imbalance
 
 
-def _check_cardinality(df: pd.DataFrame,
-                       categorical_features: list[str],
-                       output_path: Path,
-                       threshold: int = 50) -> tuple[bool, list[str]]:
+def _check_cardinality(
+    df: pd.DataFrame, categorical_features: list[str], output_path: Path, threshold: int = 50
+) -> tuple[bool, list[str]]:
     """
     Check for high cardinality in categorical variables.
 
@@ -975,11 +1004,13 @@ def _check_cardinality(df: pd.DataFrame,
 
     for col in categorical_features:
         n_unique = df[col].nunique()
-        cardinality_report.append({
-            'feature': col,
-            'unique_values': n_unique,
-            'cardinality_ratio': n_unique / len(df)
-        })
+        cardinality_report.append(
+            {
+                "feature": col,
+                "unique_values": n_unique,
+                "cardinality_ratio": n_unique / len(df),
+            }
+        )
 
         if n_unique > threshold:
             high_card_features.append(col)
@@ -992,11 +1023,12 @@ def _check_cardinality(df: pd.DataFrame,
     return len(high_card_features) > 0, high_card_features
 
 
-def _check_rare_categories(df: pd.DataFrame,
-                           categorical_features: list[str],
-                           output_path: Path,
-                           threshold: float = 0.05) -> tuple[bool, list[str]]:
-
+def _check_rare_categories(
+    df: pd.DataFrame,
+    categorical_features: list[str],
+    output_path: Path,
+    threshold: float = 0.05,
+) -> tuple[bool, list[str]]:
     """
     Detect rare categories in categorical features.
 
@@ -1033,28 +1065,31 @@ def _check_rare_categories(df: pd.DataFrame,
         if len(rare_values) > 0:
             rare_cats_found = True
             LOG.warning(
-                f"Rare categories in {col}: {len(rare_values)} categories <{threshold * 100}%")
+                "Rare categories in %s: %s categories <%s%",
+                col,
+                len(rare_values),
+                (threshold * 100),
+            )
 
             for cat, freq in rare_values.items():
-                rare_report.append({
-                    'feature': col,
-                    'category': cat,
-                    'frequency': freq,
-                    'count': (df[col] == cat).sum()
-                })
+                rare_report.append(
+                    {
+                        "feature": col,
+                        "category": cat,
+                        "frequency": freq,
+                        "count": (df[col] == cat).sum(),
+                    }
+                )
 
     if rare_report:
-        pd.DataFrame(rare_report).to_csv(
-            output_path / "rare_categories.csv", index=False
-        )
-    rare_features = list({row['feature'] for row in rare_report})
+        pd.DataFrame(rare_report).to_csv(output_path / "rare_categories.csv", index=False)
+    rare_features = list({row["feature"] for row in rare_report})
     return rare_cats_found, rare_features
 
 
-def _check_categorical_classification(df: pd.DataFrame,
-                                      target: str,
-                                      categorical_features: list[str],
-                                      output_path: Path) -> tuple[bool, list[str]]:
+def _check_categorical_classification(
+    df: pd.DataFrame, target: str, categorical_features: list[str], output_path: Path
+) -> tuple[bool, list[str]]:
     """
     Check the categorical feature versus categorical target relationship.
 
@@ -1084,17 +1119,19 @@ def _check_categorical_classification(df: pd.DataFrame,
 
     for col in categorical_features:
         contingency_table = pd.crosstab(df[col], df[target])
-        chi2, p_value, dof, expected = chi2_contingency(contingency_table)
+        chi2, p_value, _, _ = chi2_contingency(contingency_table)
 
-        chi_square_results.append({
-            'feature': col,
-            'chi2': chi2,
-            'p_value': p_value,
-        })
+        chi_square_results.append(
+            {
+                "feature": col,
+                "chi2": chi2,
+                "p_value": p_value,
+            }
+        )
 
         if p_value > 0.05:
             weak_features.append(col)
-            LOG.warning(f"Weak relationship: {col} vs {target} (p={p_value:.4f})")
+            LOG.warning("Weak relationship: %s vs %s (p=%.4f)", col, target, p_value)
 
     pd.DataFrame(chi_square_results).to_csv(
         output_path / "categorical_chi_square.csv", index=False
@@ -1103,10 +1140,9 @@ def _check_categorical_classification(df: pd.DataFrame,
     return len(weak_features) > 0, weak_features
 
 
-def _check_categorical_regression(df: pd.DataFrame,
-                                  target: str,
-                                  categorical_features: list[str],
-                                  output_path: Path) -> tuple[bool, list[str]]:
+def _check_categorical_regression(
+    df: pd.DataFrame, target: str, categorical_features: list[str], output_path: Path
+) -> tuple[bool, list[str]]:
     """
     One way anova test.
 
@@ -1135,32 +1171,30 @@ def _check_categorical_regression(df: pd.DataFrame,
     anova_results = []
 
     for col in categorical_features:
-        groups = [df[df[col] == cat][target].values
-                  for cat in df[col].unique()]
+        groups = [df[df[col] == cat][target].values for cat in df[col].unique()]
 
         f_stat, p_value = f_oneway(*groups)
 
-        anova_results.append({
-            'feature': col,
-            'f_statistic': f_stat,
-            'p_value': p_value,
-        })
+        anova_results.append(
+            {
+                "feature": col,
+                "f_statistic": f_stat,
+                "p_value": p_value,
+            }
+        )
 
         if p_value > 0.05:
             weak_features.append(col)
-            LOG.warning(f"Weak relationship: {col} vs {target} (p={p_value:.4f})")
+            LOG.warning("Weak relationship: %s vs %s (p=%.4f)", col, target, p_value)
 
-    pd.DataFrame(anova_results).to_csv(
-        output_path / "categorical_anova.csv", index=False
-    )
+    pd.DataFrame(anova_results).to_csv(output_path / "categorical_anova.csv", index=False)
 
     return len(weak_features) > 0, weak_features
 
 
-def _check_numerical_feat_class_target(numerical_features: list[str],
-                                       df: pd.DataFrame,
-                                       target: str,
-                                       output_path: Path) -> tuple[bool, list[str]]:
+def _check_numerical_feat_class_target(
+    numerical_features: list[str], df: pd.DataFrame, target: str, output_path: Path
+) -> tuple[bool, list[str]]:
     """
     Evaluate relationship between numerical features and a binary classification
     target.
@@ -1198,7 +1232,6 @@ def _check_numerical_feat_class_target(numerical_features: list[str],
         except Exception as e:
             LOG.warning("Feature-target correlation failed for %s: %s", col, e)
             continue
-
 
     corr_df = pd.DataFrame(correlations)
     corr_df.to_csv(output_path / "feature_target_correlations.csv", index=False)

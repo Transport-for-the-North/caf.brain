@@ -6,9 +6,9 @@ Original author: Adil Zaheer
 # Built-Ins
 import logging
 import os
-from pathlib import Path
 import time
-from typing import Union, Optional
+from pathlib import Path
+from typing import Optional, Union
 
 # Third Party
 import numpy as np
@@ -31,7 +31,10 @@ from sklearn.model_selection import (
 )
 from tqdm import tqdm
 
-from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import sample_data
+# Local Imports
+from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
+    sample_data,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -160,7 +163,6 @@ def rf_feature_selection(
             cv=cv,
             regression_method=regression_method,
             weight=weight_sample,
-            weight_df=None,
             classification_prediction=classification_prediction,
         )
         intensive_features = [col for col in result_sample.columns if col != target_column]
@@ -182,7 +184,6 @@ def feature_selection_intensive(
     cv: BaseCrossValidator,
     regression_method,
     weight: Optional[np.ndarray],
-    weight_df: Optional[pd.DataFrame],
     classification_prediction: tuple[int, ...] | None,
 ) -> pd.DataFrame:
     """
@@ -196,7 +197,6 @@ def feature_selection_intensive(
         splitter.
     regression_method: Initialised model algorithm from Models enum class.
     weight: Weight values in series form.
-    weight_df: Weight values in a dataframe.
     classification_prediction: List of integers that correspond to the
                                target column. The value(s) to predict
                                in a classification problem.
@@ -211,7 +211,7 @@ def feature_selection_intensive(
         score_threshold = 0.5
     else:
         selected_features = _regression_feature_selection(x, y, weight)
-        score_threshold = -1.0  # For negative MSE scores
+        score_threshold = -1.0  # negative MSE scores
 
     if len(selected_features) == 0:
         raise ValueError(
@@ -356,21 +356,21 @@ def get_cv_class(
         cv_lower = cv_method.lower()
         if cv_lower == "kfold":
             return KFold(n_splits=splits if splits else 5, shuffle=True)
-        elif cv_lower == "stratifiedkfold":
+        if cv_lower == "stratifiedkfold":
             return StratifiedKFold(n_splits=splits if splits else 5, shuffle=True)
-        elif cv_lower == "repeatedkfold":
+        if cv_lower == "repeatedkfold":
             return RepeatedKFold(
                 n_splits=splits if splits else 5, n_repeats=repeats if repeats else 5
             )
-        elif cv_lower == "repeatedstratifiedkfold":
+        if cv_lower == "repeatedstratifiedkfold":
             return RepeatedStratifiedKFold(
                 n_splits=splits if splits else 5, n_repeats=repeats if repeats else 5
             )
-        elif cv_lower == "timeseriessplit":
+        if cv_lower == "timeseriessplit":
             return TimeSeriesSplit(n_splits=splits if splits else 5)
-        else:
-            LOG.warning("Invalid cross-validation method: %s", cv_method)
-            LOG.warning("Using default cross validation method: KFold")
+
+        LOG.warning("Invalid cross-validation method: %s", cv_method)
+        LOG.warning("Using default cross validation method: KFold")
     else:
         LOG.info("No cross-validation method specified, using default: KFold")
 
@@ -426,7 +426,7 @@ def analyse_feature_importance(
 
     x, y, weight = sample_data(x=x, y=y, weight=weight, is_time_series=is_time_series)
 
-    n_rows, n_cols = train_transformed.shape
+    n_rows, _ = train_transformed.shape
     if n_rows > 500000:
         results_df = _analyse_feat_importance_helper(x, y, rf, -1, 3)
     else:

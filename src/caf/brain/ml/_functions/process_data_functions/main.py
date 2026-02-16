@@ -10,6 +10,11 @@ import pathlib
 import pandas as pd
 
 # Local Imports
+from caf.brain.ml._functions._ml_inputs import (
+    DataClassificationInputs,
+    Paths,
+    TransformingInputDataInputs,
+)
 from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
     process_data_pipeline,
 )
@@ -18,11 +23,6 @@ from caf.brain.ml._functions.process_data_functions.input_data import (
 )
 from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
     split_data,
-)
-from caf.brain.ml._functions._ml_inputs import (
-    Paths,
-    DataClassificationInputs,
-    TransformingInputDataInputs,
 )
 
 LOG = logging.getLogger(__name__)

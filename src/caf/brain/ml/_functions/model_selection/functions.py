@@ -12,7 +12,6 @@ from typing import Optional
 import joblib
 import numpy as np
 import pandas as pd
-from scipy import stats
 from sklearn.base import BaseEstimator
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss, mean_squared_error
@@ -20,7 +19,9 @@ from sklearn.model_selection import cross_val_score
 
 # Local Imports
 from caf.brain.ml._functions._ml_inputs import Models
-from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import sample_data
+from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
+    sample_data,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -363,7 +364,10 @@ def calculate_model_coeff(
             model, x_train, x_test, y_test, y_pred, classification_prediction
         )
 
-    LOG.warning("Model %s does not support coefficient or importance extraction", {type(model).__name__})
+    LOG.warning(
+        "Model %s does not support coefficient or importance extraction",
+        {type(model).__name__},
+    )
     return None, None
 
 
@@ -412,7 +416,7 @@ def calculate_final_coefficients(
     if validation_data is not None and target_column is not None:
         coeff_df, error_metric = calculate_model_coeff(
             model=model,
-            x_train=test_data, # only using it for the column names
+            x_train=test_data,  # only using it for the column names
             x_test=test_data,
             y_test=validation_data[target_column],
             y_pred=predictions,
@@ -434,34 +438,41 @@ def calculate_final_coefficients(
     if coeff_df is None:
         return None
 
-    coeff_df['Error_Metric'] = error_metric
-    coeff_df['Error_Source'] = 'validation' if validation_data is not None else 'training'
+    coeff_df["Error_Metric"] = error_metric
+    coeff_df["Error_Source"] = "validation" if validation_data is not None else "training"
 
     base_columns = list(coeff_df.columns)
     dropped_dfs = []
 
     if drop_vals is not None and len(drop_vals.columns) > 0:
-        drop_vals_features = pd.DataFrame({
-            'Feature': drop_vals.columns,
-            'Status': 'Dropped during encoding',
-        })
+        drop_vals_features = pd.DataFrame(
+            {
+                "Feature": drop_vals.columns,
+                "Status": "Dropped during encoding",
+            }
+        )
         for col in base_columns:
             if col not in drop_vals_features.columns:
-                drop_vals_features[col] = 'N/A'
+                drop_vals_features[col] = "N/A"
         dropped_dfs.append(drop_vals_features)
 
-    if cols_dropped_by_feat_select is not None and len(cols_dropped_by_feat_select.columns) > 0:
-        feat_select_features = pd.DataFrame({
-            'Feature': cols_dropped_by_feat_select.columns,
-            'Status': 'Dropped during feature selection',
-        })
+    if (
+        cols_dropped_by_feat_select is not None
+        and len(cols_dropped_by_feat_select.columns) > 0
+    ):
+        feat_select_features = pd.DataFrame(
+            {
+                "Feature": cols_dropped_by_feat_select.columns,
+                "Status": "Dropped during feature selection",
+            }
+        )
         for col in base_columns:
             if col not in feat_select_features.columns:
-                feat_select_features[col] = 'N/A'
+                feat_select_features[col] = "N/A"
         dropped_dfs.append(feat_select_features)
 
     if dropped_dfs:
-        coeff_df['Status'] = 'Active in model'
+        coeff_df["Status"] = "Active in model"
         coeff_df = pd.concat([coeff_df] + dropped_dfs, ignore_index=True)
 
     return coeff_df
@@ -527,19 +538,23 @@ def _extract_sklearn_coefficients(
         coefficients = model.coef_.flatten()
         feature_names = list(x_train.columns)
 
-    coeff_df = pd.DataFrame({
-        'Feature': feature_names,
-        'Coefficient': coefficients,
-        'Abs_Coefficient': np.abs(coefficients),
-    })
+    coeff_df = pd.DataFrame(
+        {
+            "Feature": feature_names,
+            "Coefficient": coefficients,
+            "Abs_Coefficient": np.abs(coefficients),
+        }
+    )
 
     if isinstance(model, LogisticRegression):
-        coeff_df['Odds_Ratio'] = np.exp(coefficients)
-        coeff_df['Note'] = 'Odds ratios from sklearn LogisticRegression (no p-values available)'
+        coeff_df["Odds_Ratio"] = np.exp(coefficients)
+        coeff_df["Note"] = (
+            "Odds ratios from sklearn LogisticRegression (no p-values available)"
+        )
     else:
-        coeff_df['Note'] = 'Coefficients from sklearn (no statistical inference available)'
+        coeff_df["Note"] = "Coefficients from sklearn (no statistical inference available)"
 
-    coeff_df = coeff_df.sort_values('Abs_Coefficient', ascending=False)
+    coeff_df = coeff_df.sort_values("Abs_Coefficient", ascending=False)
 
     if y_test is not None:
         if classification_prediction:
@@ -556,7 +571,11 @@ def _extract_sklearn_coefficients(
                 error_metric = log_loss(y_test, y_pred, labels=np.unique(y_test))
         else:
             # regression
-            error_metric = np.mean(residuals**2) if residuals is not None else mean_squared_error(y_test, y_pred)
+            error_metric = (
+                np.mean(residuals**2)
+                if residuals is not None
+                else mean_squared_error(y_test, y_pred)
+            )
         LOG.info("Extracted sklearn coefficients for %s features", len(coeff_df))
         return coeff_df, error_metric
 
@@ -607,13 +626,15 @@ def _extract_feat_importance(
     error_metric:
         Log loss or mean squared error of predictions.
     """
-    importance_df = pd.DataFrame({
-        'Feature': x_train.columns,
-        'Importance': model.feature_importances_,
-        'Importance_Type': 'Gini/MDI',
-    }).sort_values('Importance', ascending=False)
+    importance_df = pd.DataFrame(
+        {
+            "Feature": x_train.columns,
+            "Importance": model.feature_importances_,
+            "Importance_Type": "Gini/MDI",
+        }
+    ).sort_values("Importance", ascending=False)
 
-    importance_df['Cumulative_Importance'] = importance_df['Importance'].cumsum()
+    importance_df["Cumulative_Importance"] = importance_df["Importance"].cumsum()
 
     if y_test is not None:
         if classification_prediction:
@@ -643,10 +664,8 @@ def _is_statsmodels_model(model) -> bool:
     -------
     True if statsmodels algorithm.
     """
-    return any(
-        base.__module__.startswith("statsmodels")
-        for base in model.__class__.__mro__
-    )
+    return any(base.__module__.startswith("statsmodels") for base in model.__class__.__mro__)
+
 
 def _extract_statsmodels_inference(
     model,
@@ -688,23 +707,25 @@ def _extract_statsmodels_inference(
         return None, None
 
     try:
-        stats_df = pd.DataFrame({
-            'Feature': model.params.index,
-            'Coefficient': model.params.values,
-            'Std_Error': model.bse.values,
-            'Statistic': model.tvalues.values,  # t-value for OLS, z-value for Logit/GLM
-            'P_Value': model.pvalues.values,
-            'CI_Lower_95': model.conf_int()[0].values,
-            'CI_Upper_95': model.conf_int()[1].values,
-        })
+        stats_df = pd.DataFrame(
+            {
+                "Feature": model.params.index,
+                "Coefficient": model.params.values,
+                "Std_Error": model.bse.values,
+                "Statistic": model.tvalues.values,  # t-value for OLS, z-value for Logit/GLM
+                "P_Value": model.pvalues.values,
+                "CI_Lower_95": model.conf_int()[0].values,
+                "CI_Upper_95": model.conf_int()[1].values,
+            }
+        )
 
         if "Logit" in str(model.__class__):
-            stats_df['Odds_Ratio'] = np.exp(stats_df['Coefficient'])
-            stats_df['OR_CI_Lower_95'] = np.exp(stats_df['CI_Lower_95'])
-            stats_df['OR_CI_Upper_95'] = np.exp(stats_df['CI_Upper_95'])
+            stats_df["Odds_Ratio"] = np.exp(stats_df["Coefficient"])
+            stats_df["OR_CI_Lower_95"] = np.exp(stats_df["CI_Lower_95"])
+            stats_df["OR_CI_Upper_95"] = np.exp(stats_df["CI_Upper_95"])
 
         if y_test is not None:
-            if hasattr(model, 'predict'):
+            if hasattr(model, "predict"):
                 if classification_prediction:
                     # logistic regression
                     y_pred_proba = model.predict(x_test)

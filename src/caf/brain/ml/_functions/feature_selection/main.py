@@ -11,6 +11,12 @@ from pathlib import Path
 import pandas as pd
 
 # Local Imports
+from caf.brain.ml._functions._ml_inputs import (
+    DataClassificationInputs,
+    ModellingInputs,
+    Paths,
+    TransformingInputDataInputs,
+)
 from caf.brain.ml._functions.feature_selection.functions import (
     analyse_feature_importance,
     combine_results,
@@ -18,12 +24,6 @@ from caf.brain.ml._functions.feature_selection.functions import (
 )
 from caf.brain.ml._functions.process_data_functions.main import (
     main_input_data,
-)
-from caf.brain.ml._functions._ml_inputs import (
-    Paths,
-    DataClassificationInputs,
-    TransformingInputDataInputs,
-    ModellingInputs,
 )
 
 LOG = logging.getLogger(__name__)

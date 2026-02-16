@@ -9,9 +9,10 @@ from typing import Optional
 # Third Party
 import pandas as pd
 from sklearn.base import BaseEstimator
-from sklearn.linear_model import LogisticRegression, ElasticNet
+from sklearn.linear_model import ElasticNet, LogisticRegression
 
 # Local Imports
+from caf.brain.ml._functions._baseclasses import ValidateData
 from caf.brain.ml._functions._ml_inputs import Models
 from caf.brain.ml._functions.data_analysis.functions import (
     pre_forecast_data_analysis,
@@ -22,14 +23,16 @@ from caf.brain.ml._functions.feature_selection.functions import (
 from caf.brain.ml._functions.hparam_optimisation.functions import (
     select_param,
 )
-from caf.brain.ml._functions.model_selection.functions import select_model, initialise_model
+from caf.brain.ml._functions.model_selection.functions import (
+    initialise_model,
+    select_model,
+)
 from caf.brain.ml._functions.process_data_functions.encode_and_scale import (
     process_data_pipeline,
 )
 from caf.brain.ml._functions.process_data_functions.input_data import (
     InitialDataProcessing,
 )
-from caf.brain.ml._functions._baseclasses import ValidateData
 from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
     simple_train_test_split,
     stratified_split_with_categories,

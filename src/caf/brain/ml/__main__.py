@@ -4,8 +4,8 @@ Original author: Adil Zaheer
 """
 
 # Built-Ins
-import os
 import argparse
+import os
 from pathlib import Path
 
 # Third Party
@@ -56,7 +56,7 @@ def model_setup():
         type=Path,
         default=Path("brain.yml"),
         help=(
-            "Path to YAML config file. You should use docs/config.md \n"
+            "Path to YAML config file. You should use docs/config.rst \n"
             "as guidance and examples/brain.yml as a template.\n"
         ),
     )

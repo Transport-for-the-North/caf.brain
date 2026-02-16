@@ -12,6 +12,12 @@ from pathlib import Path
 import pandas as pd
 
 # Local Imports
+from caf.brain.ml._functions._ml_inputs import (
+    DataClassificationInputs,
+    ModellingInputs,
+    Paths,
+    TransformingInputDataInputs,
+)
 from caf.brain.ml._functions.data_analysis.functions import (
     pre_forecast_data_analysis,
 )
@@ -23,12 +29,6 @@ from caf.brain.ml._functions.process_data_functions.main import (
 )
 from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
     simple_train_test_split,
-)
-from caf.brain.ml._functions._ml_inputs import (
-    Paths,
-    DataClassificationInputs,
-    TransformingInputDataInputs,
-    ModellingInputs,
 )
 
 LOG = logging.getLogger(__name__)

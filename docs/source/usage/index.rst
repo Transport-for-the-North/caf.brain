@@ -17,3 +17,8 @@ Command-Line Interface
 
 .. todo::
     Does CAF.brain have a CLI?
+
+.. toctree::
+   :maxdepth: 2
+
+   config

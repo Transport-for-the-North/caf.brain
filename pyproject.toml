@@ -25,6 +25,7 @@ Documentation = "https://cafbrain.readthedocs.io/"
 
 [tool.setuptools.dynamic]
 dependencies = { "file" = "requirements.txt" }
+
 [tool.setuptools.dynamic.optional-dependencies]
 dev = { "file" = "requirements_dev.txt" }
 vision = { "file" = "requirements_vision.txt" }
@@ -44,7 +45,7 @@ where = ["src"]
 # Linters
 [tool.black]
 line-length = 95
-target-version = ['py39']
+target-version = ['py310']
 
 [tool.pylint.messages_control]
 disable = [
@@ -93,7 +94,11 @@ import_heading_firstparty = "Local Imports"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-addopts = "--cov=caf --cov-report=xml -n auto"
+addopts = """\
+    --cov=caf --cov-report=xml -n auto \
+    --doctest-modules --ignore=examples \
+    --junitxml=junit.xml -o junit_family=legacy\
+    """
 
 [tool.coverage.report]
 include_namespace_packages = true

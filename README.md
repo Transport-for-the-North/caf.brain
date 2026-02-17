@@ -31,14 +31,12 @@
 </a>
 </p>
 
-Common Analytical Framework package of Machine and Deep Learning tools
-
 > [!WARNING]  
 > This package is in an early stage of development so features may change or be removed. 
 > If using this package it is recommended to set a specific version and check before 
 > upgrading to a new version.
 
-Package description
+Common Analytical Framework package of Machine and Deep Learning tools.
 
 
 
@@ -52,12 +50,10 @@ transport analytics and appraisal tools.
 
 <details><summary><h2>Contributing</h2></summary>
 
-## Contributing
-
-CAF.brAIn happily accepts contributions.
+CAF.brain happily accepts contributions.
 
 The best way to contribute to this project is to go to the [issues tab](https://github.com/transport-for-the-north/caf.brain/issues)
-and report bugs or submit a feature request. This helps CAF.brAIn become more
+and report bugs or submit a feature request. This helps CAF.brain become more
 stable and full-featured. Please check the closed bugs before submitting a bug report to see if your
 question has already been answered.
 

@@ -60,11 +60,9 @@ def prediction(
                  index.
     """
     if validation is not None and not target_column:
-        raise ValueError(
-            "Please provide a target column for prediction as you \
+        raise ValueError("Please provide a target column for prediction as you \
                           have passed a validation set of data. The target column \
-                          if a string of the column title."
-        )
+                          if a string of the column title.")
 
     if target_column in test.columns:
         test = test.drop(columns=target_column)

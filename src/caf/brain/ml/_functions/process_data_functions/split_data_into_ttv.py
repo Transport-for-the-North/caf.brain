@@ -250,10 +250,8 @@ def simple_train_test_split(
     x_train_weight: Weight values for the training set, if available.
     """
     if not target_column:
-        raise ValueError(
-            "Please provide a target column. This should be a \
-                          column title passed as a string."
-        )
+        raise ValueError("Please provide a target column. This should be a \
+                          column title passed as a string.")
     x = df.drop(columns=[target_column])
     y = df[target_column]
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.35, random_state=42)

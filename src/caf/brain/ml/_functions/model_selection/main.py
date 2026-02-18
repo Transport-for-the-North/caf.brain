@@ -81,10 +81,8 @@ def main_model_selection(
         LOG.info("Data successfully read in, processed and validated")
         train = pd.DataFrame.from_dict(data_dict["train_scaled"])
     if not modelling.model_choice:
-        raise ValueError(
-            "Please provide at least one model from the Models \
-                          class."
-        )
+        raise ValueError("Please provide at least one model from the Models \
+                          class.")
 
     if not isinstance(modelling.model_choice, list):
         model = [modelling.model_choice]
@@ -106,13 +104,9 @@ def main_model_selection(
             is_time_series=data_classification.is_time_series,
         )
     else:
-        LOG.error(
-            "Model incorrectly provided or not provided at all \
-                          Provide a valid model(s) from the Models Enum class."
-        )
-        raise ValueError(
-            "Model incorrectly provided or not provided at all \
-                          Provide a valid model(s) from the Models Enum class."
-        )
+        LOG.error("Model incorrectly provided or not provided at all \
+                          Provide a valid model(s) from the Models Enum class.")
+        raise ValueError("Model incorrectly provided or not provided at all \
+                          Provide a valid model(s) from the Models Enum class.")
 
     return selected_model

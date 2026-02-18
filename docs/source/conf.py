@@ -25,7 +25,7 @@ project = "CAF.brain"
 copyright = "2025, Transport for the North"
 author = "Transport for the North"
 
-# Third Party
+# Local Imports
 import caf.brain
 
 version = str(caf.brain.__version__)

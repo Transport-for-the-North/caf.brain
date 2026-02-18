@@ -138,6 +138,7 @@ dmypy.json
 
 # Yolo file to support yolo model run
 *.pt
+*.db
 
 # Data Files (avoid accidentally uploading data)
 *.csv

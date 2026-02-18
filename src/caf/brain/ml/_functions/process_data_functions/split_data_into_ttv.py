@@ -268,7 +268,10 @@ def simple_train_test_split(
 
 
 def sample_data(
-    x: pd.DataFrame, y: pd.DataFrame, weight: np.ndarray = None, is_time_series: bool = False
+    x: pd.DataFrame,
+    y: pd.DataFrame,
+    weight: np.ndarray | None = None,
+    is_time_series: bool = False,
 ):
     """
     Take a sample of data whilst maintaining temporal nature of data if
@@ -298,17 +301,6 @@ def sample_data(
         LOG.warning(
             "Dataset has %d rows. Sampling 500,000 rows for memory efficiency.", n_rows
         )
-
-        # if is_time_series:
-        #     sample_indices = x.index[-500000:]
-        # else:
-        #     sample_indices = x.sample(n=500000, random_state=42).index
-        #
-        # x_sample = x.loc[sample_indices]
-        # y_sample = y.loc[sample_indices]
-        # weight_sample = (
-        #     weight[x.index.get_indexer(sample_indices)] if weight is not None else None
-        # )
 
         if is_time_series:
             sample_positions = np.arange(n_rows - 500000, n_rows)

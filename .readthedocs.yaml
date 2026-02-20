@@ -17,6 +17,5 @@ python:
     - method: pip
       path: .
       extra_requirements:
-        - ml
-        - vision
+        - dev
     - requirements: docs/requirements.txt

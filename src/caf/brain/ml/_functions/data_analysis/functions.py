@@ -1065,7 +1065,7 @@ def _check_rare_categories(
         if len(rare_values) > 0:
             rare_cats_found = True
             LOG.warning(
-                "Rare categories in %s: %s categories <%s%",
+                "Rare categories in %s: %s categories <%s percent",
                 col,
                 len(rare_values),
                 (threshold * 100),

@@ -144,8 +144,9 @@ def select_model(
         else:
             best_idx = df["R2"].idxmax()
             best_model_str = str(df.loc[best_idx, "Models"])
-        best_model_enum = [best_model_str]
-        best_model = best_model_enum[0].get_model()
+        enum_name = best_model_str.split(".")[1]
+        best_model_enum = Models[enum_name]
+        best_model = best_model_enum.get_model()
 
         return best_model
 

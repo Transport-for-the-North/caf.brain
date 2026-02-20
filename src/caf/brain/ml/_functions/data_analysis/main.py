@@ -122,10 +122,8 @@ def main_evaluate_input_data(
         )
 
         if not modelling.model_choice or len(modelling.model_choice) > 1:
-            raise ValueError(
-                "Please provide only one algorithm to be used to \
-                              evaluate input data if using the function standalone."
-            )
+            raise ValueError("Please provide only one algorithm to be used to \
+                              evaluate input data if using the function standalone.")
         # model re-initialised as this flow is assuming you aren't running the full model
         model_initialised = modelling.model_choice[0].get_model()
 

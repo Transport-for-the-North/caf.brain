@@ -33,7 +33,7 @@ jobs:
 
       - name: Lint with PyLint
         run: |
-          pylint
+          pylint src
 
       - name: Lint with PyDocStyle
         run: |

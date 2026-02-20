@@ -255,7 +255,7 @@ def feature_selection_intensive(
 
 
 def _classification_feature_selection(
-    x: pd.DataFrame, y: pd.Series, weight: np.ndarray
+    x: pd.DataFrame, y: pd.Series, weight: np.ndarray | None
 ) -> list[str]:
     """
     Feature selection algorithms for classification problems.
@@ -291,7 +291,7 @@ def _classification_feature_selection(
 
 
 def _regression_feature_selection(
-    x: pd.DataFrame, y: pd.Series, weight: np.ndarray
+    x: pd.DataFrame, y: pd.Series, weight: np.ndarray | None
 ) -> list[str]:
     """
     Feature selection algorithms for regression problems.

@@ -540,7 +540,7 @@ def evaluate_data(
     )
 
     # split unscaled data
-    train_unscaled, test_unscaled, validate = stratified_split_with_categories(
+    train_unscaled, test_unscaled, _ = stratified_split_with_categories(
         df=data,
         categorical_features=categorical_features,
         target_column=target,
@@ -596,7 +596,7 @@ def evaluate_data(
     else:
         model_initialised = ElasticNet(random_state=42)
 
-    x_train_model_fit, residuals, mse = initialise_model(
+    x_train_model_fit, residuals, _ = initialise_model(
         x_train=x_train,
         x_test=x_test,
         y_train=y_train,

@@ -157,11 +157,9 @@ class InitialDataProcessing:
 
         if len(self.dataframes) > 1:
             if self.custom_index is None:
-                raise ValueError(
-                    "Must provide custom index in order to process \
+                raise ValueError("Must provide custom index in order to process \
                                   multiple dataframes. Data processing outside of \
-                                  caf.ml is advised."
-                )
+                                  caf.ml is advised.")
             self.df = pd.concat(self.dataframes, axis=0)
 
         if self.df.empty:
@@ -430,10 +428,8 @@ class InitialDataProcessing:
         Dataframe without nans and duplicates.
         """
         if target_column and dataframe[target_column].isna().any():
-            raise ValueError(
-                f"Target column '{target_column}' has NaN values. \
-                               Please review the data."
-            )
+            raise ValueError(f"Target column '{target_column}' has NaN values. \
+                               Please review the data.")
 
         rows_with_nans = dataframe[dataframe.isna().any(axis=1)]
         cleaned_dataframe = dataframe.dropna()

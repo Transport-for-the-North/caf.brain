@@ -8,11 +8,10 @@ dynamic = ["version", "dependencies", "optional-dependencies"]
 description = "Common Analytical Framework package of Machine and Deep Learning tools."
 readme = "README.md"
 license = { "file" = "LICENSE" }
-requires-python = ">=3.9"
+requires-python = ">=3.10,<3.13"
 authors = [{ name = "Transport for the North" }]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -22,14 +21,13 @@ classifiers = [
 "Bug Tracker" = "https://github.com/transport-for-the-north/caf.brain/issues"
 Homepage = "https://github.com/transport-for-the-north/caf.brain"
 Source = "https://github.com/transport-for-the-north/caf.brain"
+Documentation = "https://cafbrain.readthedocs.io/"
 
 [tool.setuptools.dynamic]
 dependencies = { "file" = "requirements.txt" }
 
 [tool.setuptools.dynamic.optional-dependencies]
 dev = { "file" = "requirements_dev.txt" }
-docs = { "file" = "docs/requirements.txt" }
-vision = { "file" = "requirements_machine_vision.txt" }
 
 # Dynamic versioning for editable installs
 [tool.setuptools.cmdclass]
@@ -46,7 +44,7 @@ where = ["src"]
 # Linters
 [tool.black]
 line-length = 95
-target-version = ['py39']
+target-version = ['py310']
 
 [tool.pylint.messages_control]
 disable = [
@@ -95,7 +93,11 @@ import_heading_firstparty = "Local Imports"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-addopts = "--cov=caf --cov-report=xml -n auto"
+addopts = """\
+    --cov=caf --cov-report=xml -n auto \
+    --doctest-modules --ignore=examples \
+    --junitxml=junit.xml -o junit_family=legacy\
+    """
 
 [tool.coverage.report]
 include_namespace_packages = true
@@ -114,3 +116,6 @@ build-file = "caf/brain/_version.py"
 distance = "{base_version}+{distance}.{vcs}{rev}"
 dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
 distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
+
+[project.scripts]
+caf-brain = "caf.brain.ml.__main__:model_setup"

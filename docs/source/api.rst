@@ -1,7 +1,7 @@
 API Reference
 =============
 
-This section shows the detailed documentation for CAF.brAIn,
+This section shows the detailed documentation for CAF.brain,
 last updated on |today|.
 
 .. note::
@@ -10,7 +10,7 @@ last updated on |today|.
    - For code examples see :ref:`code examples`
 
 .. autosummary::
-    :toctree: _autosummary/
+    :toctree: _generated/autosummary/
     :recursive:
 
     caf.brain

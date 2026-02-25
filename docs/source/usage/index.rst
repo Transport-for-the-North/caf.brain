@@ -10,10 +10,15 @@ Graphical User Interface
 ------------------------
 
 .. todo::
-    Does CAF.brAIn have a GUI?
+    Does CAF.brain have a GUI?
 
 Command-Line Interface
 ----------------------
 
 .. todo::
-    Does CAF.brAIn have a CLI?
+    Does CAF.brain have a CLI?
+
+.. toctree::
+   :maxdepth: 2
+
+   config

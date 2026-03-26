@@ -75,7 +75,6 @@ def generate_satellite_images(
     """
     LOG.info("Generating satellite images")
 
-    user_location = Path(user_location)
     output_path = Path(output_path)
     image_folder_path = Path(image_folder_path)
 

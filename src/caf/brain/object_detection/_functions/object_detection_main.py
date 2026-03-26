@@ -56,7 +56,6 @@ def main(
 
     if params.object_detection.user_location is None:
         raise ValueError("user_location cannot be None.")
-    user_location = Path(params.object_detection.user_location)
 
     if params.object_detection.image_folder_path is None:
         raise ValueError("image_folder_path cannot be None.")
@@ -70,7 +69,7 @@ def main(
         "Generate_satellite_images has to be run in order to generate images for prediction."
     )
     output_dir = generate_satellite_images(
-        user_location=user_location,
+        user_location=params.object_detection.user_location,
         output_path=output_path,
         image_folder_path=image_folder_path,
     )

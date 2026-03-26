@@ -59,16 +59,29 @@ def generate_user_location_shp_file(
 
     is_path = False
     if isinstance(user_prediction_location, str):
-        try:
-            path_obj = Path(user_prediction_location)
-            is_path = path_obj.exists() and path_obj.suffix in [".shp", ".gpkg", ".geojson"]
-        except (ValueError, OSError):
-            is_path = False
+        candidate = Path(user_prediction_location)
 
-    if isinstance(user_prediction_location, list) or (
-        isinstance(user_prediction_location, str) and not is_path
+        if candidate.exists() and candidate.suffix.lower() in {".shp", ".gpkg", ".geojson"}:
+            is_path = True
+            path_obj = candidate
+        else:
+            is_path = False
+            path_obj = user_prediction_location
+
+    elif isinstance(user_prediction_location, list):
+        is_path = False
+        path_obj = user_prediction_location
+
+    else:
+        raise ValueError(
+            "user_prediction_location must be a string (city name), "
+            "list of city names, or a valid shapefile path"
+        )
+
+    if isinstance(path_obj, list) or (
+        isinstance(path_obj, str) and not is_path
     ):
-        LOG.info("Loading city boundaries for: %s", user_prediction_location)
+        LOG.info("Loading city boundaries for: %s", path_obj)
         cities_shp = Path(r"B:\TfN_object_detection\Towns_and_Cities")
         if os.path.exists(cities_shp):
             df = gpd.read_file(cities_shp)
@@ -78,15 +91,15 @@ def generate_user_location_shp_file(
             raise ValueError(f"Issue with {cities_shp}. It is not in the expected location")
 
         cities = (
-            [user_prediction_location]
-            if isinstance(user_prediction_location, str)
-            else user_prediction_location
+            [path_obj]
+            if isinstance(path_obj, str)
+            else path_obj
         )
         df = df[df["CITY"].isin(cities)]
 
     elif is_path:
-        LOG.info("Loading custom shapefile: %s", user_prediction_location)
-        df = gpd.read_file(user_prediction_location)
+        LOG.info("Loading custom shapefile: %s", path_obj)
+        df = gpd.read_file(path_obj)
 
         if "LSOA21CD" in df.columns:
             df = df[["LSOA21CD", "LSOA21NM", "geometry"]]
@@ -104,13 +117,13 @@ def generate_user_location_shp_file(
 
     else:
         raise ValueError(
-            f"Invalid user_prediction_location type: {type(user_prediction_location)}. "
+            f"Invalid user_prediction_location type: {type(path_obj)}. "
             f"Must be a string (city name), list (city names), or valid shapefile path"
         )
 
     if df.empty:
         raise ValueError(
-            f"No boundaries found for: {user_prediction_location}. "
+            f"No boundaries found for: {path_obj}. "
             f"Check your input is correct."
         )
 

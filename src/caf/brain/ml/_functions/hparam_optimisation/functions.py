@@ -82,11 +82,13 @@ def select_param(
         return final_model
 
     if not target_column:
-        raise ValueError("Please provide a target column for hyperparameter \
-                          optimisation. This is a column title passed as a string.")
+        raise ValueError(
+            "Please provide a target column for hyperparameter \
+                          optimisation. This is a column title passed as a string."
+        )
     x = train_final.drop(columns=[target_column] + ([weight_column] if weight_column else []))
     y = train_final[target_column]
-    weight = train_final[weight_column].values.flatten() if weight_column else None
+    weight = train_final[weight_column].to_numpy().flatten() if weight_column else None
     cv = get_cv_class(cv_method=cv, splits=None, repeats=None, is_time_series=is_time_series)
 
     x, y, weight = sample_data(x=x, y=y, weight=weight, is_time_series=is_time_series)

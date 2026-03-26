@@ -32,9 +32,9 @@ def initialise_model(
     y_train: pd.Series,
     y_test: pd.Series,
     output_folder: Path,
-    model_initialised: BaseEstimator,
+    model_initialised,
     classification_prediction: tuple[int, ...] | None,
-    x_train_weight: pd.DataFrame = None,
+    x_train_weight: Optional[pd.Series] = None,
 ) -> tuple[BaseEstimator, pd.Series, float | None]:
     """
     Fit the initialised model and evaluate its initial performance.
@@ -58,8 +58,8 @@ def initialise_model(
     classification_prediction: List of integers that correspond to the
                                target column. The value(s) to predict
                                in a classification problem.
-    x_train_weight:  Numpy ndarray of weight values that correspond to
-                     x_train generated in simple_train_test_split
+    x_train_weight: Pandas series of weight values that correspond to
+                    x_train generated in simple_train_test_split
 
     Returns
     -------
@@ -69,7 +69,7 @@ def initialise_model(
     """
     weight = None
     if x_train_weight is not None:
-        weight = x_train_weight.values.flatten()
+        weight = x_train_weight.to_numpy().flatten()
 
     model_filename = output_folder / "initial_fitted_model.pkl"
     if model_filename.exists():
@@ -107,7 +107,7 @@ def select_model(
     weight_column: str | None,
     models_to_test: list[Models],
     classification_prediction: tuple[int, ...] | None,
-    is_time_series: bool = False,
+    is_time_series: bool | None = False,
 ) -> BaseEstimator:
     """
     Quickly assess and select the best model from a list of candidates.
@@ -158,7 +158,7 @@ def select_model(
 
     x = train.drop(columns=[target_column] + ([weight_column] if weight_column else []))
     y = train[target_column]
-    weight = train[weight_column].values.flatten() if weight_column else None
+    weight = np.asarray(train[weight_column]).flatten() if weight_column else None
 
     acc = {}
     best_score = float("-inf")
@@ -375,12 +375,12 @@ def calculate_model_coeff(
 def calculate_final_coefficients(
     model,
     test_data: pd.DataFrame,
-    training_mse: pd.Series,
+    training_mse: float | None,
     predictions: pd.Series,
-    validation_data: pd.DataFrame,
+    validation_data: pd.DataFrame | None,
     target_column: str | None,
     is_classification: tuple[int, ...] | None,
-    drop_vals: pd.DataFrame,
+    drop_vals: pd.DataFrame | None,
     cols_dropped_by_feat_select: pd.DataFrame,
 ) -> pd.DataFrame | None:
     """
@@ -434,7 +434,9 @@ def calculate_final_coefficients(
             residuals=None,
             classification_prediction=is_classification,
         )
-        error_metric = training_mse if error_metric is None else error_metric
+
+    if error_metric is None:
+        error_metric = training_mse if training_mse is not None else None
 
     if coeff_df is None:
         return None
@@ -577,6 +579,8 @@ def _extract_sklearn_coefficients(
                 if residuals is not None
                 else mean_squared_error(y_test, y_pred)
             )
+        if error_metric:
+            error_metric = float(error_metric)
         LOG.info("Extracted sklearn coefficients for %s features", len(coeff_df))
         return coeff_df, error_metric
 
@@ -646,7 +650,8 @@ def _extract_feat_importance(
                 error_metric = log_loss(y_test, y_pred)
         else:
             error_metric = mean_squared_error(y_test, y_pred)
-
+        if error_metric is not None:
+            error_metric = float(error_metric)
         LOG.info("Extracted feature importances for %s features", len(importance_df))
         return importance_df, error_metric
     LOG.info("Extracted feature importances for %s features", len(importance_df))
@@ -735,12 +740,15 @@ def _extract_statsmodels_inference(
                     # OLS
                     y_pred = model.predict(x_test)
                     error_metric = mean_squared_error(y_test, y_pred)
+                if error_metric:
+                    error_metric = float(error_metric)
+
                 LOG.info("Extracted statsmodels inference with %s features", len(stats_df))
                 return stats_df, error_metric
         else:
             LOG.info("Extracted statsmodels inference with %s features", len(stats_df))
         return stats_df, None
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         LOG.error("Failed to extract statsmodels inference: %s", e)
         return None, None

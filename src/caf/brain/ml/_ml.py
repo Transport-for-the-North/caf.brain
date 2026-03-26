@@ -480,14 +480,10 @@ def evaluate_data(
     is_time_series: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Data analysis for structured tabular numerical data.
+    Data analysis for structured tabular data.
 
-    Where applicable, the following tests are performed:
-        - Multicolinearity (VIF)
-        - Heteroscedasticity (Breusch-Pagan & White Test)
-        - Linearity (Correlation coefficient)
-        - Normality (Shapiro-Wilk)
-        - Autocorrelation (Durbin-Watson)
+    Tests conducted depend on if the problem is classification or regression
+    and if the data is categorical, numerical or both.
 
     Data transformations (log and scaling) are applied to numerical features
     only if permitted and required (to fix issues the tests reveal).

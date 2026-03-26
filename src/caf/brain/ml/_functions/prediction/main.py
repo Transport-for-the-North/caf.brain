@@ -18,11 +18,11 @@ def main_prediction(
     test: pd.DataFrame,
     target_column: str | None,
     output_folder: Path,
-    validation: pd.DataFrame,
+    validation: pd.DataFrame | None,
     weight_column: str | None,
     classification_prediction: tuple[int, ...] | None,
-    mse: pd.Series,
-    drop_vals: pd.DataFrame,
+    mse: float | None,
+    drop_vals: pd.DataFrame | None,
     cols_dropped_by_feat_select: pd.DataFrame,
 ) -> None:
     """

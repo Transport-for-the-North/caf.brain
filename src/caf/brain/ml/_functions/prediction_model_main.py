@@ -41,10 +41,11 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
 
     Parameters
     ----------
-    params: config file inputs
-    output_path: path to output file location. Should be generated during
-                 model setup if not passed directly.
-
+    params:
+        Config file inputs
+    output_path:
+        Path to output file location. Should be generated during model setup
+        if not passed directly.
     """
     start_time = time.time()
 
@@ -122,6 +123,17 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
         if data_dict["validate"] is not None and len(data_dict["validate"]) > 0:
             validate = pd.DataFrame.from_dict(data_dict["validate"])
             validate.to_csv(paths["validate"], index=True)
+
+    if (
+        train_scaled is None
+        or test_scaled is None
+        or train_unscaled is None
+        or test_unscaled is None
+    ):
+        raise ValueError(
+            "Train/test scaled and unscaled data must not be None at this stage. \n"
+            "Please re-run the model and ensure input config is correctly populated."
+        )
 
     selected_model = main_model_selection(
         paths=params.paths,

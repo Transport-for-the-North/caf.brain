@@ -323,7 +323,7 @@ def encode_test_data(
     train_encoded: Optional[pd.DataFrame],
     target_column: str | None,
     weight_column: str | None,
-    weight_df: pd.DataFrame,
+    weight_df: pd.Series | None,
 ) -> pd.DataFrame:
     """
     This encodes test data to match the training data.
@@ -336,7 +336,7 @@ def encode_test_data(
     train_encoded: Encoded training data that the test data will match.
     target_column: Sting column name of value to predict.
     weight_column: Optional string column value to be used as weight.
-    weight_df: The weight column in dataframe form to be added back
+    weight_df: The weight column in a series to be added back
                to the encoded test data.
 
     Returns
@@ -545,5 +545,8 @@ def process_data_pipeline(
 
     if drop_vals is not None and not drop_vals.empty:
         drop_vals.to_csv(os.path.join(output_folder, "dropped_encoding_vals.csv"), index=True)
+
+    if final_df is None:
+        raise ValueError("Processing failed: final_df was never created.")
 
     return final_df, drop_vals, pipeline_out

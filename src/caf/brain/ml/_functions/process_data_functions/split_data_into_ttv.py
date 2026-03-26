@@ -153,7 +153,7 @@ def stratified_split_with_categories(
 
     if validation_path is not None:
         validate = InitialDataProcessing.read_file(file_path=validation_path)
-        if index_columns in validate.columns:
+        if index_columns is not None and all(col in validate.columns for col in index_columns):
             validate = validate.set_index(index_columns)
 
     train.to_csv(os.path.join(output_path, "train.csv"), index=True)
@@ -231,7 +231,7 @@ def split_by_column_value(
 
 def simple_train_test_split(
     df: pd.DataFrame, target_column: str | None, weight_column: str | None
-):
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series | None]:
     """
     Split data into train and test sets for model building.
 
@@ -250,8 +250,10 @@ def simple_train_test_split(
     x_train_weight: Weight values for the training set, if available.
     """
     if not target_column:
-        raise ValueError("Please provide a target column. This should be a \
-                          column title passed as a string.")
+        raise ValueError(
+            "Please provide a target column. This should be a \
+                          column title passed as a string."
+        )
     x = df.drop(columns=[target_column])
     y = df[target_column]
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.35, random_state=42)
@@ -267,9 +269,9 @@ def simple_train_test_split(
 
 def sample_data(
     x: pd.DataFrame,
-    y: pd.DataFrame,
+    y: pd.Series,
     weight: np.ndarray | None = None,
-    is_time_series: bool = False,
+    is_time_series: bool | None = False,
 ):
     """
     Take a sample of data whilst maintaining temporal nature of data if
@@ -278,7 +280,7 @@ def sample_data(
     Parameters
     ----------
     x: Pandas dataframe of explanatory variable data.
-    y: Pandas dataframe of target variable data.
+    y: Pandas series of target variable data.
     weight: Numpy array of weight column if applicable.
     is_time_series: True if data is time series.
 
@@ -303,7 +305,8 @@ def sample_data(
         if is_time_series:
             sample_positions = np.arange(n_rows - 500000, n_rows)
         else:
-            sample_positions = np.random.RandomState(42).choice(n_rows, 500000, replace=False)
+            rng = np.random.Generator(np.random.MT19937(42))
+            sample_positions = rng.choice(n_rows, size=500000, replace=False)
 
         x_sample = x.iloc[sample_positions]
         y_sample = y.iloc[sample_positions]

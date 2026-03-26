@@ -46,11 +46,11 @@ LOG = logging.getLogger(__name__)
 
 def pre_forecast_data_analysis(
     output_folder: Path,
-    residuals: pd.Series,
+    residuals: pd.Series | None,
     model_fit,
     model_initialised,
-    x_test: pd.DataFrame,
-    y_test: pd.DataFrame,
+    x_test: pd.DataFrame | None,
+    y_test: pd.Series | None,
     train_scaled: pd.DataFrame,
     test_scaled: pd.DataFrame,
     train_unscaled: pd.DataFrame,
@@ -84,7 +84,7 @@ def pre_forecast_data_analysis(
     model_fit: Fitted model on train_test_split test data.
     model_initialised: Initialised SciKitLearn model.
     x_test: Dataframe of test data to be used as unseen test data.
-    y_test: Dataframe of target data from train, test split.
+    y_test: Series of target data from train, test split.
     train_scaled: Processed input data split into train set.
     test_scaled: Processed input data split into train set.
     train_unscaled: Input data unprocessed split into train.
@@ -111,7 +111,8 @@ def pre_forecast_data_analysis(
     Train and test data post data transformations are returned
     if transformations permitted otherwise train and test scaled are returned.
     """
-
+    assert train_unscaled is not None, "Training data unscaled is required for data analysis"
+    assert test_unscaled is not None, "Test data unscaled is required for data analysis"
     # extract values from configs if provided
     _target_column = (
         data_classification.target_column if data_classification else target_column
@@ -402,9 +403,9 @@ def _regression_only(
     numerical_features: list[str] | None,
     categorical_features: list[str] | None,
     output_path: Path,
-    x_test: pd.DataFrame = None,
-    y_test: pd.DataFrame = None,
-    residuals: pd.Series = None,
+    x_test: Optional[pd.DataFrame] = None,
+    y_test: Optional[pd.Series] = None,
+    residuals: Optional[pd.Series] = None,
     is_linear_model: bool = False,
     is_time_series: bool | None = False,
 ) -> bool:
@@ -426,7 +427,7 @@ def _regression_only(
     x_test:
         Dataframe of test data to be used as unseen test data.
     y_test:
-        Dataframe of target data from train, test split.
+        Series of target data from train, test split.
     residuals:
         Truth values form the train_test_split against the predictions.
     is_linear_model:
@@ -471,21 +472,25 @@ def _regression_only(
 
     # LINEAR MODEL CHECKS
     if is_linear_model:
-        heteroscedasticity_flag = _heteroscedasticity_check(
-            x_test=x_test,
-            y_test=y_test,
-            numerical_features=numerical_features,
-            residuals=residuals,
-            is_linear_model=is_linear_model,
-        )
+        heteroscedasticity_flag = False
+        if x_test is not None and y_test is not None:
+            heteroscedasticity_flag = _heteroscedasticity_check(
+                x_test=x_test,
+                y_test=y_test,
+                numerical_features=numerical_features,
+                residuals=residuals,
+                is_linear_model=is_linear_model,
+            )
 
-        linear_model_issues = _linear_model_tests(
-            x_test=x_test,
-            numerical_features=numerical_features,
-            is_time_series=is_time_series,
-            residuals=residuals,
-            is_linear_model=is_linear_model,
-        )
+        linear_model_issues = False
+        if x_test is not None:
+            linear_model_issues = _linear_model_tests(
+                x_test=x_test,
+                numerical_features=numerical_features,
+                is_time_series=is_time_series,
+                residuals=residuals,
+                is_linear_model=is_linear_model,
+            )
 
         if heteroscedasticity_flag:
             categorical_warnings.append("Heteroscedasticity")
@@ -619,7 +624,11 @@ def transform_data(
     numerical_data = df[numerical_features].copy()
 
     # log
-    numerical_transformed = np.log1p(numerical_data)
+    numerical_transformed = pd.DataFrame(
+        np.log1p(numerical_data),
+        columns=numerical_data.columns,
+        index=numerical_data.index,
+    )
 
     # force fixing any issues post log transformations
     numerical_transformed = numerical_transformed.replace([np.inf, -np.inf], np.nan)
@@ -641,7 +650,7 @@ def transform_data(
         transformed_data.append(categorical_data)
 
     if weight is not None:
-        transformed_data.append(weight)
+        transformed_data.append(weight.to_frame())
 
     transformed_df = pd.concat(transformed_data, axis=1)
 
@@ -658,7 +667,7 @@ def _linear_model_tests(
     x_test: pd.DataFrame,
     numerical_features: list[str] | None,
     is_time_series: bool | None = False,
-    residuals: pd.Series = None,
+    residuals: Optional[pd.Series] = None,
     is_linear_model: bool | None = False,
 ) -> bool:
     """
@@ -761,9 +770,9 @@ def _linear_model_tests(
 
 def _heteroscedasticity_check(
     x_test: pd.DataFrame,
-    y_test: pd.DataFrame,
+    y_test: pd.Series,
     numerical_features: list[str] | None,
-    residuals: pd.Series = None,
+    residuals: Optional[pd.Series] = None,
     is_linear_model: bool = False,
 ) -> bool:
     """
@@ -1083,7 +1092,7 @@ def _check_rare_categories(
 
     if rare_report:
         pd.DataFrame(rare_report).to_csv(output_path / "rare_categories.csv", index=False)
-    rare_features = list({row["feature"] for row in rare_report})
+    rare_features = list({str(row["feature"]) for row in rare_report})
     return rare_cats_found, rare_features
 
 
@@ -1224,7 +1233,14 @@ def _check_numerical_feat_class_target(
 
     for col in numerical_features:
         try:
-            corr, pval = pointbiserialr(df[target], df[col])
+            res = pointbiserialr(
+                np.asarray(df[target], dtype=float), np.asarray(df[col], dtype=float)
+            )
+            corr = float(res.statistic)
+            pval = float(res.pvalue)
+            if np.isnan(corr) or np.isnan(pval):
+                continue
+
             correlations.append({"feature": col, "correlation": corr, "p_value": pval})
             if abs(corr) < 0.05:
                 if pval > 0.05:

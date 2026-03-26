@@ -6,7 +6,7 @@ Input data _functions used to tidy semi-structured / structured numeric data.
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Iterable
 
 # Third Party
 import numpy as np
@@ -79,7 +79,7 @@ class InitialDataProcessing:
         self.classification_prediction = classification_prediction
         self.is_test_data = is_test_data
 
-        self.df: pd.DataFrame = None
+        self.df: pd.DataFrame | None = None
         self.dataframes: Dict[Any, pd.DataFrame] = {}
 
     # # # Data flow pipelines # # #
@@ -157,15 +157,19 @@ class InitialDataProcessing:
 
         if len(self.dataframes) > 1:
             if self.custom_index is None:
-                raise ValueError("Must provide custom index in order to process \
+                raise ValueError(
+                    "Must provide custom index in order to process \
                                   multiple dataframes. Data processing outside of \
-                                  caf.ml is advised.")
+                                  caf.ml is advised."
+                )
             self.df = pd.concat(self.dataframes, axis=0)
 
-        if self.df.empty:
-            raise ValueError(f"Dataframe {self.df} is empty")
+        assert self.df is not None, "Dataframe was not loaded correctly."
+        df_local = self.df
 
-        df = self.convert_to_dataframe(self.df)
+        if df_local.empty:
+            raise ValueError(f"Dataframe {df_local} is empty")
+        df = self.convert_to_dataframe(df_local)
 
         target_column_ = (
             []
@@ -428,8 +432,10 @@ class InitialDataProcessing:
         Dataframe without nans and duplicates.
         """
         if target_column and dataframe[target_column].isna().any():
-            raise ValueError(f"Target column '{target_column}' has NaN values. \
-                               Please review the data.")
+            raise ValueError(
+                f"Target column '{target_column}' has NaN values. \
+                               Please review the data."
+            )
 
         rows_with_nans = dataframe[dataframe.isna().any(axis=1)]
         cleaned_dataframe = dataframe.dropna()
@@ -487,8 +493,8 @@ class InitialDataProcessing:
     @staticmethod
     def convert_to_dataframe(
         data: Union[pd.DataFrame, List[Any], tuple, set, np.ndarray, pd.Series, dict],
-        columns: Optional[List[str]] = None,
-        index: Optional[List[Any]] = None,
+        columns: Optional[Iterable[str]] = None,
+        index: Optional[Iterable[Any]] = None,
     ) -> pd.DataFrame:
         """
         Convert data to a dataframe.
@@ -526,14 +532,15 @@ class InitialDataProcessing:
                 df.index = index
 
             return df
-        except ValueError as n:
+        except Exception as e:
             LOG.error(
-                "An error occurred during data conversion: %s. Data must be \
-                       a standard Python, Numpy or Pandas datatype e.g. list, \
-                       ndarray or series to be converted",
-                n,
+                "An error occurred during data conversion: %s. Data must be a standard "
+                "Python, NumPy, or Pandas datatype.",
+                e,
             )
-            return None
+            raise ValueError(
+                f"Data conversion failed: {e}. Data must be a standard Python, NumPy, or Pandas datatype."
+            ) from e
 
     @staticmethod
     def transform_target_column(

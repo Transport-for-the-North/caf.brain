@@ -27,11 +27,11 @@ def prediction(
     test: pd.DataFrame,
     target_column: str | None,
     output_folder: Path,
-    validation: pd.DataFrame,
+    validation: pd.DataFrame | None,
     weight_column: str | None,
     classification_prediction: tuple[int, ...] | None,
-    mse: pd.Series,
-    drop_vals: pd.DataFrame,
+    mse: float | None,
+    drop_vals: pd.DataFrame | None,
     cols_dropped_by_feat_select: pd.DataFrame,
 ):
     """
@@ -60,15 +60,17 @@ def prediction(
                  index.
     """
     if validation is not None and not target_column:
-        raise ValueError("Please provide a target column for prediction as you \
+        raise ValueError(
+            "Please provide a target column for prediction as you \
                           have passed a validation set of data. The target column \
-                          if a string of the column title.")
+                          if a string of the column title."
+        )
 
     if target_column in test.columns:
         test = test.drop(columns=target_column)
 
     if weight_column in test.columns:
-        weight = test[weight_column].values.flatten()
+        weight = test[weight_column].to_numpy().flatten()
     else:
         weight = None
 

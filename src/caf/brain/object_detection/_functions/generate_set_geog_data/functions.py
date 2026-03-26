@@ -78,9 +78,7 @@ def generate_user_location_shp_file(
             "list of city names, or a valid shapefile path"
         )
 
-    if isinstance(path_obj, list) or (
-        isinstance(path_obj, str) and not is_path
-    ):
+    if isinstance(path_obj, list) or (isinstance(path_obj, str) and not is_path):
         LOG.info("Loading city boundaries for: %s", path_obj)
         cities_shp = Path(r"B:\TfN_object_detection\Towns_and_Cities")
         if os.path.exists(cities_shp):
@@ -90,11 +88,7 @@ def generate_user_location_shp_file(
         else:
             raise ValueError(f"Issue with {cities_shp}. It is not in the expected location")
 
-        cities = (
-            [path_obj]
-            if isinstance(path_obj, str)
-            else path_obj
-        )
+        cities = [path_obj] if isinstance(path_obj, str) else path_obj
         df = df[df["CITY"].isin(cities)]
 
     elif is_path:
@@ -123,8 +117,7 @@ def generate_user_location_shp_file(
 
     if df.empty:
         raise ValueError(
-            f"No boundaries found for: {path_obj}. "
-            f"Check your input is correct."
+            f"No boundaries found for: {path_obj}. " f"Check your input is correct."
         )
 
     LOG.info("Loaded %d boundaries", len(df))

@@ -83,5 +83,3 @@ def main(
     end_time = time.time()
     LOG.info("Total run time: %.2f seconds", end_time - start_time)
     LOG.info("Finished model build")
-
-    return

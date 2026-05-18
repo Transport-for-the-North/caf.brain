@@ -20,12 +20,14 @@ from sklearn.ensemble import (
     RandomForestRegressor,
 )
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import accuracy_score, make_scorer
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 # Local Imports
 from caf.brain.ml._functions._ml_inputs import (
     ModelGrids,
+    XGBClassifierMulticlass,
     get_model_grid_from_type,
 )
 from caf.brain.ml._functions.feature_selection.functions import get_cv_class
@@ -91,6 +93,12 @@ def select_param(
     weight = train_final[weight_column].to_numpy().flatten() if weight_column else None
     cv = get_cv_class(cv_method=cv, splits=None, repeats=None, is_time_series=is_time_series)
 
+    scoring = "accuracy"
+    if isinstance(model_instance, XGBClassifierMulticlass):
+        num_classes = y.nunique()
+        model_instance.set_params(num_class=num_classes)
+        scoring = make_scorer(_xgb_multiclass_accuracy)
+
     x, y, weight = sample_data(x=x, y=y, weight=weight, is_time_series=is_time_series)
 
     if isinstance(model_name, list):
@@ -118,7 +126,7 @@ def select_param(
                     model_instance=model_instance,
                     param_grid=param_grid,
                     cv=cv,
-                    scoring="accuracy",
+                    scoring=scoring,
                     n_jobs=-1,
                     weight=weight,
                     x=x,
@@ -130,7 +138,7 @@ def select_param(
                     model_instance=model_instance,
                     param_grid=param_grid,
                     cv=cv,
-                    scoring="accuracy",
+                    scoring=scoring,
                     n_jobs=-1,
                     weight=weight,
                     x=x,
@@ -141,7 +149,7 @@ def select_param(
                 model_instance=model_instance,
                 param_grid=param_grid,
                 cv=cv,
-                scoring="accuracy",
+                scoring=scoring,
                 n_jobs=-1,
                 weight=weight,
                 x=x,
@@ -308,3 +316,30 @@ def perform_grid_search(
     LOG.info("Best parameters for model are: %s", best_params)
     LOG.info("CV results: %s", grid_search.cv_results_)
     return best_params
+
+
+def _xgb_multiclass_accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """
+    Custom accuracy scorer for XGBoost multiclass models.
+
+    XGBoost's scikit-learn API returns different prediction formats:
+    Binary classification: a 1D array of class labels.
+    Multiclass classification: a 2D array of shape (n_samples, n_classes)
+                               containing class probabilities.
+
+    This scorer converts the 2D probability matrix into class labels.
+
+    Parameters
+    ----------
+    y_true:
+        Ground truth class labels.
+    y_pred:
+        Predicted labels or probability matrix
+
+    Returns
+    -------
+    Accuracy score between 0 and 1.
+    """
+    if isinstance(y_pred, np.ndarray) and y_pred.ndim == 2:
+        y_pred = np.argmax(y_pred, axis=1)
+    return accuracy_score(y_true, y_pred)

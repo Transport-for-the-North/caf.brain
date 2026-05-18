@@ -33,6 +33,7 @@ from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.svm import SVR, LinearSVC
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from xgboost import XGBClassifier
 
 
 class Models(enum.Enum):
@@ -61,6 +62,8 @@ class Models(enum.Enum):
     EXTRA_TREES_CLASSIFIER = "extra_trees_classifier"
     DECISION_TREE_CLASSIFIER = "decision_tree_classifier"
     SVM_CLASSIFIER = "svm_classifier"
+    XGBOOST_CLASSIFIER = "xg_boost_classifier"
+    XGBOOST_MULTICLASS = "xg_boost_multi_classifier"
 
     def get_model(self):
         """
@@ -112,6 +115,7 @@ class TransformingInputDataInputs(BaseConfig):
     sample_size_encode: Optional[bool] = False
     select_encode_values: Optional[bool] = False
     encode_values_to_drop: Optional[List[str]] = None
+    skip_encoding_and_scaling: Optional[bool] = False
 
 
 class ModellingInputs(BaseConfig):
@@ -124,6 +128,14 @@ class ModellingInputs(BaseConfig):
     cv: Optional[str] = None
     skip_feature_selection: Optional[bool] = False
     intensive_feature_selection: Optional[bool] = False
+
+
+class XGBClassifierBinary(XGBClassifier):
+    """subclass for binary XGBoost classification."""
+
+
+class XGBClassifierMulticlass(XGBClassifier):
+    """subclass for multiclass XGBoost classification."""
 
 
 class PredictionModelInputs(BaseConfig):
@@ -148,7 +160,12 @@ MODEL_LOOKUP = {
     ),
     Models.LOGIT_REGRESSION_ELASTICNET: (
         LogisticRegression,
-        {"penalty": "elasticnet", "solver": "saga", "l1_ratio": 0.5},
+        {
+            "penalty": "elasticnet",
+            "solver": "saga",
+            "l1_ratio": 0.5,
+            "class_weight": "balanced",
+        },
     ),
     Models.MULTINOMIAL: (
         LogisticRegression,
@@ -200,6 +217,14 @@ MODEL_LOOKUP = {
     Models.SVM_CLASSIFIER: (
         OneVsRestClassifier,
         {"estimator": LinearSVC()},
+    ),
+    Models.XGBOOST_CLASSIFIER: (
+        XGBClassifierBinary,
+        {"eval_metric": "logloss"},
+    ),
+    Models.XGBOOST_MULTICLASS: (
+        XGBClassifierMulticlass,
+        {"objective": "multi:softprob", "eval_metric": "mlogloss"},
     ),
 }
 
@@ -260,7 +285,10 @@ class ModelGrids(enum.Enum):
 
     LOGIT_REGRESSION_L1 = {"C": [1.0, 0.1, 0.01, 0.001]}
     LOGIT_REGRESSION_L2 = {"C": [1.0, 0.1, 0.01, 0.001]}
-    LOGIT_REGRESSION_ELASTICNET = {"C": [0.1, 1.0, 10.0], "l1_ratio": [0.1, 0.5, 0.9]}
+    LOGIT_REGRESSION_ELASTICNET = {
+        "C": [0.1, 1.0, 10.0, 50.0, 100.0],
+        "l1_ratio": [0.1, 0.5, 0.9],
+    }
 
     MULTINOMIAL = {
         "C": np.arange(0.1, 10, 0.1).tolist(),
@@ -299,6 +327,21 @@ class ModelGrids(enum.Enum):
     SVM_CLASSIFIER = {
         "estimator__C": [0.1, 1, 10],
         "estimator__loss": ["hinge", "squared_hinge"],
+    }
+
+    XGBOOST_CLASSIFIER = {
+        "n_estimators": [200, 400],
+        "max_depth": [3, 5, 7],
+        "learning_rate": [0.01, 0.05, 0.1],
+        "subsample": [0.7, 1.0],
+        "colsample_bytree": [0.7, 1.0],
+    }
+    XGBOOST_MULTICLASS = {
+        "n_estimators": [200, 400],
+        "max_depth": [4, 6, 8],
+        "learning_rate": [0.01, 0.05, 0.1],
+        "subsample": [0.7, 1.0],
+        "colsample_bytree": [0.7, 1.0],
     }
 
     @classmethod
@@ -341,6 +384,8 @@ def get_model_grid_from_type(model_type: Type[BaseEstimator]) -> dict:
         DecisionTreeClassifier: ModelGrids.DECISION_TREE_CLASSIFIER.value,
         GradientBoostingClassifier: ModelGrids.GRADIENT_BOOSTING_CLASSIFIER.value,
         LogisticRegression: ModelGrids.LOGIT_REGRESSION_ELASTICNET.value,
+        XGBClassifierBinary: ModelGrids.XGBOOST_CLASSIFIER.value,
+        XGBClassifierMulticlass: ModelGrids.XGBOOST_MULTICLASS.value,
     }
     try:
         param_grid = model_type_to_parm_grid[model_type]

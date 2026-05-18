@@ -185,9 +185,8 @@ def train_object_detection_model(
         )
     else:
         raise ValueError(
-            "Not enough training images with valid pairs provided \
-             You provided %s but at least 1200 are required",
-            valid_pairs,
+            f"Not enough training images with valid pairs provided. "
+            f"You provided {valid_pairs} but at least 1200 are required."
         )
 
     end_time = time.time()

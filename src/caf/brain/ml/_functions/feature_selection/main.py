@@ -77,6 +77,7 @@ def main_feature_selection(
     """
 
     if modelling.skip_feature_selection:
+        LOG.info("Skipping feature selection due to skip_feature_selection")
         return train, test, None
 
     if output is None:
@@ -91,7 +92,11 @@ def main_feature_selection(
                   main_input_data function"
         )
         data_dict, _, _ = main_input_data(
-            paths, data_classification, transforming_inputs, output_path=output
+            paths,
+            data_classification,
+            transforming_inputs,
+            output_path=output,
+            modelling=modelling,
         )
 
         train = pd.DataFrame.from_dict(data_dict["train_scaled"])

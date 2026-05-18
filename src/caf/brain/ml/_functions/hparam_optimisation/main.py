@@ -79,6 +79,7 @@ def main_hyperparameter_optimisation(
             paths=paths,
             data_classification=data_classification,
             transforming_inputs=transforming_inputs,
+            modelling=modelling,
         )
 
         train = pd.DataFrame.from_dict(data_dict["train_scaled"])

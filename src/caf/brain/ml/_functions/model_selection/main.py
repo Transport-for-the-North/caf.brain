@@ -14,6 +14,7 @@ from sklearn.base import BaseEstimator
 from caf.brain.ml._functions._ml_inputs import (
     DataClassificationInputs,
     ModellingInputs,
+    Models,
     Paths,
     TransformingInputDataInputs,
 )
@@ -77,6 +78,7 @@ def main_model_selection(
             paths=paths,
             data_classification=data_classification,
             transforming_inputs=transforming_inputs,
+            modelling=modelling,
         )
         LOG.info("Data successfully read in, processed and validated")
         train = pd.DataFrame.from_dict(data_dict["train_scaled"])
@@ -93,18 +95,38 @@ def main_model_selection(
 
     if len(model) == 1:
         selected_model = model[0].get_model()
-
+        if model[0] == Models.XGBOOST_MULTICLASS:
+            num_classes = train[data_classification.target_column].nunique()
+            selected_model.set_params(num_class=num_classes)
     elif len(model) > 1:
-        LOG.info("Beginning model evaluation.")
-        selected_model = select_model(
-            train=train,
-            target_column=data_classification.target_column,
-            weight_column=data_classification.weight_column,
-            models_to_test=model,
-            classification_prediction=transforming_inputs.classification_prediction,
-            output_folder=output,
-            is_time_series=data_classification.is_time_series,
+        xgb_selected = any(
+            m in (Models.XGBOOST_CLASSIFIER, Models.XGBOOST_MULTICLASS) for m in model
         )
+        if xgb_selected:
+            LOG.info(
+                "XGBoost model selected. This algorithm cannot be compared \n"
+                "in the same run as the other provided algorithms. If you \n"
+                "want to test the other models, please remove XGBoost from \n"
+                "the selection."
+            )
+            selected_enum = next(
+                m for m in model if m in (Models.XGBOOST_CLASSIFIER, Models.XGBOOST_MULTICLASS)
+            )
+            selected_model = selected_enum.get_model()
+            if selected_enum == Models.XGBOOST_MULTICLASS:
+                num_classes = train[data_classification.target_column].nunique()
+                selected_model.set_params(num_class=num_classes)
+        else:
+            LOG.info("Beginning model evaluation.")
+            selected_model = select_model(
+                train=train,
+                target_column=data_classification.target_column,
+                weight_column=data_classification.weight_column,
+                models_to_test=model,
+                classification_prediction=transforming_inputs.classification_prediction,
+                output_folder=output,
+                is_time_series=data_classification.is_time_series,
+            )
     else:
         LOG.error(
             "Model incorrectly provided or not provided at all \

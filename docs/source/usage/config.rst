@@ -118,6 +118,7 @@ Controls data preprocessing and train/test splitting.
         sample_size_encode: False
         select_encode_values: False
         encode_values_to_drop: null
+        skip_encoding_and_scaling: False
 
 Parameters
 ~~~~~~~~~~
@@ -140,6 +141,8 @@ Parameters
 | select_encode_values        | bool                         | Manually specify encoding reference values                                |
 +-----------------------------+------------------------------+---------------------------------------------------------------------------+
 | encode_values_to_drop       | list[str] or null            | Values to drop when encoding                                              |
++-----------------------------+------------------------------+---------------------------------------------------------------------------+
+| skip_encoding_and_scaling   | bool                         | If True, encoding and scaling is skipped                                  |
 +-----------------------------+------------------------------+---------------------------------------------------------------------------+
 
 Example: Filtering Rows
@@ -240,6 +243,8 @@ Classification Models:
 - ``extra_trees_classifier``
 - ``decision_tree_classifier``
 - ``svm_classifier``
+- ``xg_boost_classifier``
+- ``xg_boost_multi_classifier``
 
 Cross-Validation Options
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -255,6 +260,7 @@ Notes
 - If ``skip_feature_selection`` and ``intensive_feature_selection`` are false then a standard feature selection is used.
 - Feature selection will remove features if they are not predictive. If all feature are required, skipping feature selection is advised.
 - Remove null arguments from your config file.
+- Both XGBoost variants will not be able to be tested against other algorithms in the same run. If you want to assess their performance against another algorithm, separate runs will have to be done.
 
 Example
 ~~~~~~~
@@ -346,6 +352,45 @@ Classification Example Configuration
         model_choice:
             - logit_regression_elasticnet
             - gradient_boosting_classifier
+        full_transformations: true
+        skip_feature_selection: false
+        intensive_feature_selection: true
+
+
+Classification Example 2 Configuration
+--------------------------------------
+
+.. code-block:: yaml
+
+    paths:
+        file_path: "data\\input\\training_data.csv"
+        output_path: "outputs\\model_results"
+
+    data_classification:
+        target_column: 'numcarvan'
+        custom_index:
+            - "householdid"
+            - "soc"
+            - "ns"
+        categorical_features:
+            - "hh_child"
+        numerical_features:
+            - "trips"
+        is_time_series: true
+
+    transforming_inputs:
+        classification_prediction:
+            - 0
+            - 1
+            - 2
+            - 3
+            - 4
+        sample_size_encode: false
+        select_encode_values: false
+        skip_encoding_and_scaling: true
+    modelling:
+        model_choice:
+            - xg_boost_multi_classifier
         full_transformations: true
         skip_feature_selection: false
         intensive_feature_selection: true

@@ -36,6 +36,7 @@ def generate_user_location_shp_file(
     -------
     GeoDataFrame of points to process for prediction.
     """
+    path_obj: Path | str | list[str] | None = None
     if user_prediction_location is None:
         raise ValueError(
             "user_prediction_location cannot be None. Please provide either:\n"

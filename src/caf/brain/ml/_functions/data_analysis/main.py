@@ -15,6 +15,7 @@ import pandas as pd
 from caf.brain.ml._functions._ml_inputs import (
     DataClassificationInputs,
     ModellingInputs,
+    Models,
     Paths,
     TransformingInputDataInputs,
 )
@@ -108,7 +109,11 @@ def main_evaluate_input_data(
         LOG.info("Evaluation of input data beginning. Outputs are saved to: %s", output_path)
 
         data_dict, _, numerical_pipeline = main_input_data(
-            paths, data_classification, transforming_inputs, output_path=output_path
+            paths,
+            data_classification,
+            transforming_inputs,
+            output_path=output_path,
+            modelling=modelling,
         )
 
         train_scaled = pd.DataFrame.from_dict(data_dict["train_scaled"])
@@ -129,6 +134,10 @@ def main_evaluate_input_data(
             )
         # model re-initialised as this flow is assuming you aren't running the full model
         model_initialised = modelling.model_choice[0].get_model()
+
+        if modelling.model_choice[0] == Models.XGBOOST_MULTICLASS:
+            num_classes = train_scaled[data_classification.target_column].nunique()
+            model_initialised.set_params(num_class=num_classes)
 
         model_fit, residuals, _ = initialise_model(
             x_train=x_train,

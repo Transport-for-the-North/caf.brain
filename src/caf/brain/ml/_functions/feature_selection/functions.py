@@ -32,6 +32,7 @@ from sklearn.model_selection import (
 from tqdm import tqdm
 
 # Local Imports
+from caf.brain.ml._functions._ml_inputs import XGBClassifierMulticlass
 from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
     sample_data,
 )
@@ -92,6 +93,10 @@ def rf_feature_selection(
     x_sample, y_sample, weight_sample = sample_data(
         x=x, y=y, weight=weight, is_time_series=is_time_series
     )
+
+    if isinstance(regression_method, XGBClassifierMulticlass):
+        num_classes = y.nunique()
+        regression_method.set_params(num_class=num_classes)
 
     if classification_prediction:
         model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)

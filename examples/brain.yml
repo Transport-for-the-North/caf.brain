@@ -32,6 +32,7 @@ transforming_inputs:
     sample_size_encode: False
     select_encode_values: False
     encode_values_to_drop: null
+    skip_encoding_and_scaling: False
 
 modelling:
     model_choice: null # (required)

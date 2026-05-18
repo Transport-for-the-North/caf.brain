@@ -1180,7 +1180,16 @@ def _check_categorical_regression(
     anova_results = []
 
     for col in categorical_features:
-        groups = [df[df[col] == cat][target].values for cat in df[col].unique()]
+        groups = []
+        for cat in df[col].unique():
+            vals = df[df[col] == cat][target].values
+            if len(vals) >= 2:
+                groups.append(vals)
+
+        if len(groups) < 2:
+            LOG.warning("Skipping ANOVA for %s: not enough samples per category", col)
+            weak_features.append(col)
+            continue
 
         f_stat, p_value = f_oneway(*groups)
 

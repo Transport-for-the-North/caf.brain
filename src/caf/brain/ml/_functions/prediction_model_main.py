@@ -107,6 +107,7 @@ def main(params: PredictionModelInputs, output_path: Path) -> None:
             paths=params.paths,
             data_classification=params.data_classification,
             transforming_inputs=params.transforming_inputs,
+            modelling=params.modelling,
         )
 
         train_scaled = pd.DataFrame.from_dict(data_dict["train_scaled"])

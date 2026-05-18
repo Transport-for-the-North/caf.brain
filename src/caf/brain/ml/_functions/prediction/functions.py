@@ -15,6 +15,10 @@ from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 from sklearn.svm import LinearSVC
 
 # Local Imports
+from caf.brain.ml._functions._ml_inputs import (
+    XGBClassifierBinary,
+    XGBClassifierMulticlass,
+)
 from caf.brain.ml._functions.model_selection.functions import (
     calculate_final_coefficients,
 )
@@ -82,21 +86,30 @@ def prediction(
                 accuracy = accuracy_score(y_true, pred_classes, sample_weight=weight)
             else:
                 pred_probs = model.predict_proba(test)
-                pred_classes = model.classes_[np.argmax(pred_probs, axis=1)]
+                if isinstance(model, XGBClassifierMulticlass):
+                    pred_classes = np.argmax(pred_probs, axis=1)
+                else:
+                    pred_classes = model.classes_[np.argmax(pred_probs, axis=1)]
                 y_true = validation[target_column].values
                 accuracy = accuracy_score(y_true, pred_classes, sample_weight=weight)
 
             LOG.info("Accuracy: %s", accuracy)
             accuracy_df = pd.DataFrame({"accuracy": [accuracy]})
             accuracy_df.to_csv(os.path.join(output_folder, "model_performance.csv"))
-            predictions = pred_classes
         else:
             if isinstance(model, LinearSVC):
                 pred_classes = model.predict(test)
             else:
                 pred_probs = model.predict_proba(test)
-                pred_classes = model.classes_[np.argmax(pred_probs, axis=1)]
-            predictions = pred_classes
+                if isinstance(model, XGBClassifierMulticlass):
+                    pred_classes = np.argmax(pred_probs, axis=1)
+                else:
+                    pred_classes = model.classes_[np.argmax(pred_probs, axis=1)]
+        if isinstance(model, (XGBClassifierBinary, XGBClassifierMulticlass)):
+            mapping = dict(enumerate(classification_prediction))
+            pred_classes = pd.Series(pred_classes).map(mapping).to_numpy()
+        predictions = pred_classes
+
     else:
         predictions = model.predict(test)
         if validation is not None:

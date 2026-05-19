@@ -1058,18 +1058,35 @@ def visualise_model_performance(
     metrics["classification_report_test"] = classification_report(val, y_pred)
     pd.DataFrame([metrics]).to_csv(output_folder / "metrics.csv", index=False)
 
-    cm = confusion_matrix(val, y_pred)
+    cm = confusion_matrix(val, y_pred, labels=model.classes_)
     fig, ax = plt.subplots(figsize=(7, 6))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        ax=ax,
+        xticklabels=model.classes_,
+        yticklabels=model.classes_,
+    )
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("Actual")
     ax.set_title("Confusion Matrix (Test)")
     fig.savefig(output_folder / "confusion_matrix_test.png", dpi=300)
     plt.close(fig)
 
     if hasattr(model, "predict_proba"):
-        y_proba_test = model.predict_proba(test)
+        classes = model.classes_
 
-        if y_proba_test.shape[1] == 2:
-            fpr, tpr, _ = roc_curve(val, y_proba_test[:, 1])
+        if len(classes) == 2:
+            y_proba_test = model.predict_proba(test)
+            positive_class = classes[-1]
+            positive_index = list(classes).index(positive_class)
+
+            # ROC
+            fpr, tpr, _ = roc_curve(
+                val, y_proba_test[:, positive_index], pos_label=positive_class
+            )
             roc_auc = auc(fpr, tpr)
 
             fig, ax = plt.subplots(figsize=(7, 6))
@@ -1081,7 +1098,9 @@ def visualise_model_performance(
             plt.close(fig)
 
             # PR
-            precision, recall, _ = precision_recall_curve(val, y_proba_test[:, 1])
+            precision, recall, _ = precision_recall_curve(
+                val, y_proba_test[:, positive_index], pos_label=positive_class
+            )
             pr_auc = auc(recall, precision)
 
             fig, ax = plt.subplots(figsize=(7, 6))

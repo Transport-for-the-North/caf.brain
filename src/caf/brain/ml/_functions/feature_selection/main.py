@@ -130,6 +130,15 @@ def main_feature_selection(
             weight_column=data_classification.weight_column,
             test=test,
         )
+
+        train_final.to_csv(
+            output / "final_train.csv",
+            index=not isinstance(train_final.index, pd.RangeIndex)
+        )
+        test_final.to_csv(
+            output / "final_test.csv",
+            index=not isinstance(test_final.index, pd.RangeIndex)
+        )
         return train_final, test_final, cols_dropped_by_feat_select
 
     if modelling.intensive_feature_selection:
@@ -163,6 +172,16 @@ def main_feature_selection(
                 weight_column=data_classification.weight_column,
                 test=test,
             )
+
+            train_final.to_csv(
+                output / "final_train.csv",
+                index=not isinstance(train_final.index, pd.RangeIndex)
+            )
+            test_final.to_csv(
+                output / "final_test.csv",
+                index=not isinstance(test_final.index, pd.RangeIndex)
+            )
+
             return train_final, test_final, cols_dropped_by_feat_select
 
         LOG.info("Intensive feature selection running")
@@ -183,6 +202,15 @@ def main_feature_selection(
             test=test,
         )
 
+        train_final.to_csv(
+            output / "final_train.csv",
+            index=not isinstance(train_final.index, pd.RangeIndex)
+        )
+        test_final.to_csv(
+            output / "final_test.csv",
+            index=not isinstance(test_final.index, pd.RangeIndex)
+        )
+
         return train_final, test_final, cols_dropped_by_feat_select
 
     LOG.info("Standard feature importance running")
@@ -199,6 +227,15 @@ def main_feature_selection(
         target_column=data_classification.target_column,
         weight_column=data_classification.weight_column,
         test=test,
+    )
+
+    train_final.to_csv(
+        output / "final_train.csv",
+        index=not isinstance(train_final.index, pd.RangeIndex)
+    )
+    test_final.to_csv(
+        output / "final_test.csv",
+        index=not isinstance(test_final.index, pd.RangeIndex)
     )
 
     return train_final, test_final, cols_dropped_by_feat_select

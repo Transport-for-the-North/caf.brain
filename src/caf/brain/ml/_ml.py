@@ -617,10 +617,7 @@ def evaluate_data(
         are taken into consideration during function execution.
     Returns
     -------
-    train_transformed
-        training data post transformation.
-    test_transformed
-        test data post transformation.
+    None
     """
 
     if isinstance(output_path, str):

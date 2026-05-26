@@ -165,8 +165,14 @@ def main_evaluate_input_data(
             test_unscaled=test_unscaled,
             numerical_pipeline=numerical_pipeline,
         )
-        train_transformed.to_csv(output_path / "train_transformed.csv")
-        test_transformed.to_csv(output_path / "test_transformed.csv")
+        train_transformed.to_csv(
+            output_path / "final_train.csv",
+            index=not isinstance(train_transformed.index, pd.RangeIndex)
+        )
+        test_transformed.to_csv(
+            output_path / "final_test.csv",
+            index=not isinstance(test_transformed.index, pd.RangeIndex)
+        )
 
         LOG.info("Evaluation of input data finished.")
         return train_transformed, test_transformed
@@ -198,6 +204,15 @@ def main_evaluate_input_data(
         train_unscaled=train_unscaled,
         test_unscaled=test_unscaled,
         numerical_pipeline=numerical_pipeline,
+    )
+
+    train_transformed.to_csv(
+        output_path / "final_train.csv",
+        index=not isinstance(train_transformed.index, pd.RangeIndex)
+    )
+    test_transformed.to_csv(
+        output_path / "final_test.csv",
+        index=not isinstance(test_transformed.index, pd.RangeIndex)
     )
 
     if train_transformed is not None and test_transformed is not None:

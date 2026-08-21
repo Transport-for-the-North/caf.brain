@@ -77,8 +77,8 @@ def rf_feature_selection(
     """
     if not target_column:
         raise ValueError(
-            "Please provide a target column for feature selection. \n"
-            "This is a column title passed as a string."
+            "Please provide a target column for hyperparameter"
+            " optimisation. This is a column title passed as a string."
         )
 
     if isinstance(regression_method, LogisticRegression):

@@ -1,6 +1,6 @@
 """
-Created on: 11/03/2026
-Original author: Adil Zaheer
+CLI / main entry point to run object detection inference with a trained YOLO
+model.
 """
 
 # Built-Ins
@@ -12,13 +12,10 @@ from pathlib import Path
 from caf.toolkit import LogHelper, ToolDetails
 
 # Local Imports
-from caf.brain.object_detection._functions._object_detection_inputs import (
-    ObjectDetectionInputs,
-)
-from caf.brain.object_detection._functions.object_detection_main import main
+from caf.brain.object_detection import _object_detection
 
 
-def _custom_load_yaml(config_path: Path) -> ObjectDetectionInputs:
+def _custom_load_yaml(config_path: Path) -> _object_detection.ObjectDetectionInputs:
     """
     Loads the YAML configuration file for the caf.brAIn Object Detection Model.
 
@@ -39,7 +36,7 @@ def _custom_load_yaml(config_path: Path) -> ObjectDetectionInputs:
     if not config_path.exists():
         raise FileNotFoundError(f"No config file found at {config_path}")
 
-    config_data = ObjectDetectionInputs.load_yaml(config_path)
+    config_data = _object_detection.ObjectDetectionInputs.load_yaml(config_path)
 
     return config_data
 
@@ -58,7 +55,7 @@ def model_setup():
         type=Path,
         default=Path("object_detection.yml"),
         help=(
-            "Path to YAML config file. You should use docs/usage/object_detection_config.rst \n"
+            "Path to YAML config file. You should use https://cafbrain.readthedocs.io/en/stable/usage/object_detection_config.html \n"
             "as guidance and examples/object_detection.yml as a template.\n"
         ),
     )
@@ -73,7 +70,7 @@ def model_setup():
     details = ToolDetails("caf.brAIn Object Detection Model", "1.0.0")
 
     with LogHelper("caf.brain", details, console=True, log_file=path):
-        main(params, output_path)
+        _object_detection.main(params, output_path)
 
 
 if __name__ == "__main__":

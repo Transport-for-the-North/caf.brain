@@ -1,7 +1,5 @@
-"""
-Created on: 9/25/2025
-Original author: Adil Zaheer
-"""
+"""Generate metadata that is used to guide the processing of satellite images
+inline with the user specifications."""
 
 # Built-Ins
 import glob
@@ -17,53 +15,6 @@ from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
 LOG = logging.getLogger(__name__)
-
-
-def _find_file_type(file_path: Path) -> str | None:
-    """
-    Helper function for finding file types.
-
-    Parameters
-    ----------
-    file_path:
-        Path to file.
-
-    Returns
-    -------
-    String with file ending e.g. csv, shp or None.
-    """
-    _, ext = os.path.splitext(file_path)
-    ext = ext.lower()
-
-    if ext == ".csv":
-        return "csv"
-    if ext == ".shp":
-        return "shp"
-    return None
-
-
-def _read_path(file_path: Path):
-    """
-    Function to read in files based on their file types.
-
-    Parameters
-    ----------
-    file_path:
-        Path to file.
-
-    Returns
-    -------
-    Either a dataframe or geo-dataframe of your data along with their file
-    type.
-    """
-    file_type = _find_file_type(file_path)
-    if file_type == "csv":
-        df = pd.read_csv(file_path)
-        return df, file_type
-    if file_type == "shp":
-        gdf = gpd.read_file(file_path)
-        return gdf, file_type
-    raise ValueError("Unsupported file type.")
 
 
 def _euclidean_distance(df_a: pd.DataFrame, df_b: pd.DataFrame) -> pd.DataFrame:
@@ -160,3 +111,53 @@ def _user_image_path_finder(
     path_df = pd.DataFrame(list(path_dict.items()), columns=["box_boundary", "paths"])
 
     return path_df
+
+
+def locate_user_coordinates(
+    df: gpd.GeoDataFrame,
+    output_path: Path,
+    satellite_image_metadata: pd.DataFrame,
+    image_folder_path: Path,
+) -> pd.DataFrame:
+    """
+    Locate the satellite images that correspond to user input coordinates.
+
+    Parameters
+    ----------
+    df:
+        gpd.GeoDataFrame that contains user coordinates.
+    output_path:
+        Path to output folder.
+    satellite_image_metadata:
+        Satellite image metadata containing tile names, midpoints and path
+        locations. Generated from image_info_generation.
+    image_folder_path:
+        Path to folder that contains British National Grid tile jpegs and
+        their accompanying XML files.
+
+    Returns
+    -------
+    user_image_metadata:
+        Dataframe with user coordinate locations, relevant classification and
+        location specific satellite metadata.
+    """
+    output_path = Path(output_path)
+    image_folder_path = Path(image_folder_path)
+
+    df["coordinates_easting"] = df["geometry"].x
+    df["coordinates_northing"] = df["geometry"].y
+
+    user_data_with_closest_tile = _euclidean_distance(df_a=satellite_image_metadata, df_b=df)
+
+    path_df = _user_image_path_finder(
+        image_folder=image_folder_path, user_coordinate_data=user_data_with_closest_tile
+    )
+
+    user_image_metadata = pd.merge(
+        user_data_with_closest_tile, path_df, on="box_boundary", how="inner"
+    )
+
+    user_coordinate_filename = output_path / "user_coordinate_data.csv"
+    user_image_metadata.to_csv(user_coordinate_filename, index=False)
+
+    return user_image_metadata

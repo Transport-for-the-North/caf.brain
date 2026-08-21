@@ -7,7 +7,7 @@ and the user permits.
 # Built-Ins
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 
 # Third Party
 import numpy as np
@@ -111,8 +111,6 @@ def pre_forecast_data_analysis(
     Train and test data post data transformations are returned
     if transformations permitted otherwise train and test scaled are returned.
     """
-    assert train_unscaled is not None, "Training data unscaled is required for data analysis"
-    assert test_unscaled is not None, "Test data unscaled is required for data analysis"
     # extract values from configs if provided
     _target_column = (
         data_classification.target_column if data_classification else target_column
@@ -1192,6 +1190,7 @@ def _check_categorical_regression(
             continue
 
         f_stat, p_value = f_oneway(*groups)
+        p_value = cast(float, p_value)
 
         anova_results.append(
             {

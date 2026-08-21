@@ -1,7 +1,4 @@
-"""
-Created on: 31/10/2025
-Original author: Adil Zaheer
-"""
+"""Functions to build a YOLO object detection model"""
 
 # Built-Ins
 import logging
@@ -9,12 +6,16 @@ import os
 import shutil
 import time
 from pathlib import Path
+from typing import Literal
 
 # Third Party
 import pandas as pd
+import strictyaml
 import torch
-import yaml
 from ultralytics import YOLO
+
+# Local Imports
+from caf.brain.object_detection.model_building import hyperparameters
 
 LOG = logging.getLogger(__name__)
 
@@ -41,22 +42,17 @@ def _baseline_model(output: Path, config_path: Path) -> YOLO:
     LOG.info("Base model running")
     start_time = time.time()
 
-    model_dir = os.path.join(output, "baseline_model_results")
-    os.makedirs(model_dir, exist_ok=True)
+    model_dir = output / "baseline_model_results"
+    model_dir.mkdir(parents=True, exist_ok=True)
 
-    best_weights = os.path.join(model_dir, "baseline", "weights", "best.pt")
-    device = 0 if torch.cuda.is_available() else "cpu"
-    if device == 0:
-        LOG.info("GPU available and being used to run the model")
-    else:
-        LOG.warning("GPU not available. CPU being used.")
-        torch.set_num_threads(8)
+    best_weights = model_dir / "baseline" / "weights" / "best.pt"
+    device = select_device()
 
     if os.path.exists(best_weights):
         LOG.info("Loading existing model from %s", best_weights)
         model = YOLO(best_weights)
     else:
-        model = YOLO("../yolo11l.pt")
+        model = YOLO("yolo11l.pt")
         model.train(
             data=config_path,
             epochs=300,
@@ -113,32 +109,23 @@ def _final_model(output: Path, config_path: Path) -> None:
     """
     LOG.info("Final model running")
 
-    model_dir = os.path.join(output, "final_model_results")
-    os.makedirs(model_dir, exist_ok=True)
+    model_dir = output / "final_model_results"
+    model_dir.mkdir(parents=True, exist_ok=True)
 
     start_time = time.time()
 
-    device = 0 if torch.cuda.is_available() else "cpu"
-    if device == 0:
-        LOG.info("GPU available and being used to run the model")
-    else:
-        LOG.warning("GPU not available. CPU being used.")
-        torch.set_num_threads(8)
+    device = select_device()
 
     hyp_path = os.path.join(
         output, "hyperparameter_results", "tune", "best_hyperparameters.yaml"
     )
     if os.path.exists(hyp_path):
         with open(hyp_path, "r", encoding="utf-8") as f:
-            best_hyperparams = yaml.safe_load(f)
+            best_hyperparams = strictyaml.load(f.read()).data
     else:
-        LOG.error(
-            "best_hyperparameters does not exist. Please provide them or run \
-                          hyperparameter optimisation functions"
-        )
         raise ValueError(
-            "best_hyperparameters does not exist. Please provide them or run \
-                          hyperparameter optimisation functions"
+            "best_hyperparameters does not exist. Please provide"
+            " them or run hyperparameter optimisation functions"
         )
 
     learning_params = best_hyperparams.copy()
@@ -157,7 +144,7 @@ def _final_model(output: Path, config_path: Path) -> None:
 
     learning_params = clean_hyperparams(learning_params)
 
-    final = YOLO("../yolo11l.pt")
+    final = YOLO("yolo11l.pt")
     _ = final.train(
         data=config_path,
         epochs=300,
@@ -172,7 +159,7 @@ def _final_model(output: Path, config_path: Path) -> None:
         **learning_params,
     )
 
-    best_weights = os.path.join(model_dir, "final_model", "weights", "best.pt")
+    best_weights = model_dir / "final_model" / "weights" / "best.pt"
 
     metrics = YOLO(best_weights).val(data=config_path, device=device)
 
@@ -250,3 +237,75 @@ def clean_hyperparams(hyp_dict: dict) -> dict:
         else:
             sanitised[k] = v
     return sanitised
+
+
+def select_device() -> int | str:
+    """
+    Select the compute device (GPU or CPU).
+
+    If a CUDA GPU is available, the function returns `0` and logs that the GPU
+    will be used. If no GPU is available, it returns `cpu`, logs a warning,
+    and reduces the number of CPU threads for better performance.
+
+    Returns
+    -------
+    Int for GPU, cpu string for cpu.
+    """
+    device = 0 if torch.cuda.is_available() else "cpu"
+    if device == 0:
+        LOG.info("GPU available and being used to run the model")
+    else:
+        LOG.warning("GPU not available. CPU being used.")
+        cpu_count = os.cpu_count()
+        if cpu_count is None:
+            cpu_count = 1
+        torch.set_num_threads(cpu_count - 1)
+
+    return device
+
+
+def main_model_build(
+    output: Path, hyperparameter_optimisation: Literal["base", "moderate"] | None = "base"
+) -> None:
+    """
+    End-to-end pipeline to build a YOLO object detection model.
+
+    Steps:
+    1. Train a baseline model.
+    2. Run hyperparameter optimisation (moderate Optuna or YOLO's tuner).
+    3. Train the final model with the best hyperparameters.
+
+    Parameters
+    ----------
+    output:
+        Root directory where model results, configs, and outputs will be stored.
+    hyperparameter_optimisation:
+        Optimisation mode to pass to "main_hyperparameter_optimisation".
+        "moderate" uses Optuna and "base" or None uses YOLO's built-in tuner.
+
+    Returns
+    -------
+    None
+    """
+    model_dir = Path(output) / "model_results"
+    model_dir.mkdir(parents=True, exist_ok=True)
+    final_model_path = model_dir / "best.pt"
+    if final_model_path.exists():
+        LOG.info(
+            "Trained model already exists here: %s meaning you have already ran the model",
+            final_model_path,
+        )
+    else:
+        config_path = Path(output) / "config.yaml"
+
+        model = _baseline_model(output=model_dir, config_path=config_path)
+
+        hyperparameters.main_hyperparameter_optimisation(
+            basemodel=model,
+            config=config_path,
+            hyperparameter_optimisation=hyperparameter_optimisation,
+            output=model_dir,
+        )
+
+        _final_model(output=model_dir, config_path=config_path)
+        _model_comparison(output=model_dir)

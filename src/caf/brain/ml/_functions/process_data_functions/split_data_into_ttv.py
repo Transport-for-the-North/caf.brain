@@ -83,7 +83,7 @@ def split_data(
 
         return train, test, validate
 
-    elif transforming_inputs.classification_prediction is not None:
+    if transforming_inputs.classification_prediction is not None:
         train, test, validate = stratified_split_with_categories(
             df=df,
             categorical_features=data_classification.categorical_features,

@@ -1,11 +1,12 @@
 """
-Created on: 10/6/2025
-Original author: Adil Zaheer
+Crop and process user selected satellite images.
 """
 
 # Built-Ins
+# Built-In
 import logging
 import os
+import warnings
 from pathlib import Path
 
 # Third Party
@@ -15,8 +16,182 @@ import rasterio
 from PIL import Image
 from rasterio.errors import MergeError, RasterioError, RasterioIOError
 from rasterio.merge import merge
+from rasterio.windows import Window
+from tqdm import tqdm
 
 LOG = logging.getLogger(__name__)
+
+
+def image_crop(
+    user_image_metadata: pd.DataFrame,
+    output_path: Path,
+    satellite_image_metadata: pd.DataFrame,
+) -> Path:
+    """
+    Function to locate, crop and where applicable merge images.
+
+    This function creates images ready for labelling or use in a trained YOLO
+    model.
+
+    Parameters
+    ----------
+    user_image_metadata:
+        User coordinate data that has been processed by
+        main_process_user_locations.
+    output_path:
+        Path to output folder.
+    satellite_image_metadata:
+        Satellite image metadata containing tile names, midpoints and path
+        locations. Generated from image_info_generation
+
+    Returns
+    -------
+    Location of saved processed images.
+    """
+    output_path = Path(output_path)
+    output_dir = output_path / "images_for_machine_vision"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    count = 0
+    invalid_count = 0
+    invalid_images = []
+
+    with tqdm(total=None) as pbar:
+        for idx, row_data in user_image_metadata.iterrows():
+            path = row_data["paths"]
+            file_name = row_data["box_boundary"]
+
+            if "id" in row_data and pd.notna(row_data["id"]):
+                unique_id = str(row_data["id"])
+            else:
+                unique_id = f"{file_name}_{idx}"
+
+            output_filename = output_dir / f"{unique_id}_cropped.jpg"
+            output_filename_extended = output_dir / f"{unique_id}_cropped_extended.jpg"
+
+            if output_filename.exists() or output_filename_extended.exists():
+                LOG.info("Skipping image processing as final cropped image already exists")
+                pbar.update(1)
+                continue
+
+            focal_point_easting = row_data["coordinates_easting"]
+            focal_point_northing = row_data["coordinates_northing"]
+
+            if _check_raster_file(path):
+                with rasterio.open(path) as img:
+                    transform = img.transform
+                    col, row = ~transform * (focal_point_easting, focal_point_northing)
+                    crop_size_pixels = 640
+                    half_size = crop_size_pixels // 2
+
+                    col_start = int(col - half_size)
+                    row_start = int(row - half_size)
+                    col_end = int(col + half_size)
+                    row_end = int(row + half_size)
+
+                    list_of_needed_tiles = _find_surrounding_images(
+                        col_start=col_start,
+                        row_start=row_start,
+                        col_end=col_end,
+                        row_end=row_end,
+                        image_height=img.height,
+                        image_width=img.width,
+                    )
+
+                    if list_of_needed_tiles:
+                        LOG.info("Image %s needs expanding", path)
+
+                        image_layout_dict = _find_surrounding_names(file_name=file_name)
+
+                        image_paths_to_concat = _surrounding_img_path_finder(
+                            image_layout_dict=image_layout_dict,
+                            list_of_needed_tiles=list_of_needed_tiles,
+                            satellite_metadata=satellite_image_metadata,
+                        )
+                        if not image_paths_to_concat:
+                            warnings.warn(
+                                "Required satellite images to extend centre image for crop does not exist"
+                            )
+                            _, file_name = os.path.split(path)
+                            name = os.path.splitext(file_name)[0]
+                            invalid_images.append(name)
+                            continue
+
+                        extended_output_name = Path(output_filename).stem
+                        if extended_output_name.endswith("_cropped_extended"):
+                            extended_output_name = extended_output_name[
+                                : -len("_cropped_extended")
+                            ]
+
+                        _create_new_image(
+                            image_paths_to_concat=image_paths_to_concat,
+                            centre_image_path=path,
+                            focal_point_easting=focal_point_easting,
+                            focal_point_northing=focal_point_northing,
+                            output_dir=output_dir,
+                            file_name=extended_output_name,
+                        )
+
+                        pbar.update(1)
+                        count += 1
+                        if count % 100 == 0:
+                            LOG.info("Processed item %s: %s", count, path)
+
+                    else:
+                        LOG.info("Image %s does not need expanding", path)
+
+                        actual_width = col_end - col_start
+                        actual_height = row_end - row_start
+
+                        if actual_width <= 0 or actual_height <= 0:
+                            warnings.warn("Invalid dimensions calculated for %s", path)
+                            warnings.warn("Target point: col=%s, row=%s", col, row)
+                            warnings.warn(
+                                f"Adjusted window: col_start={col_start}, col_end={col_end}, row_start={row_start}, row_end={row_end}"
+                            )
+                            warnings.warn(
+                                "Image dimensions: width=%s, height=%s", img.width, img.height
+                            )
+
+                            _, file_name = os.path.split(path)
+                            name = os.path.splitext(file_name)[0]
+
+                            invalid_images.append(name)
+
+                            invalid_count += 1
+                            LOG.info("Total invalid images: %s", invalid_count)
+                            continue
+
+                        window = Window(
+                            col_start,  # left edge of box
+                            row_start,  # top of box
+                            actual_width,  # width
+                            actual_height,
+                        )  # height
+
+                        cropped_img = img.read(window=window)
+
+                        final_image = Image.fromarray(
+                            np.moveaxis(cropped_img, 0, -1).astype(np.uint8)
+                        )
+                        final_image.save(output_filename, "JPEG", quality=95)
+
+                        pbar.update(1)
+                        count += 1
+                        if count % 100 == 0:
+                            LOG.info("Processed item %s: %s", count, path)
+
+            else:
+                warnings.warn("Image %s couldn't be opened", path)
+                _, file_name = os.path.split(path)
+                name = os.path.splitext(file_name)[0]
+                invalid_images.append(name)
+                continue
+
+        df = pd.DataFrame(invalid_images, columns=["invalid_junctions"])
+        df.to_csv(output_dir / "failed_image_crops.csv", index=False)
+
+        return output_dir
 
 
 def _find_surrounding_images(
@@ -343,61 +518,63 @@ def _create_new_image(
         return
 
     datasets = []
-    for path in image_paths_to_concat:
-        ds = rasterio.open(path)
-        datasets.append(ds)
-
-    centre_ds = rasterio.open(centre_image_path)
-    datasets.append(centre_ds)
-
     try:
-        mosaic, mosaic_transform = merge(datasets)
-    except MergeError as e:
-        LOG.error("Error merging mosaic: %s", e)
-        return
+        for path in image_paths_to_concat:
+            ds = rasterio.open(path)
+            datasets.append(ds)
 
-    if mosaic is None or mosaic.size == 0:
-        LOG.error(
-            "Mosaic creation failed for %s - empty or null mosaic returned", centre_image_path
-        )
-        return
+        centre_ds = rasterio.open(centre_image_path)
+        datasets.append(centre_ds)
 
-    col, row = ~mosaic_transform * (focal_point_easting, focal_point_northing)
+        try:
+            mosaic, mosaic_transform = merge(datasets)
+        except MergeError as e:
+            LOG.error("Error merging mosaic: %s", e)
+            return
 
-    crop_size_pixels = 640
-    half_size = crop_size_pixels // 2
+        if mosaic is None or mosaic.size == 0:
+            LOG.error(
+                "Mosaic creation failed for %s - empty or null mosaic returned",
+                centre_image_path,
+            )
+            return
 
-    col_start = int(col - half_size)
-    row_start = int(row - half_size)
-    col_end = int(col + half_size)
-    row_end = int(row + half_size)
+        col, row = ~mosaic_transform * (focal_point_easting, focal_point_northing)
 
-    if (
-        col_start < 0
-        or row_start < 0
-        or col_end > mosaic.shape[2]
-        or row_end > mosaic.shape[1]
-    ):
-        LOG.warning("%s crop extends beyond mosaic boundaries", centre_image_path)
-        LOG.warning("Mosaic shape: %s", mosaic.shape)
-        LOG.warning("Crop window: (%s:%s, %s:%s)", row_start, row_end, col_start, col_end)
-        return
+        crop_size_pixels = 640
+        half_size = crop_size_pixels // 2
 
-    cropped_img = mosaic[:, row_start:row_end, col_start:col_end]
+        col_start = int(col - half_size)
+        row_start = int(row - half_size)
+        col_end = int(col + half_size)
+        row_end = int(row + half_size)
 
-    expected_shape = (mosaic.shape[0], crop_size_pixels, crop_size_pixels)
-    if cropped_img.shape != expected_shape:
-        LOG.warning("%s cropped image has unexpected dimensions", centre_image_path)
-        LOG.warning("Expected: %s", expected_shape)
-        LOG.warning("Actual: %s", cropped_img.shape)
-        return
+        if (
+            col_start < 0
+            or row_start < 0
+            or col_end > mosaic.shape[2]
+            or row_end > mosaic.shape[1]
+        ):
+            LOG.warning("%s crop extends beyond mosaic boundaries", centre_image_path)
+            LOG.warning("Mosaic shape: %s", mosaic.shape)
+            LOG.warning("Crop window: (%s:%s, %s:%s)", row_start, row_end, col_start, col_end)
+            return
 
-    final_image = Image.fromarray(np.moveaxis(cropped_img, 0, -1).astype(np.uint8))
-    output_filename = os.path.join(output_dir, f"{file_name}_cropped_extended.jpg")
-    final_image.save(output_filename, "JPEG", quality=95)
+        cropped_img = mosaic[:, row_start:row_end, col_start:col_end]
 
-    for ds in datasets:
-        ds.close()
+        expected_shape = (mosaic.shape[0], crop_size_pixels, crop_size_pixels)
+        if cropped_img.shape != expected_shape:
+            LOG.warning("%s cropped image has unexpected dimensions", centre_image_path)
+            LOG.warning("Expected: %s", expected_shape)
+            LOG.warning("Actual: %s", cropped_img.shape)
+            return
+
+        final_image = Image.fromarray(np.moveaxis(cropped_img, 0, -1).astype(np.uint8))
+        output_filename = os.path.join(output_dir, f"{file_name}_cropped_extended.jpg")
+        final_image.save(output_filename, "JPEG", quality=95)
+    finally:
+        for ds in datasets:
+            ds.close()
 
     return
 
@@ -419,8 +596,8 @@ def _check_raster_file(path: Path) -> bool:
         with rasterio.open(path) as _:
             return True
     except RasterioIOError as e:
-        print("Error opening file %s: %s", path, e)
+        LOG.exception("Error opening file %s: %s", path, e)
         return False
     except RasterioError as e:
-        print("Unexpected error with %s: %s", path, e)
+        LOG.exception("Unexpected error with %s: %s", path, e)
         return False

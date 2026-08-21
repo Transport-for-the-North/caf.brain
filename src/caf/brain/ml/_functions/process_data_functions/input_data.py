@@ -549,9 +549,9 @@ class InitialDataProcessing:
                 )
 
             if columns is not None:
-                df.columns = columns
+                df.columns = pd.Index(columns)
             if index is not None:
-                df.index = index
+                df.index = pd.Index(index)
 
             return df
         except Exception as e:

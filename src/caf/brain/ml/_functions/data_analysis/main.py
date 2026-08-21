@@ -10,6 +10,7 @@ from pathlib import Path
 
 # Third Party
 import pandas as pd
+from sklearn.base import BaseEstimator
 
 # Local Imports
 from caf.brain.ml._functions._ml_inputs import (
@@ -46,7 +47,7 @@ def main_evaluate_input_data(
     train_unscaled: pd.DataFrame | None = None,
     test_unscaled: pd.DataFrame | None = None,
     model_fit: object = None,
-    model_initialised: object = None,
+    model_initialised: BaseEstimator | None = None,
     residuals: pd.Series | None = None,
     x_test: pd.DataFrame | None = None,
     y_test: pd.Series | None = None,
@@ -129,8 +130,8 @@ def main_evaluate_input_data(
 
         if not modelling.model_choice or len(modelling.model_choice) > 1:
             raise ValueError(
-                "Please provide only one algorithm to be used to \
-                              evaluate input data if using the function standalone."
+                "Please provide only one algorithm to be used to "
+                "evaluate input data if using the function standalone."
             )
         # model re-initialised as this flow is assuming you aren't running the full model
         model_initialised = modelling.model_choice[0].get_model()
@@ -167,11 +168,11 @@ def main_evaluate_input_data(
         )
         train_transformed.to_csv(
             output_path / "final_train.csv",
-            index=not isinstance(train_transformed.index, pd.RangeIndex)
+            index=not isinstance(train_transformed.index, pd.RangeIndex),
         )
         test_transformed.to_csv(
             output_path / "final_test.csv",
-            index=not isinstance(test_transformed.index, pd.RangeIndex)
+            index=not isinstance(test_transformed.index, pd.RangeIndex),
         )
 
         LOG.info("Evaluation of input data finished.")
@@ -208,11 +209,11 @@ def main_evaluate_input_data(
 
     train_transformed.to_csv(
         output_path / "final_train.csv",
-        index=not isinstance(train_transformed.index, pd.RangeIndex)
+        index=not isinstance(train_transformed.index, pd.RangeIndex),
     )
     test_transformed.to_csv(
         output_path / "final_test.csv",
-        index=not isinstance(test_transformed.index, pd.RangeIndex)
+        index=not isinstance(test_transformed.index, pd.RangeIndex),
     )
 
     if train_transformed is not None and test_transformed is not None:

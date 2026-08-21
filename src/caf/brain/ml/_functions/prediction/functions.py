@@ -65,9 +65,9 @@ def prediction(
     """
     if validation is not None and not target_column:
         raise ValueError(
-            "Please provide a target column for prediction as you \
-                          have passed a validation set of data. The target column \
-                          if a string of the column title."
+            "Please provide a target column for prediction as you"
+            " have passed a validation set of data. The target column"
+            " if a string of the column title."
         )
 
     if target_column in test.columns:

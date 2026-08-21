@@ -6,7 +6,7 @@ SciKit-Learn algorithm.
 # Built-Ins
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 
 # Third Party
 import joblib
@@ -280,8 +280,7 @@ def score_classification(
     scores_f1: Series of F1 scores.
     scores_auc: Series of AUC scores.
     """
-    y_ = pd.Series(y).squeeze()
-    assert isinstance(y_, pd.Series)
+    y_ = cast(pd.Series, pd.Series(y).squeeze())
 
     if y_.nunique() > 2:
         f1 = "f1_weighted"
@@ -590,7 +589,7 @@ def _extract_sklearn_coefficients(
                 if residuals is not None
                 else mean_squared_error(y_test, y_pred)
             )
-        if error_metric:
+        if error_metric is not None:
             error_metric = float(error_metric)
         LOG.info("Extracted sklearn coefficients for %s features", len(coeff_df))
         return coeff_df, error_metric
@@ -751,7 +750,7 @@ def _extract_statsmodels_inference(
                     # OLS
                     y_pred = model.predict(x_test)
                     error_metric = mean_squared_error(y_test, y_pred)
-                if error_metric:
+                if error_metric is not None:
                     error_metric = float(error_metric)
 
                 LOG.info("Extracted statsmodels inference with %s features", len(stats_df))

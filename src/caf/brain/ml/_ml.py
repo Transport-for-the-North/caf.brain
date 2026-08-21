@@ -1,10 +1,11 @@
-"""Created on: 9/9/2025. Original author: Adil Zaheer"""
+"""caf.brAIn Machine Learning API"""
 
 # Built-Ins
 import logging
 import os.path
+import warnings
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 # Third Party
 import joblib
@@ -241,7 +242,7 @@ def transform_data(
     if process_numeric_only:
         if numerical_features is None:
             raise ValueError(
-                "Numerical features are required if processing " "only numerical features"
+                "Numerical features are required if processing only numerical features"
             )
         preprocessed_df = _process_data_pipeline_numeric_only(
             df=data,
@@ -257,7 +258,7 @@ def transform_data(
     if process_categorical_only:
         if categorical_features is None:
             raise ValueError(
-                "Categorical features are required if processing " "only categorical features"
+                "Categorical features are required if processing only categorical features"
             )
         preprocessed_df = _process_data_pipeline_categorical_only(
             df=data,
@@ -351,13 +352,13 @@ def feature_selection(
         dataframe=data, custom_index=custom_index, target_column=target
     ).validate():
         raise ValueError(
-            "Data not suitable for data analysis. Please run \n"
-            "full model flow or tidy_data method prior to \n"
+            "Data not suitable for data analysis. Please run "
+            "full model flow or tidy_data method prior to "
             "data analysis."
         )
 
     LOG.warning(
-        "Data should already been encoded and scaled where applicable \n"
+        "Data should already been encoded and scaled where applicable "
         "If this is not the case set is_encoded to false"
     )
 
@@ -384,8 +385,8 @@ def feature_selection(
     )
 
     if test_data is not None:
-        LOG.warning(
-            "You've provided test data meaning feature selection results"
+        warnings.warn(
+            "You've provided test data meaning feature selection results "
             "are being applied to test_data."
         )
         test_final, _ = combine_results(
@@ -444,7 +445,7 @@ def algorithm_evaluation(
     """
     output_path = Path(output_path)
 
-    LOG.warning(
+    warnings.warn(
         "It is advised to run both transform_data and feat_selection \n"
         "prior to algorithm_evaluation."
     )
@@ -540,13 +541,13 @@ def hparam_optim(
         model = model_choice
 
     if len(model) > 1:
-        LOG.warning(
+        warnings.warn(
             "More than one model selected. The first model will be \n"
             "optimised. To find the best performing model, call algorithm_evaluation or \n"
             "main_model_selection"
         )
 
-    LOG.warning(
+    warnings.warn(
         "Data should be encoded and scaled where applicable. Call \n"
         "_transform_data to do this prior to hyperparameter optimisation"
     )
@@ -697,7 +698,7 @@ def evaluate_data(
     )
 
     # run data analysis
-    _, _ = pre_forecast_data_analysis(
+    _ = pre_forecast_data_analysis(
         output_folder=output_path,
         residuals=residuals,
         model_fit=x_train_model_fit,
@@ -829,7 +830,7 @@ def simple_data_split(
 
 
 def simple_prediction(
-    model: BaseEstimator,
+    model: Any,
     test: pd.DataFrame,
     target_column: str,
     output_folder: Path,
@@ -866,9 +867,9 @@ def simple_prediction(
     mse = None
     if validation is not None and not target_column:
         raise ValueError(
-            "Please provide a target column for prediction as you \
-                          have passed a validation set of data. The target column \
-                          if a string of the column title."
+            "Please provide a target column for prediction as you "
+            "have passed a validation set of data. The target column "
+            "if a string of the column title."
         )
 
     if target_column in test.columns:
@@ -948,7 +949,7 @@ def simple_prediction(
 
 
 def visualise_model_performance(
-    model: str | BaseEstimator,
+    model: Any,
     test: str | pd.DataFrame,
     target: str,
     output_folder: Path | str,
@@ -1150,9 +1151,9 @@ def dependant_variable_testing(
     if unique_vals <= 10:
         var_type = "categorical"
     else:
-        var_type = "numeric"
+        var_type = "continuous"
 
-    if var_type == "numeric":
+    if var_type == "continuous":
         stats = {
             "count": y.count(),
             "mean": y.mean(),
@@ -1167,7 +1168,7 @@ def dependant_variable_testing(
             "unique_values": unique_vals,
         }
 
-        pd.DataFrame([stats]).to_csv(output_folder / "numeric_summary.csv", index=False)
+        pd.DataFrame([stats]).to_csv(output_folder / "continuous_summary.csv", index=False)
 
         fig, ax = plt.subplots(figsize=(7, 6))
         sns.histplot(y, kde=True, ax=ax)

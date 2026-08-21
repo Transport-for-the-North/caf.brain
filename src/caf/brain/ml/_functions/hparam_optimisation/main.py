@@ -71,8 +71,8 @@ def main_hyperparameter_optimisation(
     """
     if train is None:
         LOG.info(
-            "Train does not exist so is being generated with the main_input_data \
-                  function based on user provided inputs"
+            "Train does not exist so is being generated with the"
+            " main_input_data function based on user provided inputs"
         )
         data_dict, _, _ = main_input_data(
             output_path=output_folder,
@@ -86,8 +86,8 @@ def main_hyperparameter_optimisation(
 
     if model_instance is None:
         LOG.info(
-            "Model instance is None so main_model_selection is being called to \
-                  obtain the initialised model"
+            "Model instance is None so main_model_selection"
+            " is being called to obtain the initialised model"
         )
         model_instance = main_model_selection(
             paths=paths,

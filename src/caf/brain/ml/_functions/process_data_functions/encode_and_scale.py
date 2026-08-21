@@ -482,9 +482,7 @@ def process_data_pipeline(
     pipeline_out: stored transformation pipeline for continuous variables
     """
     if skip_encoding_and_scaling:
-        LOG.info(
-            "Skipping encoding and scaling process as " "skip_encoding_and_scaling is True"
-        )
+        LOG.info("Skipping encoding and scaling process as skip_encoding_and_scaling is True")
         return df, None, None
 
     if target_column is not None and target_column in df.columns:

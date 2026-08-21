@@ -1,7 +1,4 @@
-"""
-Created on: 03/11/2025
-Original author: Adil Zaheer
-"""
+"""Object detection inference with a trained YOLO model."""
 
 # Built-Ins
 import logging
@@ -11,8 +8,9 @@ from pathlib import Path
 
 # Third Party
 import pandas as pd
-import torch
 from ultralytics import YOLO
+
+from caf.brain.object_detection.model_building import build
 
 LOG = logging.getLogger(__name__)
 
@@ -25,8 +23,8 @@ def _prediction(
 
     Parameters
     ----------
-    output: R
-        oot directory where prediction results will be stored.
+    output:
+        Root directory where prediction results will be stored.
     final_model_path:
         Path to the trained YOLO model weights (e.g., best.pt).
     prediction_images:
@@ -42,12 +40,7 @@ def _prediction(
     start_time = time.time()
     LOG.info("Prediction running")
 
-    device = 0 if torch.cuda.is_available() else "cpu"
-    if device == 0:
-        LOG.info("GPU available and being used to run the model")
-    else:
-        LOG.warning("GPU not available. CPU being used.")
-        torch.set_num_threads(8)
+    device = build.select_device()
 
     output = Path(output)
     final_model_path = Path(final_model_path)
@@ -166,15 +159,14 @@ def main_prediction(output: Path, images_to_predict_path: Path, model_path: Path
 
     if output is None:
         raise ValueError(
-            "Please provide an output path. This should be a \
-                          location on your computers drive e.g. E:/Documents"
+            "Please provide an output path. This should be a"
+            " location on your computers drive e.g. E:/Documents"
         )
 
     if images_to_predict_path is None:
         raise ValueError(
-            "Please ensure object_detection has been \
-                          correctly run as this should create the images to \
-                          predict."
+            "Please ensure object_detection has been correctly"
+            " run as this should create the images to predict."
         )
 
     prediction_results_dir, model = _prediction(

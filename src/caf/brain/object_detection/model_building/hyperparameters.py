@@ -1,20 +1,22 @@
-"""
-Created on: 03/11/2025
-Original author: Adil Zaheer
-"""
+"""Hyperparameter optimisation for the YOLO object detection model."""
 
 # Built-Ins
 import logging
 import os
+import time
 from pathlib import Path
+from typing import Literal
 
 # Third Party
 import optuna
-import torch
-import yaml
+import pandas as pd
+import strictyaml
 from optuna.study import Study
 from optuna.trial import FrozenTrial
 from ultralytics import YOLO
+
+# Local Imports
+from caf.brain.object_detection.model_building import build
 
 LOG = logging.getLogger(__name__)
 
@@ -45,43 +47,25 @@ def _moderate_optimisation(config: str | Path, output_dir: str | Path, model: YO
     - "performance_metrics": dict of evaluation metrics (mAP, precision, recall).
     - "trial_details": dict with best trial ID and value
     """
-
-    device = 0 if torch.cuda.is_available() else "cpu"
-    if device == 0:
-        LOG.info("GPU available and being used to run the model")
-    else:
-        LOG.warning("GPU not available. CPU being used.")
-        torch.set_num_threads(8)
-
     best_hyp_path = os.path.join(output_dir, "best_hyperparameters.yaml")
+
+    device = build.select_device()
 
     pruner = optuna.pruners.MedianPruner(
         n_startup_trials=5, n_warmup_steps=10, interval_steps=2
     )
+    storage_path = Path(output_dir) / "moderate_hyp_optim.db"
 
     study = optuna.create_study(
         direction="maximize",
         pruner=pruner,
         study_name="moderate_hyp_optim",
-        storage="sqlite:///moderate_hyp_optim.db",
+        storage=f"sqlite:///{storage_path}",
         load_if_exists=True,
     )
 
     def _track_progress(study: Study, trial: FrozenTrial) -> None:
-        """
-        Progress tracking helper function.
-
-        Parameters
-        ----------
-        study:
-            The Optuna study object managing the optimisation.
-        trial:
-            The completed trial containing its fitness value.
-
-        Returns
-        -------
-        None
-        """
+        """Progress tracking helper function."""
         LOG.info("Trial %s finished with value: %s", trial.number, trial.value)
         LOG.info("Best value so far: %s", study.best_value)
 
@@ -97,7 +81,7 @@ def _moderate_optimisation(config: str | Path, output_dir: str | Path, model: YO
             show_progress_bar=True,
         )
         with open(best_hyp_path, "w", encoding="utf-8") as f:
-            yaml.dump(study.best_params, f)
+            f.write(strictyaml.as_document(study.best_params).as_yaml())
 
     optimisation_results = {
         "best_hyperparameters": study.best_params,
@@ -115,7 +99,7 @@ def _optuna_objective_func(
     config: str | Path,
     output: str | Path,
     model: YOLO,
-    device: float | str,
+    device: int | str,
 ) -> float:
     """
     Objective function for Optuna hyperparameter optimisation.
@@ -160,14 +144,14 @@ def _optuna_objective_func(
             patience=7,
             workers=8,
             project=output,
-            name="",
-            exist_ok=True,
+            name=f"trial_{trial.number}",
+            exist_ok=False,
             optimizer=optimiser,
             device=device,
             **reduced_search_space,
         )
 
-        best_weights = os.path.join(output, "train", "weights", "best.pt")
+        best_weights = os.path.join(output, f"trial_{trial.number}", "weights", "best.pt")
         if not os.path.exists(best_weights):
             LOG.warning("Best weights not found for trial %s", trial.number)
             return 0.0
@@ -234,3 +218,90 @@ class EarlyStopper:
         if self.counter >= self.patience:
             LOG.info("Early stopping: no improvement in %s trials.", self.patience)
             study.stop()
+
+
+def main_hyperparameter_optimisation(
+    basemodel: YOLO,
+    config: str | Path,
+    hyperparameter_optimisation: Literal["base", "moderate"] | None,
+    output: str | Path,
+) -> None:
+    """
+    Run hyperparameter optimisation for a YOLO model.
+
+    Depending on the hyperparameter_optimisation argument, this will either:
+    - Run a moderate Optuna-based optimisation.
+    - Run YOLO's built-in .tune() method.
+
+    The best hyperparameters are saved to
+    <output>/hyperparameter_results/best_hyperparameters.yaml and also
+    exported as a CSV for inspection.
+
+    Parameters
+    ----------
+    basemodel:
+        A YOLO model instance, from _baseline_model.
+    config:
+        Path to the YOLO dataset configuration file (YAML).
+    hyperparameter_optimisation:
+        Optimisation mode. "moderate" uses Optuna and "base" or None uses
+        YOLO's built-in tuner.
+    output:
+        Directory where optimisation results will be stored.
+
+    Returns
+    -------
+    None
+    """
+    start_time = time.time()
+
+    hyperparameter_dir = os.path.join(output, "hyperparameter_results")
+    os.makedirs(hyperparameter_dir, exist_ok=True)
+
+    if hyperparameter_optimisation == "moderate":
+        LOG.info("Moderate hyperparameter optimisation is running")
+        hyperparameter_dict = _moderate_optimisation(
+            config=config, output_dir=hyperparameter_dir, model=basemodel
+        )
+
+        df_flat = pd.DataFrame([hyperparameter_dict])
+        df_flat.to_csv(
+            os.path.join(hyperparameter_dir, "best_hyperparameters.csv"), index=False
+        )
+
+    elif hyperparameter_optimisation == "base" or hyperparameter_optimisation is None:
+        LOG.info("Simple hyperparameter optimisation is running")
+        device = build.select_device()
+
+        best_hyp_file = Path(hyperparameter_dir) / "tune" / "best_hyperparameters.yaml"
+        if os.path.exists(best_hyp_file):
+            LOG.info("Best hyperparameters already exist and are being loaded in")
+        else:
+            basemodel.callbacks["on_trial_end"] = EarlyStopper(patience=5)
+            _ = basemodel.tune(
+                data=config,
+                project=hyperparameter_dir,
+                epochs=200,
+                iterations=25,
+                imgsz=640,
+                workers=8,
+                optimizer="AdamW",
+                plots=True,
+                save=True,
+                val=True,
+                use_ray=False,
+                device=device,
+                patience=20,
+                batch=16,
+            )
+            LOG.info(
+                "Hyperparameters written out to {C:USER_OUTPUT_PATH/output/ModelBuildingOutputs/model_results/hyperparameter_results/tune/best_hyperparameters.yaml}",
+            )
+    else:
+        raise ValueError(
+            "Unknown hyperparameter optimisation mode."
+            " Please choose from either base or moderate."
+        )
+    end_time = time.time()
+    LOG.info("Total Hyperparameter optimisation run time: %.2f seconds", end_time - start_time)
+    LOG.info("Hyperparameter optimisation finished")

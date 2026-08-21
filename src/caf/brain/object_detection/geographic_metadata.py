@@ -1,7 +1,5 @@
-"""
-Created on: 9/17/2025
-Original author: Adil Zaheer
-"""
+"""Generate geographic information that helps guide the image processing prior
+to object detection training and inference."""
 
 # Built-Ins
 import logging
@@ -13,11 +11,15 @@ import geopandas as gpd
 import pandas as pd
 
 LOG = logging.getLogger(__name__)
+OS_DATA_PATH = Path(os.getenv("OS_DATA_PATH", r"B:\TfN_object_detection\os_data.gpkg"))
+TOWNS_AND_CITIES_PATH = Path(
+    os.getenv("TOWNS_AND_CITIES_PATH", r"B:\TfN_object_detection\Towns_and_Cities")
+)
 
 
 def generate_user_location_shp_file(
     output_path: Path,
-    user_prediction_location: Path | str | list[str] | None = None,
+    user_prediction_location: Path | str | list[str],
 ) -> gpd.GeoDataFrame:
     """
     Generate GeoDataFrame that contains coordinates of junctions.
@@ -30,28 +32,22 @@ def generate_user_location_shp_file(
         This can be a path to a shapefile that contains a column called MOSA,
         LSOA OR LAD. This column would contain strings of the MSOAs, LSOAs or
         LADS you want to use. Alternatively, this can be a list of string(s) of
-        city's you want to use.
-
+        city's you want to use. Examples:
+            - A city name as a string (e.g., 'London')
+            - A list of city names (e.g., ['London', 'Manchester'])
+            - A path to a shapefile with LSOA, MSOA, or LAD columns
     Returns
     -------
     GeoDataFrame of points to process for prediction.
     """
     path_obj: Path | str | list[str] | None = None
-    if user_prediction_location is None:
-        raise ValueError(
-            "user_prediction_location cannot be None. Please provide either:\n"
-            "  - A city name as a string (e.g., 'London')\n"
-            "  - A list of city names (e.g., ['London', 'Manchester'])\n"
-            "  - A path to a shapefile with LSOA, MSOA, or LAD columns"
-        )
 
-    # Load or process OS junction data
     os_junc_path = output_path / "OS_junction_coordinates_final.shp"
     if os_junc_path.exists():
         LOG.info("Loading existing OS data from %s", os_junc_path)
         os_data = gpd.read_file(os_junc_path)
     else:
-        os_path = Path(r"B:\TfN_object_detection\os_data.gpkg")
+        os_path = OS_DATA_PATH
         if os.path.exists(os_path):
             LOG.info("Processing OS data from %s", os_path)
             os_data = _process_os(os_path=os_path, output_path=output_path)
@@ -81,7 +77,7 @@ def generate_user_location_shp_file(
 
     if isinstance(path_obj, list) or (isinstance(path_obj, str) and not is_path):
         LOG.info("Loading city boundaries for: %s", path_obj)
-        cities_shp = Path(r"B:\TfN_object_detection\Towns_and_Cities")
+        cities_shp = TOWNS_AND_CITIES_PATH
         if os.path.exists(cities_shp):
             df = gpd.read_file(cities_shp)
             df = df[["TCITY15CD", "TCITY15NM", "geometry"]]
@@ -161,13 +157,13 @@ def _process_os(os_path: Path, output_path: Path) -> gpd.GeoDataFrame:
     os0 = os0[os0["form_of_road_node"] != "pseudo node"]
     os0 = os0[["id", "geometry"]]
     os1 = os1[["id", "geometry"]]
-    print(len(os0))
-    print(len(os1))
+    LOG.info("Loaded %d road_node features (after removing pseudo nodes)", len(os0))
+    LOG.info("Loaded %d motorway_junction features", len(os1))
     all_junctions = pd.concat([os0, os1], ignore_index=True)
     all_junctions = gpd.GeoDataFrame(all_junctions, geometry="geometry", crs=os0.crs)
-    print(len(all_junctions))
+    LOG.info("Total junction features combined: %d", len(all_junctions))
     duplicates = all_junctions.duplicated(subset=["id", "geometry"])
-    print(duplicates.sum())
+    LOG.info("Duplicate junction records detected: %d", duplicates.sum())
 
     out = output_path / "OS_junction_coordinates_final.shp"
     all_junctions.to_file(out)

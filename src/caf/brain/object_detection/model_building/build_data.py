@@ -1,24 +1,22 @@
-"""
-Created on: 11/10/2025
-Original author: Adil Zaheer
-"""
+"""Build object detection data in suitable YOLO formats"""
 
 # Built-Ins
 import logging
 import os
 import random
 import shutil
+import warnings
 from pathlib import Path
 from typing import Any
 
 # Third Party
 import pandas as pd
-import yaml
+import strictyaml
 
 LOG = logging.getLogger(__name__)
 
 
-def _create_dict(user_images_folder_path: Path, output_path: Path) -> dict:
+def _create_dict(user_images_folder_path: Path, output_path: Path) -> dict[Path, Path]:
     """
     Create a lookup dictionary of labeled model building images.
 
@@ -48,7 +46,7 @@ def _create_dict(user_images_folder_path: Path, output_path: Path) -> dict:
 
             LOG.info("Found image-label pair: %s -> %s", image_path, txt_path)
         else:
-            LOG.warning("No image label pair found for %s", image_path)
+            warnings.warn(f"No image label pair found for {image_path}")
             no_label_images.append(image_path)
 
     if no_label_images:
@@ -157,9 +155,9 @@ def ensure_labels(folder_path: Path) -> None:
             if os.path.exists(jpg_path):
                 os.remove(txt_file)
                 os.remove(jpg_path)
-                print(f"Removed: {txt_file} and {jpg_path}")
+                LOG.info("Removed: %s and %s", txt_file, jpg_path)
             else:
-                print(f"Warning: {jpg_path} not found for {txt_file}")
+                warnings.warn(f"Warning: {jpg_path} not found for {txt_file}")
 
 
 def build_config(output: Path, class_names: list) -> None:
@@ -194,7 +192,7 @@ def build_config(output: Path, class_names: list) -> None:
 
     yaml_file_path = output / "config.yaml"
     with open(yaml_file_path, "w", encoding="utf-8") as file:
-        yaml.dump(yaml_content, file, sort_keys=False, default_flow_style=False)
+        file.write(strictyaml.as_document(yaml_content).as_yaml())
 
 
 def count_valid_pairs(folder_path: Path) -> dict:
@@ -211,7 +209,9 @@ def count_valid_pairs(folder_path: Path) -> dict:
     Dict of image amount information.
     """
     folder = Path(folder_path)
-    images = {f.stem for f in folder.glob("*.png")}
+
+    image_exts = ("*.png", "*.jpg", "*.jpeg")
+    images = {f.stem for ext in image_exts for f in folder.glob(ext)}
     labels = {f.stem for f in folder.glob("*.txt")}
 
     valid = images & labels

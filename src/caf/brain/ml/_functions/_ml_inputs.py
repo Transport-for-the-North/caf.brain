@@ -346,6 +346,7 @@ class ModelGrids(enum.Enum):
 
     @classmethod
     def get_grid(cls, model_enum):
+        """Return the hyperparameter grid associated with a given model enum."""
         return getattr(cls, model_enum.name).value
 
 

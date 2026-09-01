@@ -5,7 +5,7 @@ import logging
 import os.path
 import warnings
 from pathlib import Path
-from typing import Optional, Any
+from typing import Any, Optional
 
 # Third Party
 import joblib

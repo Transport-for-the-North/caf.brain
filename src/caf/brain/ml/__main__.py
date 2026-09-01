@@ -26,7 +26,8 @@ def _custom_load_yaml(config_path: Path) -> PredictionModelInputs:
 
     Parameters
     ----------
-    config_path: Path to the YAML configuration file.
+    config_path:
+        Path to the YAML configuration file.
 
     Returns
     -------
@@ -56,7 +57,7 @@ def model_setup():
         type=Path,
         default=Path("brain.yml"),
         help=(
-            "Path to YAML config file. You should use docs/config.rst \n"
+            "Path to YAML config file. You should use docs/usage/config.rst \n"
             "as guidance and examples/brain.yml as a template.\n"
         ),
     )

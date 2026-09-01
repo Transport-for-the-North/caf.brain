@@ -15,6 +15,10 @@ from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 from sklearn.svm import LinearSVC
 
 # Local Imports
+from caf.brain.ml._functions._ml_inputs import (
+    XGBClassifierBinary,
+    XGBClassifierMulticlass,
+)
 from caf.brain.ml._functions.model_selection.functions import (
     calculate_final_coefficients,
 )
@@ -27,11 +31,11 @@ def prediction(
     test: pd.DataFrame,
     target_column: str | None,
     output_folder: Path,
-    validation: pd.DataFrame,
+    validation: pd.DataFrame | None,
     weight_column: str | None,
     classification_prediction: tuple[int, ...] | None,
-    mse: pd.Series,
-    drop_vals: pd.DataFrame,
+    mse: float | None,
+    drop_vals: pd.DataFrame | None,
     cols_dropped_by_feat_select: pd.DataFrame,
 ):
     """
@@ -60,15 +64,17 @@ def prediction(
                  index.
     """
     if validation is not None and not target_column:
-        raise ValueError("Please provide a target column for prediction as you \
-                          have passed a validation set of data. The target column \
-                          if a string of the column title.")
+        raise ValueError(
+            "Please provide a target column for prediction as you"
+            " have passed a validation set of data. The target column"
+            " if a string of the column title."
+        )
 
     if target_column in test.columns:
         test = test.drop(columns=target_column)
 
     if weight_column in test.columns:
-        weight = test[weight_column].values.flatten()
+        weight = test[weight_column].to_numpy().flatten()
     else:
         weight = None
 
@@ -80,21 +86,30 @@ def prediction(
                 accuracy = accuracy_score(y_true, pred_classes, sample_weight=weight)
             else:
                 pred_probs = model.predict_proba(test)
-                pred_classes = model.classes_[np.argmax(pred_probs, axis=1)]
+                if isinstance(model, XGBClassifierMulticlass):
+                    pred_classes = np.argmax(pred_probs, axis=1)
+                else:
+                    pred_classes = model.classes_[np.argmax(pred_probs, axis=1)]
                 y_true = validation[target_column].values
                 accuracy = accuracy_score(y_true, pred_classes, sample_weight=weight)
 
             LOG.info("Accuracy: %s", accuracy)
             accuracy_df = pd.DataFrame({"accuracy": [accuracy]})
             accuracy_df.to_csv(os.path.join(output_folder, "model_performance.csv"))
-            predictions = pred_classes
         else:
             if isinstance(model, LinearSVC):
                 pred_classes = model.predict(test)
             else:
                 pred_probs = model.predict_proba(test)
-                pred_classes = model.classes_[np.argmax(pred_probs, axis=1)]
-            predictions = pred_classes
+                if isinstance(model, XGBClassifierMulticlass):
+                    pred_classes = np.argmax(pred_probs, axis=1)
+                else:
+                    pred_classes = model.classes_[np.argmax(pred_probs, axis=1)]
+        if isinstance(model, (XGBClassifierBinary, XGBClassifierMulticlass)):
+            mapping = dict(enumerate(classification_prediction))
+            pred_classes = pd.Series(pred_classes).map(mapping).to_numpy()
+        predictions = pred_classes
+
     else:
         predictions = model.predict(test)
         if validation is not None:

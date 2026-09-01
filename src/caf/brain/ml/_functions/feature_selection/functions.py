@@ -32,6 +32,7 @@ from sklearn.model_selection import (
 from tqdm import tqdm
 
 # Local Imports
+from caf.brain.ml._functions._ml_inputs import XGBClassifierMulticlass
 from caf.brain.ml._functions.process_data_functions.split_data_into_ttv import (
     sample_data,
 )
@@ -76,8 +77,8 @@ def rf_feature_selection(
     """
     if not target_column:
         raise ValueError(
-            "Please provide a target column for feature selection. \n"
-            "This is a column title passed as a string."
+            "Please provide a target column for hyperparameter"
+            " optimisation. This is a column title passed as a string."
         )
 
     if isinstance(regression_method, LogisticRegression):
@@ -86,12 +87,16 @@ def rf_feature_selection(
 
     x = data.drop(columns=[target_column] + ([weight_column] if weight_column else []))
     y = data[target_column]
-    weight = data[weight_column].values.flatten() if weight_column else None
+    weight = data[weight_column].to_numpy().flatten() if weight_column else None
     weight_df = data[weight_column] if weight_column else None
 
     x_sample, y_sample, weight_sample = sample_data(
         x=x, y=y, weight=weight, is_time_series=is_time_series
     )
+
+    if isinstance(regression_method, XGBClassifierMulticlass):
+        num_classes = y.nunique()
+        regression_method.set_params(num_class=num_classes)
 
     if classification_prediction:
         model = RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)
@@ -208,10 +213,10 @@ def feature_selection_intensive(
 
     if classification_prediction:
         selected_features = _classification_feature_selection(x, y, weight)
-        score_threshold = 0.5
+        score_threshold = 0.5  # uses accuracy
     else:
         selected_features = _regression_feature_selection(x, y, weight)
-        score_threshold = -1.0  # negative MSE scores
+        score_threshold = 0.5  # uses r2
 
     if len(selected_features) == 0:
         raise ValueError(
@@ -243,7 +248,7 @@ def feature_selection_intensive(
     if classification_prediction:
         use_all_features = cv_score < score_threshold  # Low score = bad
     else:
-        use_all_features = cv_score > score_threshold  # High negative = bad
+        use_all_features = cv_score < score_threshold  # low score = bad
 
     if use_all_features:
         LOG.warning("CV score is still not optimal, feature selection is being ignored")
@@ -382,7 +387,7 @@ def analyse_feature_importance(
     target_column: str | None,
     weight_column: str | None,
     output_path: Path | None,
-    is_time_series: bool = False,
+    is_time_series: bool | None = False,
 ) -> pd.DataFrame:
     """
     Simple feature selection through importance and correlation metrics with
@@ -416,7 +421,7 @@ def analyse_feature_importance(
         columns=[target_column] + ([weight_column] if weight_column else [])
     )
     y = train_transformed[target_column]
-    weight = train_transformed[weight_column].values.flatten() if weight_column else None
+    weight = train_transformed[weight_column].to_numpy().flatten() if weight_column else None
 
     is_classification = y.dtype == "object" or y.dtype.name == "category" or y.nunique() <= 20
     if is_classification:

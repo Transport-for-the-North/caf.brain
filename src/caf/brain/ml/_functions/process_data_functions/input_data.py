@@ -6,7 +6,7 @@ Input data _functions used to tidy semi-structured / structured numeric data.
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 # Third Party
 import numpy as np
@@ -14,6 +14,7 @@ import pandas as pd
 
 # Local Imports
 from caf.brain.ml._functions._baseclasses import ValidateData
+from caf.brain.ml._functions._ml_inputs import Models
 
 LOG = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class InitialDataProcessing:
         numerical_features: list[str] | None,
         classification_prediction: tuple[int, ...] | None,
         is_test_data: bool = False,
+        model_choice: list[Models] | None = None,
     ):
         """
         Parameters
@@ -64,6 +66,9 @@ class InitialDataProcessing:
                       being processed. This is set to true when using
                       the main prediction function. If using separately
                       then set to True or False when calling the class.
+        model_choice:
+            List or one algorithm to use as the base of the model. Available
+            algorithms can be seen in _ml_inputs.py or __info__.py.
         """
 
         self.file_path = file_path
@@ -78,8 +83,9 @@ class InitialDataProcessing:
         self.numerical_features = numerical_features
         self.classification_prediction = classification_prediction
         self.is_test_data = is_test_data
+        self.model_choice = model_choice
 
-        self.df: pd.DataFrame = None
+        self.df: pd.DataFrame | None = None
         self.dataframes: Dict[Any, pd.DataFrame] = {}
 
     # # # Data flow pipelines # # #
@@ -157,15 +163,19 @@ class InitialDataProcessing:
 
         if len(self.dataframes) > 1:
             if self.custom_index is None:
-                raise ValueError("Must provide custom index in order to process \
+                raise ValueError(
+                    "Must provide custom index in order to process \
                                   multiple dataframes. Data processing outside of \
-                                  caf.ml is advised.")
+                                  caf.ml is advised."
+                )
             self.df = pd.concat(self.dataframes, axis=0)
 
-        if self.df.empty:
-            raise ValueError(f"Dataframe {self.df} is empty")
+        assert self.df is not None, "Dataframe was not loaded correctly."
+        df_local = self.df
 
-        df = self.convert_to_dataframe(self.df)
+        if df_local.empty:
+            raise ValueError(f"Dataframe {df_local} is empty")
+        df = self.convert_to_dataframe(df_local)
 
         target_column_ = (
             []
@@ -227,7 +237,7 @@ class InitialDataProcessing:
                 df, target_column=self.target_column, output_folder=self.output_path
             )
 
-            df = self.numeric_transformation(df, self.target_column)
+            df = self.numeric_transformation(df, self.target_column, self.custom_index)
 
             if self.custom_index:
                 df = self.index_sorter(df, self.custom_index)
@@ -237,6 +247,13 @@ class InitialDataProcessing:
                     df,
                     target_column=self.target_column,
                     classification_prediction=self.classification_prediction,
+                )
+
+                df = self.xgboost_preparation(
+                    df,
+                    target_column=self.target_column,
+                    classification_prediction=self.classification_prediction,
+                    model_choice=self.model_choice,
                 )
 
         df = self.convert_to_dataframe(df, columns=df.columns, index=df.index)
@@ -428,8 +445,10 @@ class InitialDataProcessing:
         Dataframe without nans and duplicates.
         """
         if target_column and dataframe[target_column].isna().any():
-            raise ValueError(f"Target column '{target_column}' has NaN values. \
-                               Please review the data.")
+            raise ValueError(
+                f"Target column '{target_column}' has NaN values. \
+                               Please review the data."
+            )
 
         rows_with_nans = dataframe[dataframe.isna().any(axis=1)]
         cleaned_dataframe = dataframe.dropna()
@@ -457,14 +476,21 @@ class InitialDataProcessing:
         return cleaned_dataframe
 
     @staticmethod
-    def numeric_transformation(data: pd.DataFrame, target_column: str | None) -> pd.DataFrame:
+    def numeric_transformation(
+        data: pd.DataFrame, target_column: str | None, custom_index: list[str] | None = None
+    ) -> pd.DataFrame:
         """
         Ensure all data is numeric in a dataframe where applicable.
 
         Parameters
         ----------
-        data: Input data.
-        target_column: Column in the dataframe specified by user.
+        data:
+            Input data.
+        target_column:
+            Column in the dataframe specified by user.
+        custom_index:
+            List of strings that are columns in the dataframe. These will be
+            set as an index.
 
         Returns
         -------
@@ -475,7 +501,9 @@ class InitialDataProcessing:
                 "The target column is not in the dataframe. Please evaluate data."
             )
 
-        data = data.apply(pd.to_numeric, errors="coerce")
+        index_cols = custom_index or []
+        cols_to_convert = [c for c in data.columns if c not in index_cols]
+        data[cols_to_convert] = data[cols_to_convert].apply(pd.to_numeric, errors="coerce")
 
         if not pd.to_numeric(data[target_column], errors="coerce").notna().all():
             data[target_column] = pd.to_numeric(data[target_column], errors="coerce")
@@ -487,8 +515,8 @@ class InitialDataProcessing:
     @staticmethod
     def convert_to_dataframe(
         data: Union[pd.DataFrame, List[Any], tuple, set, np.ndarray, pd.Series, dict],
-        columns: Optional[List[str]] = None,
-        index: Optional[List[Any]] = None,
+        columns: Optional[Iterable[str]] = None,
+        index: Optional[Iterable[Any]] = None,
     ) -> pd.DataFrame:
         """
         Convert data to a dataframe.
@@ -521,19 +549,20 @@ class InitialDataProcessing:
                 )
 
             if columns is not None:
-                df.columns = columns
+                df.columns = pd.Index(columns)
             if index is not None:
-                df.index = index
+                df.index = pd.Index(index)
 
             return df
-        except ValueError as n:
+        except Exception as e:
             LOG.error(
-                "An error occurred during data conversion: %s. Data must be \
-                       a standard Python, Numpy or Pandas datatype e.g. list, \
-                       ndarray or series to be converted",
-                n,
+                "An error occurred during data conversion: %s. Data must be a standard "
+                "Python, NumPy, or Pandas datatype.",
+                e,
             )
-            return None
+            raise ValueError(
+                f"Data conversion failed: {e}. Data must be a standard Python, NumPy, or Pandas datatype."
+            ) from e
 
     @staticmethod
     def transform_target_column(
@@ -564,8 +593,7 @@ class InitialDataProcessing:
             df = df[df[target_column].isin(classification_prediction)]
 
         elif (
-            isinstance(classification_prediction, tuple)
-            and len(classification_prediction) == 3
+            isinstance(classification_prediction, tuple) and len(classification_prediction) > 2
         ):
             LOG.info("Multiclass model selected for values %s", classification_prediction)
             LOG.info("Multiclass model selected for values %s", classification_prediction)
@@ -575,5 +603,63 @@ class InitialDataProcessing:
         unique_values = df[target_column].unique()
         LOG.info("Unique values in %s after transformation: %s", target_column, unique_values)
         LOG.info("Unique values in %s after transformation: %s", target_column, unique_values)
+
+        return df
+
+    @staticmethod
+    def xgboost_preparation(
+        df: pd.DataFrame,
+        target_column: str | None,
+        classification_prediction: tuple[int, ...] | None,
+        model_choice: list[Models] | Models | None,
+    ) -> pd.DataFrame:
+        """
+        Remaps classification target for XGBoost modelling (if applicable).
+
+        Parameters
+        ----------
+        df:
+            Input dataframe
+        target_column:
+            String column name of value to predict.
+        classification_prediction:
+            List of integers that correspond to the target column. The value(s)
+            to predict in a classification problem.
+        model_choice:
+            List or one algorithm to use as the base of the model. Available
+            algorithms can be seen in _ml_inputs.py or __info__.py.
+
+        Returns
+        -------
+        Dataframe with remapped classification target if XGBoost is the chosen
+        algorithm.
+        """
+        if not model_choice:
+            return df
+
+        model_list = model_choice if isinstance(model_choice, list) else [model_choice]
+
+        xgb_selected = any(
+            m in (Models.XGBOOST_CLASSIFIER, Models.XGBOOST_MULTICLASS) for m in model_list
+        )
+
+        if not xgb_selected:
+            return df
+
+        if classification_prediction is None:
+            raise ValueError(
+                "You selected an XGBoost classifier but did not provide classification_prediction."
+            )
+
+        df = df[df[target_column].isin(classification_prediction)]
+        df[target_column] = (
+            df[target_column]
+            .astype("category")
+            .cat.set_categories(classification_prediction)
+            .cat.codes
+        )
+
+        unique_vals = df[target_column].unique()
+        LOG.info("XGBoost target remapped to: %s", unique_vals)
 
         return df

@@ -50,7 +50,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-# Test statistics 
+# Test statistics
 junit.xml
 
 # Translations
@@ -164,3 +164,6 @@ dmypy.json
 # Specific configs can be included using '!' https://git-scm.com/docs/gitignore#_pattern_format
 # All configs in the examples folder are included
 !examples/*.yml
+
+# YOLO
+runs/*

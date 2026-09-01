@@ -1,0 +1,15 @@
+lxml>=6.0.2
+beautifulsoup4>=4.12.3
+geopandas>=1.0.1
+rasterio>=1.4.3
+Pillow>=11.1.0
+caf.toolkit>=0.9.0
+numpy>=1.26.4
+pandas>=2.2.3
+tqdm>=4.66.2
+pyproj>=3.6.1,<3.7
+scipy>=1.15.1
+optuna==4.1.0 # pinned due to API changes in 4.2+ affecting pruning
+torch==2.3.1+cu118 # upgrade required for this and below if CUDA driver upgraded
+torchvision==0.18.1+cu118 # pinned to match Torch CUDA version
+ultralytics==8.3.228 # pinned due to API changes affecting metrics and training parameters

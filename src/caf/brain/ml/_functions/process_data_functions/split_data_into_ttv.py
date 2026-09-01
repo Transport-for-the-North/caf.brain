@@ -40,11 +40,25 @@ def split_data(
 
     Parameters
     ----------
-    processed_dataframes: input dataframes inside a dictionary
-    paths
-    data_classification
-    transforming_inputs
-    output_path
+    processed_dataframes:
+        Input dataframes inside a dictionary
+    paths:
+        Path inputs from the PredictionModelInputs class. These inputs define
+        paths to external files. See
+        caf/brain/ml/main_models/prediction_model/_ml_inputs.py for available
+        options.
+    data_classification: Data classification inputs from the PredictionModelInputs
+                         class. These inputs help define and outline the
+                         structure of the input data. See
+                         caf/brain/ml/main_models/prediction_model/_ml_inputs.py
+                         for available options.
+    transforming_inputs: Transforming inputs from the PredictionModelInputs
+                         class. These inputs dictate how the data is transformed
+                         for machine learning modelling. See
+                         caf/brain/ml/main_models/prediction_model/_ml_inputs.py
+                         for available options.
+    output_path:
+        Path to output location.
     Returns
     -------
     Train, test and validate dataframes.
@@ -69,16 +83,50 @@ def split_data(
 
         return train, test, validate
 
-    train, test, validate = stratified_split_with_categories(
-        df=df,
-        categorical_features=data_classification.categorical_features,
-        target_column=data_classification.target_column,
-        weight_column=data_classification.weight_column,
-        split_size=transforming_inputs.split_size,
-        validation_path=paths.validation_path,
-        index_columns=data_classification.custom_index,
-        output_path=output_path,
+    if transforming_inputs.classification_prediction is not None:
+        train, test, validate = stratified_split_with_categories(
+            df=df,
+            categorical_features=data_classification.categorical_features,
+            target_column=data_classification.target_column,
+            weight_column=data_classification.weight_column,
+            split_size=transforming_inputs.split_size,
+            validation_path=paths.validation_path,
+            index_columns=data_classification.custom_index,
+            output_path=output_path,
+        )
+        return train, test, validate
+
+    train, test = train_test_split(
+        df,
+        test_size=(
+            transforming_inputs.split_size
+            if transforming_inputs.split_size is not None
+            else 0.2
+        ),
+        random_state=42,
     )
+    validate = None
+    if data_classification.weight_column in test.columns:
+        test = test.drop(columns=data_classification.weight_column)
+
+    if data_classification.target_column in test.columns:
+        validate = pd.DataFrame(
+            {data_classification.target_column: test[data_classification.target_column]},
+            index=test.index,
+        )
+        validate.to_csv(os.path.join(output_path, "validate.csv"), index=True)
+        test = test.drop(columns=data_classification.target_column)
+
+    if paths.validation_path is not None:
+        validate = InitialDataProcessing.read_file(file_path=paths.validation_path)
+        if data_classification.custom_index is not None and all(
+            col in validate.columns for col in data_classification.custom_index
+        ):
+            validate = validate.set_index(data_classification.custom_index)
+
+    train.to_csv(os.path.join(output_path, "train.csv"), index=True)
+    test.to_csv(os.path.join(output_path, "test.csv"), index=True)
+
     return train, test, validate
 
 
@@ -90,7 +138,7 @@ def stratified_split_with_categories(
     split_size: Optional[float],
     validation_path: Optional[Path],
     index_columns: Optional[list[str]],
-    output_path: Path,
+    output_path: Path | str,
 ) -> tuple[pd.DataFrame, pd.DataFrame, Optional[pd.DataFrame]]:
     """
     Split data into train, test, and validate sets using stratification.
@@ -118,7 +166,8 @@ def stratified_split_with_categories(
     -------
     Train, test and validate dataframes.
     """
-    strat = pd.cut(df.iloc[:, 0], 4)
+    # strat = pd.cut(df.iloc[:, 0], 4)
+    strat = df[target_column]
     train, test = train_test_split(
         df,
         test_size=split_size if split_size is not None else 0.2,
@@ -153,7 +202,7 @@ def stratified_split_with_categories(
 
     if validation_path is not None:
         validate = InitialDataProcessing.read_file(file_path=validation_path)
-        if index_columns in validate.columns:
+        if index_columns is not None and all(col in validate.columns for col in index_columns):
             validate = validate.set_index(index_columns)
 
     train.to_csv(os.path.join(output_path, "train.csv"), index=True)
@@ -168,7 +217,7 @@ def split_by_column_value(
     weight_column: Optional[str],
     target_column: Optional[str],
     validation_path: Optional[Path],
-    output_path: Path,
+    output_path: Path | str,
 ) -> tuple[pd.DataFrame, pd.DataFrame, Optional[pd.DataFrame]]:
     """
     Split data into train, test, and validate sets by a specific column value.
@@ -231,7 +280,7 @@ def split_by_column_value(
 
 def simple_train_test_split(
     df: pd.DataFrame, target_column: str | None, weight_column: str | None
-):
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series, pd.Series | None]:
     """
     Split data into train and test sets for model building.
 
@@ -250,8 +299,10 @@ def simple_train_test_split(
     x_train_weight: Weight values for the training set, if available.
     """
     if not target_column:
-        raise ValueError("Please provide a target column. This should be a \
-                          column title passed as a string.")
+        raise ValueError(
+            "Please provide a target column. This should be a \
+                          column title passed as a string."
+        )
     x = df.drop(columns=[target_column])
     y = df[target_column]
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.35, random_state=42)
@@ -267,9 +318,9 @@ def simple_train_test_split(
 
 def sample_data(
     x: pd.DataFrame,
-    y: pd.DataFrame,
+    y: pd.Series,
     weight: np.ndarray | None = None,
-    is_time_series: bool = False,
+    is_time_series: bool | None = False,
 ):
     """
     Take a sample of data whilst maintaining temporal nature of data if
@@ -278,7 +329,7 @@ def sample_data(
     Parameters
     ----------
     x: Pandas dataframe of explanatory variable data.
-    y: Pandas dataframe of target variable data.
+    y: Pandas series of target variable data.
     weight: Numpy array of weight column if applicable.
     is_time_series: True if data is time series.
 
@@ -303,7 +354,8 @@ def sample_data(
         if is_time_series:
             sample_positions = np.arange(n_rows - 500000, n_rows)
         else:
-            sample_positions = np.random.RandomState(42).choice(n_rows, 500000, replace=False)
+            rng = np.random.Generator(np.random.MT19937(42))
+            sample_positions = rng.choice(n_rows, size=500000, replace=False)
 
         x_sample = x.iloc[sample_positions]
         y_sample = y.iloc[sample_positions]

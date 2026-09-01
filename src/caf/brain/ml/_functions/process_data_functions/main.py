@@ -12,6 +12,7 @@ import pandas as pd
 # Local Imports
 from caf.brain.ml._functions._ml_inputs import (
     DataClassificationInputs,
+    ModellingInputs,
     Paths,
     TransformingInputDataInputs,
 )
@@ -32,6 +33,7 @@ def main_input_data(
     paths: Paths,
     data_classification: DataClassificationInputs,
     transforming_inputs: TransformingInputDataInputs,
+    modelling: ModellingInputs,
     output_path,
 ):
     """
@@ -53,7 +55,13 @@ def main_input_data(
                          for machine learning modelling. See
                          caf/brain/ml/main_models/prediction_model/_ml_inputs.py
                          for available options.
-    output_path: Path to output location.
+    modelling:
+        Modelling inputs from the PredictionModelInputs class. These inputs
+        control the machine learning modelling pipeline and _functions. See
+        caf/brain/ml/main_models/prediction_model/_ml_inputs.py for available
+        options.
+    output_path:
+        Path to output location.
 
     Returns
     -------
@@ -102,6 +110,7 @@ def main_input_data(
             categorical_features=data_classification.categorical_features,
             numerical_features=data_classification.numerical_features,
             classification_prediction=transforming_inputs.classification_prediction,
+            model_choice=modelling.model_choice,
         )
 
         processed_dfs = {}
@@ -141,6 +150,7 @@ def main_input_data(
             test_data=False,
             numerical_pipeline=None,
             output_folder=output_path,
+            skip_encoding_and_scaling=transforming_inputs.skip_encoding_and_scaling,
         )
 
         test_scaled, _, _ = process_data_pipeline(
@@ -156,6 +166,7 @@ def main_input_data(
             test_data=True,
             numerical_pipeline=numerical_pipeline,
             output_folder=output_path,
+            skip_encoding_and_scaling=transforming_inputs.skip_encoding_and_scaling,
         )
 
         data_dict = {
@@ -179,6 +190,7 @@ def main_input_data(
         categorical_features=data_classification.categorical_features,
         numerical_features=data_classification.numerical_features,
         classification_prediction=transforming_inputs.classification_prediction,
+        model_choice=modelling.model_choice,
     )
 
     is_test_data = False
@@ -214,6 +226,7 @@ def main_input_data(
         test_data=False,
         numerical_pipeline=None,
         output_folder=output_path,
+        skip_encoding_and_scaling=transforming_inputs.skip_encoding_and_scaling,
     )
 
     test_scaled, _, _ = process_data_pipeline(
@@ -229,6 +242,7 @@ def main_input_data(
         test_data=True,
         numerical_pipeline=numerical_pipeline,
         output_folder=output_path,
+        skip_encoding_and_scaling=transforming_inputs.skip_encoding_and_scaling,
     )
 
     train_unscaled[data_classification.target_column] = train_unscaled[

@@ -1,0 +1,5 @@
+object_detection:
+    user_location: null # (required)
+    output_path: null # (required)
+    image_folder_path: null # (required)
+    model_path: null # (required)

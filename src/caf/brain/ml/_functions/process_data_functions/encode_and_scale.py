@@ -323,7 +323,7 @@ def encode_test_data(
     train_encoded: Optional[pd.DataFrame],
     target_column: str | None,
     weight_column: str | None,
-    weight_df: pd.DataFrame,
+    weight_df: pd.Series | None,
 ) -> pd.DataFrame:
     """
     This encodes test data to match the training data.
@@ -336,7 +336,7 @@ def encode_test_data(
     train_encoded: Encoded training data that the test data will match.
     target_column: Sting column name of value to predict.
     weight_column: Optional string column value to be used as weight.
-    weight_df: The weight column in dataframe form to be added back
+    weight_df: The weight column in a series to be added back
                to the encoded test data.
 
     Returns
@@ -359,10 +359,68 @@ def encode_test_data(
 
     test_encoded = test_encoded.loc[:, test_encoded.columns.isin(train_encoded.columns)]
 
+    test_encoded = _align_categorical_dummies(
+        test_encoded=test_encoded,
+        train_encoded=train_encoded,
+        categorical_features=categorical_features,
+    )
+
     if weight_df is not None:
         test_encoded[weight_column] = weight_df
 
     return test_encoded
+
+
+def _align_categorical_dummies(
+    test_encoded: pd.DataFrame,
+    train_encoded: pd.DataFrame,
+    categorical_features: list[str],
+) -> pd.DataFrame:
+    """
+    Ensures that test_encoded contains all categorical dummy columns
+    that appear in train_encoded, adding missing ones with 0.0.
+
+    Numeric columns are ignored and left untouched.
+
+    Parameters
+    ----------
+    test_encoded:
+        Encoded test data that will be aligned to the training data.
+    train_encoded:
+        Encoded training data that the test data will match.
+    categorical_features:
+        List of string column names that are categorical variables.
+    Returns
+    -------
+    Aligned test dataframe.
+    """
+
+    train_cat_cols = [
+        c
+        for c in train_encoded.columns
+        if any(c.startswith(f"{feat}_") for feat in categorical_features)
+    ]
+
+    test_cat_cols = [
+        c
+        for c in test_encoded.columns
+        if any(c.startswith(f"{feat}_") for feat in categorical_features)
+    ]
+    if set(train_cat_cols) == set(test_cat_cols):
+        return test_encoded
+
+    missing = set(train_cat_cols) - set(test_cat_cols)
+    for col in missing:
+        test_encoded[col] = 0.0
+
+    ordered_cat = test_encoded[train_cat_cols]
+
+    numeric_cols = [c for c in test_encoded.columns if c not in train_cat_cols]
+    numeric_df = test_encoded[numeric_cols]
+
+    final = pd.concat([numeric_df, ordered_cat], axis=1)
+
+    return final
 
 
 def process_data_pipeline(
@@ -378,6 +436,7 @@ def process_data_pipeline(
     test_data: bool,
     numerical_pipeline,
     output_folder: Path,
+    skip_encoding_and_scaling: bool | None = False,
 ) -> tuple[pd.DataFrame, Optional[pd.DataFrame], Optional[Pipeline]]:
     """
     Pipeline to process input data via encoding and scaling transformations.
@@ -413,6 +472,8 @@ def process_data_pipeline(
                         output_folder must contain the csv or pkl
                         version of numerical_pipeline.
     output_folder: Path to output folder
+    skip_encoding_and_scaling:
+        If true, no encoding or scaling applied.
 
     Returns
     -------
@@ -420,6 +481,10 @@ def process_data_pipeline(
     drop_vals: Dataframe of columns removed during the encoding process.
     pipeline_out: stored transformation pipeline for continuous variables
     """
+    if skip_encoding_and_scaling:
+        LOG.info("Skipping encoding and scaling process as skip_encoding_and_scaling is True")
+        return df, None, None
+
     if target_column is not None and target_column in df.columns:
         x = df.drop(columns=[target_column])
         y = df[target_column]
@@ -546,4 +611,137 @@ def process_data_pipeline(
     if drop_vals is not None and not drop_vals.empty:
         drop_vals.to_csv(os.path.join(output_folder, "dropped_encoding_vals.csv"), index=True)
 
+    if final_df is None:
+        raise ValueError("Processing failed: final_df was never created.")
+
     return final_df, drop_vals, pipeline_out
+
+
+def _process_data_pipeline_numeric_only(
+    df: pd.DataFrame,
+    target_column: str,
+    numerical_features: list[str],
+    output_folder: Path,
+    weight_column: str | None = None,
+):
+    """
+    Process only numerical features while preserving raw categorical columns.
+
+    This function is used when the user provides both numerical and categorical
+    features but explicitly requests that only numerical features are processed.
+    Categorical columns are included in the final dataframe unchanged.
+
+    Parameters
+    ----------
+    df:
+        Pandas Dataframe of your data. Structured or semi-structured tabular
+        format.
+    target_column:
+        Column in your data that is the target variable (Y, dependent variable),
+        what you want to predict.
+    weight_column:
+        Optional string column value to be used as weight.
+    numerical_features:
+        List of column names (strings) that are continuous variables.
+    output_folder:
+        Path to output location.
+
+    Returns
+    -------
+    Pandas dataframe of input data scaled and categorical columns left unchanged.
+    """
+    if target_column is not None and target_column in df.columns:
+        x = df.drop(columns=[target_column])
+        y = df[target_column]
+    else:
+        x = df
+        y = None
+
+    weight_df = None
+    if weight_column is not None and weight_column in df.columns:
+        weight_df = df[weight_column]
+        x = x.drop(columns=weight_column)
+
+    x_cat = x.drop(columns=[c for c in numerical_features if c in x.columns])
+    numerical_df, _ = preprocess_numerical_data(
+        df=x,
+        numerical_features=numerical_features,
+        is_test_data=False,
+        numerical_pipeline_train=None,
+        output_folder=output_folder,
+    )
+
+    final_df = pd.concat([numerical_df, x_cat], axis=1)
+
+    if y is not None:
+        final_df[target_column] = y
+        if not is_numeric_dtype(final_df[target_column]):
+            raise ValueError(f"Target column '{target_column}' must be numeric")
+
+    if weight_df is not None:
+        final_df[weight_column] = weight_df
+    return final_df
+
+
+def _process_data_pipeline_categorical_only(
+    df: pd.DataFrame,
+    target_column: str,
+    categorical_features: list[str],
+    weight_column: str | None = None,
+):
+    """
+    Process only categorical features while preserving raw numerical columns.
+
+    This function is used when the user provides both numerical and categorical
+    features but explicitly requests that only categorical features are processed.
+    Numerical columns are included in the final dataframe unchanged.
+
+    Parameters
+    ----------
+    df:
+        Pandas Dataframe of your data. Structured or semi-structured tabular
+        format.
+    target_column:
+        Column in your data that is the target variable (Y, dependent variable),
+        what you want to predict.
+    categorical_features:
+        List of column names (strings) that are categorical variables.
+    weight_column:
+        Optional string column value to be used as weight.
+
+    Returns
+    -------
+    Pandas dataframe of input data encoded and numeric columns left unchanged.
+    """
+    if target_column is not None and target_column in df.columns:
+        x = df.drop(columns=[target_column])
+        y = df[target_column]
+    else:
+        x = df
+        y = None
+
+    weight_df = None
+
+    if weight_column is not None and weight_column in df.columns:
+        weight_df = df[weight_column]
+        x = x.drop(columns=weight_column)
+
+    x_num = x.drop(columns=[c for c in categorical_features if c in x.columns])
+    categorical_df, _ = preprocess_categorical_data(
+        df=x[categorical_features],
+        categorical_features=categorical_features,
+        sample_size_encode=None,
+        select_encode_values=None,
+        encode_values_to_drop=None,
+    )
+    final_df = pd.concat([x_num, categorical_df], axis=1)
+
+    if y is not None:
+        final_df[target_column] = y
+        if not is_numeric_dtype(final_df[target_column]):
+            raise ValueError(f"Target column '{target_column}' must be numeric")
+
+    if weight_df is not None:
+        final_df[weight_column] = weight_df
+
+    return final_df

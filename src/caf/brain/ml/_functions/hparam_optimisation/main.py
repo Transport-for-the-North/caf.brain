@@ -34,7 +34,7 @@ def main_hyperparameter_optimisation(
     transforming_inputs: TransformingInputDataInputs,
     modelling: ModellingInputs,
     output_folder: Path,
-    train: pd.DataFrame = None,
+    train: pd.DataFrame | None = None,
     model_instance=None,
 ):
     """
@@ -70,20 +70,25 @@ def main_hyperparameter_optimisation(
     best_model: Fitted final model for prediction on unseen (test) data.
     """
     if train is None:
-        LOG.info("Train does not exist so is being generated with the main_input_data \
-                  function based on user provided inputs")
+        LOG.info(
+            "Train does not exist so is being generated with the"
+            " main_input_data function based on user provided inputs"
+        )
         data_dict, _, _ = main_input_data(
             output_path=output_folder,
             paths=paths,
             data_classification=data_classification,
             transforming_inputs=transforming_inputs,
+            modelling=modelling,
         )
 
         train = pd.DataFrame.from_dict(data_dict["train_scaled"])
 
     if model_instance is None:
-        LOG.info("Model instance is None so main_model_selection is being called to \
-                  obtain the initialised model")
+        LOG.info(
+            "Model instance is None so main_model_selection"
+            " is being called to obtain the initialised model"
+        )
         model_instance = main_model_selection(
             paths=paths,
             data_classification=data_classification,
